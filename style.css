@@ -1,0 +1,51 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #111;
+  color: #f5f5f5;
+}
+
+.game {
+  max-width: 700px;
+  margin: 40px auto;
+  padding: 20px;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.card {
+  background: #1c1c1c;
+  border: 1px solid #333;
+  border-radius: 10px;
+  padding: 24px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3);
+}
+
+#story-text {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+#choices {
+  display: grid;
+  gap: 12px;
+}
+
+button {
+  background: #2b2b2b;
+  color: #fff;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 1rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+button:hover {
+  background: #3a3a3a;
+}
