@@ -1,24 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Choose Your Adventure</title>
-  <link rel="stylesheet" href="style.css" />
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>CYOA Template</title>
+	<link rel="stylesheet" href="./assets/css/styles.css" />
 </head>
 <body>
-  <main class="game">
-    <h1>Choose Your Adventure</h1>
+	<main class="game-shell">
+		<section class="game-card" id="game-card">
+			<header class="game-header">
+				<p class="eyebrow">Choose Your Own Adventure</p>
+				<h1 id="scene-title">Loading...</h1>
+			</header>
 
-    <section id="game-screen" class="card">
-      <div id="story-text">
-        Welcome to the adventure.
-      </div>
+			<section class="game-body">
+				<div id="scene-text" class="scene-text"></div>
+				<div id="choices" class="choices"></div>
+			</section>
 
-      <div id="choices"></div>
-    </section>
-  </main>
+			<footer class="game-footer">
+				<button id="restart-button" class="restart-button" type="button">
+					Restart
+				</button>
+			</footer>
+		</section>
+	</main>
 
-  <script src="game.js"></script>
+	<script type="module" src="./assets/js/app.js"></script>
 </body>
 </html>

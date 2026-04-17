@@ -1,51 +1,130 @@
+* {
+	box-sizing: border-box;
+}
+
+html,
 body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #111;
-  color: #f5f5f5;
+	margin: 0;
+	padding: 0;
+	min-height: 100%;
+	font-family: Arial, Helvetica, sans-serif;
+	background: #111827;
+	color: #f9fafb;
 }
 
-.game {
-  max-width: 700px;
-  margin: 40px auto;
-  padding: 20px;
+body {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 2rem;
 }
 
-h1 {
-  text-align: center;
-  margin-bottom: 24px;
+.game-shell {
+	width: 100%;
+	max-width: 760px;
 }
 
-.card {
-  background: #1c1c1c;
-  border: 1px solid #333;
-  border-radius: 10px;
-  padding: 24px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3);
+.game-card {
+	background: #1f2937;
+	border: 1px solid #374151;
+	border-radius: 16px;
+	padding: 2rem;
+	box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
 }
 
-#story-text {
-  font-size: 1.1rem;
-  line-height: 1.6;
-  margin-bottom: 24px;
+.game-header {
+	margin-bottom: 1.5rem;
 }
 
-#choices {
-  display: grid;
-  gap: 12px;
+.eyebrow {
+	margin: 0 0 0.5rem;
+	font-size: 0.8rem;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: #9ca3af;
 }
 
-button {
-  background: #2b2b2b;
-  color: #fff;
-  border: 1px solid #444;
-  border-radius: 8px;
-  padding: 12px 16px;
-  font-size: 1rem;
-  cursor: pointer;
-  text-align: left;
+#scene-title {
+	margin: 0;
+	font-size: 2rem;
+	line-height: 1.2;
 }
 
-button:hover {
-  background: #3a3a3a;
+.scene-text {
+	margin-bottom: 1.5rem;
+	line-height: 1.7;
+	font-size: 1.05rem;
+	color: #e5e7eb;
+}
+
+.scene-text p {
+	margin-top: 0;
+	margin-bottom: 1rem;
+}
+
+.choices {
+	display: grid;
+	gap: 0.75rem;
+}
+
+.choice-button,
+.restart-button {
+	appearance: none;
+	border: none;
+	border-radius: 10px;
+	padding: 0.9rem 1rem;
+	font-size: 1rem;
+	font-weight: 700;
+	cursor: pointer;
+	transition: transform 0.12s ease, opacity 0.12s ease, background 0.12s ease;
+}
+
+.choice-button {
+	background: #2563eb;
+	color: #ffffff;
+	text-align: left;
+}
+
+.choice-button:hover,
+.choice-button:focus {
+	background: #1d4ed8;
+	transform: translateY(-1px);
+}
+
+.restart-button {
+	background: #374151;
+	color: #f9fafb;
+}
+
+.restart-button:hover,
+.restart-button:focus {
+	background: #4b5563;
+}
+
+.game-footer {
+	margin-top: 1.5rem;
+	display: flex;
+	justify-content: flex-end;
+}
+
+.ending .scene-text {
+	color: #fde68a;
+}
+
+.hidden {
+	display: none;
+}
+
+@media (max-width: 640px) {
+	body {
+		padding: 1rem;
+	}
+
+	.game-card {
+		padding: 1.25rem;
+	}
+
+	#scene-title {
+		font-size: 1.6rem;
+	}
 }
