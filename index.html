@@ -3,36 +3,95 @@
 <head>
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-	<title>Choose Your Own Adventure</title>
+	<title>Blackout at Morrow's Crossing</title>
 	<link rel="stylesheet" href="style.css" />
 </head>
 <body>
-	<main class="game">
-		<h1 class="game__title">Choose Your Own Adventure</h1>
+	<main class="app">
+		<header class="panel hero">
+			<p class="eyebrow">Baseline Build</p>
+			<h1>Blackout at Morrow's Crossing</h1>
+			<p class="hero-copy">
+				A prairie storm traps you in a small town after dark. The generator did not fail by accident.
+			</p>
+		</header>
 
-		<section class="card state-card">
-			<h2 class="panel-title">Status</h2>
-			<div id="stats"></div>
-			<div id="inventory"></div>
-			<div id="flags"></div>
-		</section>
+		<section class="layout">
+			<section class="panel main-panel">
+				<div class="status-grid">
+					<div class="status-card">
+						<p class="status-label">Current Location</p>
+						<h2 id="location-name">Ash Creek Diner</h2>
+						<p id="location-description" class="location-description"></p>
+						<p id="location-npc" class="location-meta"></p>
+					</div>
 
-		<section class="card feedback-card">
-			<h2 class="panel-title">Latest Event</h2>
-			<div id="feedback" class="feedback-empty">Nothing yet.</div>
-		</section>
+					<div class="status-card">
+						<p class="status-label">Pressure</p>
+						<div class="pressure-wrap">
+							<div class="pressure-bar">
+								<div id="pressure-fill" class="pressure-fill"></div>
+							</div>
+							<p id="pressure-text">0 / 6</p>
+						</div>
+					</div>
+				</div>
 
-		<section class="card log-card">
-			<h2 class="panel-title">Event Log</h2>
-			<div id="log" class="log-empty">No events recorded yet.</div>
-		</section>
+				<div class="status-row">
+					<span id="truth-status" class="pill">Truth not pieced together.</span>
+					<span id="escape-status" class="pill">Escape route unknown.</span>
+				</div>
 
-		<section class="card">
-			<div id="story">Booting...</div>
-			<div id="choices" class="choices"></div>
+				<section id="scenario-section" class="scenario-card">
+					<h3>Tonight's Problem</h3>
+					<p>
+						Search the town, talk to the people still willing to talk, and figure out what happened to the generator.
+						Every action burns time. If you learn about the west road, you can try to leave before panic takes over.
+					</p>
+				</section>
+
+				<section id="move-section" class="action-block">
+					<h3>Move</h3>
+					<div id="movement-buttons" class="button-group"></div>
+				</section>
+
+				<section id="actions-section" class="action-block">
+					<h3>Actions</h3>
+					<div class="button-group">
+						<button id="search-button" class="action-button">Search</button>
+						<button id="talk-button" class="action-button">Talk</button>
+						<button id="wait-button" class="action-button secondary">Wait</button>
+						<button id="escape-button" class="action-button escape-button">Attempt Escape</button>
+					</div>
+				</section>
+
+				<section id="ending-panel" class="panel ending-panel hidden">
+					<p class="eyebrow">Run Complete</p>
+					<h2 id="ending-title">Ending</h2>
+					<p id="ending-text"></p>
+					<button id="restart-button" class="action-button">Restart Run</button>
+				</section>
+			</section>
+
+			<aside class="sidebar">
+				<section class="panel sidebar-panel">
+					<h3>Discovered Clues</h3>
+					<div class="clue-scroll">
+						<ul id="clue-list" class="list"></ul>
+					</div>
+				</section>
+
+				<section class="panel sidebar-panel">
+					<h3>Log</h3>
+					<div class="log-scroll">
+						<ul id="log-list" class="list log-list" aria-live="polite"></ul>
+					</div>
+				</section>
+			</aside>
 		</section>
 	</main>
 
-	<script type="module" src="assets/js/app.js"></script>
+	<script defer src="data.js"></script>
+	<script defer src="main.js"></script>
 </body>
 </html>
