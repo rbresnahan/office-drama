@@ -1,74 +1,168 @@
-import {
-	createStateStore,
-	checkConditions,
-	applyEffects,
-} from "./state.js";
-import {
-	renderScene,
-	renderMissingScene,
-} from "./renderer.js";
+import { createInitialState, resolveValue } from './state.js';
+import { applyEffects } from './effects.js';
+import { getProcessedChoices } from './guards.js';
+import { processNodeRedirects } from './guards.js';
 
-function createGame(story, elements) {
-	const stateStore = createStateStore(story.initialState || {});
-	let currentSceneId = story.startScene;
+export class Game {
+	constructor({ storyConfig, renderer }) {
+		this.storyConfig = storyConfig;
+		this.renderer = renderer;
 
-	function getScene(sceneId) {
-		return story.scenes[sceneId];
+		this.meta = storyConfig.meta || {};
+		this.nodes = storyConfig.nodes || {};
+		this.startNode = storyConfig.startNode || 'start';
+		this.baseInitialState = storyConfig.initialState || {};
+		this.displayConfig = storyConfig.display || {};
+
+		this.validateStoryConfig();
+
+		this.state = createInitialState(this.baseInitialState);
+		this.currentNodeId = this.startNode;
+		this.latestFeedback = '';
+		this.eventLog = [];
+		this.visitedNodes = {};
+		this.triggeredRedirects = {};
 	}
 
-	function getVisibleChoices(scene) {
-		return (scene.choices || []).filter(function (choice) {
-			return checkConditions(choice.conditions || [], stateStore.getState());
-		});
+	start() {
+		this.renderer.setDocumentTitle(this.meta.title);
+		this.enterNode(this.currentNodeId);
+		this.render();
 	}
 
-	function goToScene(sceneId) {
-		currentSceneId = sceneId;
-		render();
+	reset() {
+		this.state = createInitialState(this.baseInitialState);
+		this.currentNodeId = this.startNode;
+		this.latestFeedback = '';
+		this.eventLog = [];
+		this.visitedNodes = {};
+		this.triggeredRedirects = {};
+		this.enterNode(this.currentNodeId);
+		this.render();
 	}
 
-	function choose(choice) {
-		applyEffects(choice.effects || [], stateStore.getMutableState());
-		goToScene(choice.nextScene);
-	}
-
-	function render() {
-		const scene = getScene(currentSceneId);
-
-		if (!scene) {
-			renderMissingScene(elements, currentSceneId);
+	addEvent(message) {
+		if (!message) {
 			return;
 		}
 
-		renderScene({
-			elements,
-			scene,
-			state: stateStore.getState(),
-			choices: getVisibleChoices(scene),
-			onChoiceSelected: choose,
+		this.latestFeedback = message;
+		this.eventLog.push(message);
+	}
+
+	enterNode(nodeId) {
+		this.currentNodeId = processNodeRedirects({
+			nodeId,
+			nodes: this.nodes,
+			state: this.state,
+			triggeredRedirects: this.triggeredRedirects,
+			resolveValue: (value) => resolveValue(value, this.state),
+			addEvent: (message) => this.addEvent(message),
+			applyEffects: (effects) => applyEffects(this.state, effects),
+		});
+
+		const node = this.nodes[this.currentNodeId];
+
+		if (!node) {
+			return;
+		}
+
+		const wasVisited = this.visitedNodes[this.currentNodeId] === true;
+
+		if (node.entryOnce && wasVisited) {
+			this.visitedNodes[this.currentNodeId] = true;
+			return;
+		}
+
+		const entryEffects = resolveValue(node.entryEffects, this.state);
+		const entryFeedback = resolveValue(node.entryFeedback, this.state);
+
+		applyEffects(this.state, entryEffects);
+		this.addEvent(entryFeedback);
+
+		this.visitedNodes[this.currentNodeId] = true;
+	}
+
+	getCurrentNode() {
+		return this.nodes[this.currentNodeId];
+	}
+
+	getCurrentNodeText() {
+		const node = this.getCurrentNode();
+
+		if (!node) {
+			return '';
+		}
+
+		return resolveValue(node.text, this.state) || '';
+	}
+
+	getCurrentChoices() {
+		const node = this.getCurrentNode();
+
+		if (!node) {
+			return [];
+		}
+
+		return getProcessedChoices(node, this.state);
+	}
+
+	choose(choice) {
+		this.addEvent(choice.feedback);
+		applyEffects(this.state, choice.effects);
+
+		if (!choice.next) {
+			this.render();
+			return;
+		}
+
+		this.currentNodeId = choice.next;
+		this.enterNode(this.currentNodeId);
+		this.render();
+	}
+
+	render() {
+		if (this.currentNodeId === 'restart') {
+			this.reset();
+			return;
+		}
+
+		const node = this.getCurrentNode();
+
+		if (!node) {
+			this.renderer.showError(`Error: Story node "${this.currentNodeId}" not found.`);
+			return;
+		}
+
+		this.renderer.renderStatePanel({
+			state: this.state,
+			displayConfig: this.displayConfig,
+			latestFeedback: this.latestFeedback,
+			eventLog: this.eventLog,
+		});
+
+		this.renderer.renderNode({
+			text: this.getCurrentNodeText(),
+			choices: this.getCurrentChoices(),
+			onChoice: (choice) => this.choose(choice),
 		});
 	}
 
-	function restart() {
-		stateStore.reset();
-		currentSceneId = story.startScene;
-		render();
-	}
+	validateStoryConfig() {
+		if (!this.storyConfig || typeof this.storyConfig !== 'object') {
+			throw new Error('storyConfig is missing or invalid.');
+		}
 
-	function start() {
-		restart();
-	}
+		if (!this.startNode) {
+			throw new Error('startNode is missing.');
+		}
 
-	return {
-		start,
-		restart,
-		getState: function () {
-			return stateStore.getState();
-		},
-		getCurrentSceneId: function () {
-			return currentSceneId;
-		},
-	};
+		if (!this.nodes || typeof this.nodes !== 'object') {
+			throw new Error('nodes are missing or invalid.');
+		}
+
+		if (!this.nodes[this.startNode]) {
+			throw new Error(`startNode "${this.startNode}" does not exist in nodes.`);
+		}
+	}
 }
-
-export { createGame };

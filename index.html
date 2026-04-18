@@ -3,30 +3,36 @@
 <head>
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-	<title>CYOA Template</title>
-	<link rel="stylesheet" href="./assets/css/styles.css" />
+	<title>Choose Your Own Adventure</title>
+	<link rel="stylesheet" href="style.css" />
 </head>
 <body>
-	<main class="game-shell">
-		<section class="game-card" id="game-card">
-			<header class="game-header">
-				<p class="eyebrow">Choose Your Own Adventure</p>
-				<h1 id="scene-title">Loading...</h1>
-			</header>
+	<main class="game">
+		<h1 class="game__title">Choose Your Own Adventure</h1>
 
-			<section class="game-body">
-				<div id="scene-text" class="scene-text"></div>
-				<div id="choices" class="choices"></div>
-			</section>
+		<section class="card state-card">
+			<h2 class="panel-title">Status</h2>
+			<div id="stats"></div>
+			<div id="inventory"></div>
+			<div id="flags"></div>
+		</section>
 
-			<footer class="game-footer">
-				<button id="restart-button" class="restart-button" type="button">
-					Restart
-				</button>
-			</footer>
+		<section class="card feedback-card">
+			<h2 class="panel-title">Latest Event</h2>
+			<div id="feedback" class="feedback-empty">Nothing yet.</div>
+		</section>
+
+		<section class="card log-card">
+			<h2 class="panel-title">Event Log</h2>
+			<div id="log" class="log-empty">No events recorded yet.</div>
+		</section>
+
+		<section class="card">
+			<div id="story">Booting...</div>
+			<div id="choices" class="choices"></div>
 		</section>
 	</main>
 
-	<script type="module" src="./assets/js/app.js"></script>
+	<script type="module" src="assets/js/app.js"></script>
 </body>
 </html>
