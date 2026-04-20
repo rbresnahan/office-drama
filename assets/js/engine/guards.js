@@ -1,9 +1,31 @@
+import { resolveValue } from './state.js';
+
+function getChoiceCondition(choice) {
+	return choice.condition || choice.availableIf;
+}
+
+function getChoiceDisabledCondition(choice) {
+	return choice.disabledCondition || choice.disabledIf;
+}
+
 export function isChoiceAvailable(choice, state) {
-	if (!choice.condition) {
+	const condition = getChoiceCondition(choice);
+
+	if (!condition) {
 		return true;
 	}
 
-	return choice.condition(state);
+	return resolveValue(condition, state) !== false;
+}
+
+export function isChoiceDisabled(choice, state) {
+	const disabledCondition = getChoiceDisabledCondition(choice);
+
+	if (!disabledCondition) {
+		return false;
+	}
+
+	return resolveValue(disabledCondition, state) === true;
 }
 
 export function getProcessedChoices(node, state) {
@@ -14,15 +36,23 @@ export function getProcessedChoices(node, state) {
 	return node.choices
 		.map((choice) => {
 			const available = isChoiceAvailable(choice, state);
-			const hideWhenUnavailable = choice.hideWhenUnavailable === true;
+			const hidden = !available && choice.hideWhenUnavailable === true;
+
+			if (hidden) {
+				return null;
+			}
+
+			const disabled = available ? isChoiceDisabled(choice, state) : true;
 
 			return {
 				...choice,
 				available,
-				hidden: !available && hideWhenUnavailable,
+				disabled,
+				text: resolveValue(choice.text, state) || 'Continue',
+				unavailableText: resolveValue(choice.unavailableText, state) || '',
 			};
 		})
-		.filter((choice) => !choice.hidden);
+		.filter(Boolean);
 }
 
 function getRedirectRules(node) {
@@ -46,7 +76,7 @@ export function processNodeRedirects({
 	nodes,
 	state,
 	triggeredRedirects,
-	resolveValue,
+	resolveValue: resolveStateValue,
 	addEvent,
 	applyEffects,
 	maxDepth = 25,
@@ -68,22 +98,24 @@ export function processNodeRedirects({
 			const rule = redirectRules[index];
 			const redirectKey = buildRedirectKey(currentNodeId, index);
 			const alreadyTriggered = triggeredRedirects[redirectKey] === true;
-			const redirectOnce = rule.redirectOnce === true;
+			const redirectOnce = rule.redirectOnce === true || rule.once === true;
 
 			if (redirectOnce && alreadyTriggered) {
 				continue;
 			}
 
-			if (!rule.condition || rule.condition(state)) {
-				addEvent(resolveValue(rule.feedback, state));
-				applyEffects(resolveValue(rule.effects, state));
+			if (!rule.condition || resolveStateValue(rule.condition)) {
+				addEvent(resolveStateValue(rule.feedback));
+				applyEffects(resolveStateValue(rule.effects));
 
 				if (redirectOnce) {
 					triggeredRedirects[redirectKey] = true;
 				}
 
-				if (rule.next && rule.next !== currentNodeId) {
-					currentNodeId = rule.next;
+				const targetNode = rule.next || rule.to;
+
+				if (targetNode && targetNode !== currentNodeId) {
+					currentNodeId = resolveStateValue(targetNode);
 					redirected = true;
 					break;
 				}

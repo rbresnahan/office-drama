@@ -7,6 +7,9 @@ export class Renderer {
 		this.flagsEl = elements.flagsEl;
 		this.feedbackEl = elements.feedbackEl;
 		this.logEl = elements.logEl;
+		this.titleEl = elements.titleEl;
+		this.subtitleEl = elements.subtitleEl;
+		this.eyebrowEl = elements.eyebrowEl;
 	}
 
 	setDocumentTitle(title) {
@@ -15,132 +18,197 @@ export class Renderer {
 		}
 	}
 
+	renderMeta(meta = {}) {
+		if (this.titleEl && meta.title) {
+			this.titleEl.textContent = meta.title;
+		}
+
+		if (this.subtitleEl && meta.subtitle) {
+			this.subtitleEl.textContent = meta.subtitle;
+		}
+
+		if (this.eyebrowEl && meta.eyebrow) {
+			this.eyebrowEl.textContent = meta.eyebrow;
+		}
+	}
+
 	showError(message) {
-		this.storyEl.textContent = message;
+		this.storyEl.innerHTML = `<p class="error-text">${this.escapeHtml(message)}</p>`;
 		this.choicesEl.innerHTML = '';
 	}
 
-	renderStatePanel({ state, displayConfig, latestFeedback, eventLog }) {
-		this.renderStats(state, displayConfig.stats || []);
-		this.renderInventory(state, displayConfig.inventory || []);
-		this.renderFlags(state, displayConfig.flags || []);
-		this.renderFeedback(latestFeedback);
-		this.renderLog(eventLog);
+	renderStatePanel({ state, displayConfig, context }) {
+		this.renderStats(state, displayConfig.status || [], context);
+		this.renderEvidence(state.evidence || []);
+		this.renderBeliefs(state.beliefs || {});
+		this.renderSignals(state.signals || []);
+		this.renderMemories(state.memories || []);
 	}
 
-	renderStats(state, stats) {
+	renderStats(state, statusItems, context) {
 		this.statsEl.innerHTML = '';
 
-		if (!stats.length) {
+		if (!statusItems.length) {
+			this.statsEl.innerHTML = '<div class="status-empty">No status configured.</div>';
 			return;
 		}
 
-		const items = stats.map((key) => {
-			return this.createPill(`${key}: ${state[key]}`);
+		const wrapper = document.createElement('div');
+		wrapper.className = 'status-group';
+
+		const list = document.createElement('div');
+		list.className = 'status-list';
+
+		statusItems.forEach((item) => {
+			const pill = document.createElement('span');
+			pill.className = 'status-pill';
+			pill.textContent = `${item.label}: ${item.getValue(state, context)}`;
+			list.appendChild(pill);
 		});
 
-		this.statsEl.appendChild(this.createStatusGroup('Stats', items));
+		wrapper.appendChild(list);
+		this.statsEl.appendChild(wrapper);
 	}
 
-	renderInventory(state, inventory) {
+	renderEvidence(evidence) {
 		this.inventoryEl.innerHTML = '';
 
-		if (!inventory.length) {
+		if (!evidence.length) {
+			this.inventoryEl.innerHTML = '<div class="evidence-empty">Nothing secured yet.</div>';
 			return;
 		}
 
-		const activeItems = inventory
-			.filter((item) => state[item.key])
-			.map((item) => this.createPill(item.label));
+		const list = document.createElement('div');
+		list.className = 'evidence-list';
 
-		if (!activeItems.length) {
-			this.inventoryEl.appendChild(
-				this.createStatusGroup('Inventory', [this.createEmptyText('Nothing yet.')])
-			);
-			return;
-		}
+		evidence.forEach((item) => {
+			const wrapper = document.createElement('div');
+			wrapper.className = 'evidence-item';
+			wrapper.innerHTML = `
+				<div class="item-row">
+					<span class="badge">${this.escapeHtml(item.source)}</span>
+					${item.verified === true ? '<span class="badge badge--fresh">verified</span>' : ''}
+				</div>
+				<div><strong>${this.escapeHtml(item.title)}</strong></div>
+				<div>${this.escapeHtml(item.text)}</div>
+			`;
+			list.appendChild(wrapper);
+		});
 
-		this.inventoryEl.appendChild(this.createStatusGroup('Inventory', activeItems));
+		this.inventoryEl.appendChild(list);
 	}
 
-	renderFlags(state, flags) {
+	renderBeliefs(beliefs) {
 		this.flagsEl.innerHTML = '';
+		const entries = Object.values(beliefs || {});
 
-		if (!flags.length) {
+		if (!entries.length) {
+			this.flagsEl.innerHTML = '<div class="belief-empty">No committed interpretation yet.</div>';
 			return;
 		}
 
-		const activeFlags = flags
-			.filter((flag) => state[flag.key])
-			.map((flag) => this.createPill(flag.label));
+		const list = document.createElement('div');
+		list.className = 'belief-list';
 
-		if (!activeFlags.length) {
-			this.flagsEl.appendChild(
-				this.createStatusGroup('Flags', [this.createEmptyText('No known flags.')])
-			);
-			return;
-		}
+		entries.forEach((belief) => {
+			const wrapper = document.createElement('div');
+			wrapper.className = 'belief-item';
+			wrapper.textContent = belief.label;
+			list.appendChild(wrapper);
+		});
 
-		this.flagsEl.appendChild(this.createStatusGroup('Flags', activeFlags));
+		this.flagsEl.appendChild(list);
 	}
 
-	renderFeedback(latestFeedback) {
-		if (!latestFeedback) {
-			this.feedbackEl.className = 'feedback-empty';
-			this.feedbackEl.textContent = 'Nothing yet.';
+	renderSignals(signals) {
+		this.feedbackEl.innerHTML = '';
+
+		if (!signals.length) {
+			this.feedbackEl.innerHTML = '<div class="signal-empty">Nothing has shifted recently.</div>';
 			return;
 		}
 
-		this.feedbackEl.className = 'feedback-text';
-		this.feedbackEl.textContent = latestFeedback;
+		const list = document.createElement('div');
+		list.className = 'signal-list';
+
+		signals.forEach((signal) => {
+			const wrapper = document.createElement('div');
+			wrapper.className = 'signal-item';
+			wrapper.textContent = signal;
+			list.appendChild(wrapper);
+		});
+
+		this.feedbackEl.appendChild(list);
 	}
 
-	renderLog(eventLog) {
-		if (!eventLog.length) {
-			this.logEl.className = 'log-empty';
-			this.logEl.textContent = 'No events recorded yet.';
-			return;
-		}
-
-		this.logEl.className = 'log-list';
+	renderMemories(memories) {
 		this.logEl.innerHTML = '';
 
-		eventLog
-			.slice()
-			.reverse()
-			.forEach((entry) => {
-				const entryEl = document.createElement('div');
-				entryEl.className = 'log-entry';
-				entryEl.textContent = entry;
-				this.logEl.appendChild(entryEl);
-			});
+		if (!memories.length) {
+			this.logEl.innerHTML = '<div class="memory-empty">Nothing solid is left in your head yet.</div>';
+			return;
+		}
+
+		const sortedMemories = [ ...memories ].sort((a, b) => b.stability - a.stability);
+		const list = document.createElement('div');
+		list.className = 'memory-list';
+
+		sortedMemories.forEach((memory) => {
+			const wrapper = document.createElement('div');
+			wrapper.className = `memory-item memory-item--${memory.stage}`;
+			wrapper.innerHTML = `
+				<div class="item-row">
+					<span class="badge badge--${memory.stage}">${this.escapeHtml(memory.stage)}</span>
+					${memory.preserved === true ? '<span class="badge badge--anchor">anchored</span>' : ''}
+				</div>
+				<div>${this.escapeHtml(memory.currentText)}</div>
+				<div class="item-meta">${this.escapeHtml(memory.label)}</div>
+			`;
+			list.appendChild(wrapper);
+		});
+
+		this.logEl.appendChild(list);
 	}
 
-	renderNode({ text, choices, onChoice }) {
-		this.storyEl.textContent = text;
+	renderNode({ nodeView, choices, onChoice }) {
+		const kickerMarkup = nodeView.kicker
+			? `<div class="story-kicker">${this.escapeHtml(nodeView.kicker)}</div>`
+			: '';
+
+		const paragraphs = String(nodeView.text || '')
+			.split(/\n{2,}/)
+			.filter(Boolean)
+			.map((paragraph) => `<p>${this.escapeHtml(paragraph)}</p>`)
+			.join('');
+
+		this.storyEl.innerHTML = `
+			${kickerMarkup}
+			<h2 class="story-title">${this.escapeHtml(nodeView.title || '')}</h2>
+			<div class="story-body">${paragraphs}</div>
+		`;
+
 		this.choicesEl.innerHTML = '';
 
 		choices.forEach((choice) => {
 			const button = document.createElement('button');
+			button.type = 'button';
+			button.className = 'choice-button';
+			button.disabled = choice.available === false || choice.disabled === true;
 
 			const choiceText = document.createElement('span');
 			choiceText.className = 'choice-text';
 			choiceText.textContent = choice.text || 'Continue';
 			button.appendChild(choiceText);
 
-			if (!choice.available && choice.unavailableText) {
+			if ((choice.available === false || choice.disabled === true) && choice.unavailableText) {
 				const choiceNote = document.createElement('span');
 				choiceNote.className = 'choice-note';
 				choiceNote.textContent = choice.unavailableText;
 				button.appendChild(choiceNote);
 			}
 
-			if (!choice.available) {
-				button.disabled = true;
-			}
-
 			button.addEventListener('click', () => {
-				if (!choice.available) {
+				if (choice.available === false || choice.disabled === true) {
 					return;
 				}
 
@@ -151,43 +219,12 @@ export class Renderer {
 		});
 	}
 
-	createStatusGroup(label, nodes) {
-		const wrapper = document.createElement('div');
-		wrapper.className = 'status-group';
-
-		const labelEl = document.createElement('div');
-		labelEl.className = 'status-label';
-		labelEl.textContent = label;
-		wrapper.appendChild(labelEl);
-
-		if (nodes.length === 1 && nodes[0].classList.contains('status-empty')) {
-			wrapper.appendChild(nodes[0]);
-			return wrapper;
-		}
-
-		const list = document.createElement('div');
-		list.className = 'status-list';
-
-		nodes.forEach((node) => {
-			list.appendChild(node);
-		});
-
-		wrapper.appendChild(list);
-
-		return wrapper;
-	}
-
-	createPill(text) {
-		const pill = document.createElement('span');
-		pill.className = 'status-pill';
-		pill.textContent = text;
-		return pill;
-	}
-
-	createEmptyText(text) {
-		const empty = document.createElement('div');
-		empty.className = 'status-empty';
-		empty.textContent = text;
-		return empty;
+	escapeHtml(value) {
+		return String(value)
+			.replaceAll('&', '&amp;')
+			.replaceAll('<', '&lt;')
+			.replaceAll('>', '&gt;')
+			.replaceAll('"', '&quot;')
+			.replaceAll("'", '&#039;');
 	}
 }

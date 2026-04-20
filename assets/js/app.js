@@ -10,6 +10,9 @@ const renderer = new Renderer({
 	flagsEl: document.getElementById('flags'),
 	feedbackEl: document.getElementById('feedback'),
 	logEl: document.getElementById('log'),
+	titleEl: document.getElementById('app-title'),
+	subtitleEl: document.getElementById('app-subtitle'),
+	eyebrowEl: document.getElementById('app-eyebrow'),
 });
 
 const game = new Game({
