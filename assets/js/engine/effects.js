@@ -1,14 +1,24 @@
 import {
 	addEvidence,
+	addIssue,
 	addMemory,
 	addSignal,
+	adjustActor,
+	adjustIssue,
 	clearBelief,
 	commitBelief,
+	containIssue,
 	distortMemory,
+	exposeIssue,
+	findActorById,
 	hasEvidence,
 	preserveMemory,
 	reinforceMemory,
 	resolveValue,
+	setActorBelief,
+	setActorKnowledge,
+	setIssueLifecycle,
+	shiftIssuePrecision,
 } from './state.js';
 
 function getPathSegments(path) {
@@ -118,6 +128,74 @@ export function applyEffects(state, effects, options = {}) {
 				break;
 			}
 
+			case 'addIssue': {
+				addIssue(state, resolve(effect.issue));
+				break;
+			}
+
+			case 'issueSet': {
+				adjustIssue(state, resolve(effect.id), resolve(effect.path), resolve(effect.value), 'set');
+				break;
+			}
+
+			case 'issueAdd': {
+				adjustIssue(state, resolve(effect.id), resolve(effect.path), resolve(effect.value), 'add');
+				break;
+			}
+
+			case 'issueContain': {
+				containIssue(state, resolve(effect.id), Number(resolve(effect.amount) || 0));
+				break;
+			}
+
+			case 'issueExpose': {
+				exposeIssue(state, resolve(effect.id), Number(resolve(effect.amount) || 0));
+				break;
+			}
+
+			case 'issueLifecycle': {
+				setIssueLifecycle(state, resolve(effect.id), resolve(effect.lifecycleState));
+				break;
+			}
+
+			case 'issuePrecision': {
+				shiftIssuePrecision(state, resolve(effect.id), Number(resolve(effect.amount) || 0));
+				break;
+			}
+
+			case 'actorSet': {
+				adjustActor(state, resolve(effect.id), resolve(effect.path), resolve(effect.value), 'set');
+				break;
+			}
+
+			case 'actorAdd': {
+				adjustActor(state, resolve(effect.id), resolve(effect.path), resolve(effect.value), 'add');
+				break;
+			}
+
+			case 'actorKnowledge': {
+				setActorKnowledge(
+					state,
+					resolve(effect.id),
+					resolve(effect.issueId),
+					resolve(effect.level),
+					Number(resolve(effect.confidence) || 50),
+					resolve(effect.source) || 'player'
+				);
+				break;
+			}
+
+			case 'actorBelief': {
+				setActorBelief(
+					state,
+					resolve(effect.id),
+					resolve(effect.key),
+					resolve(effect.label),
+					Number(resolve(effect.confidence) || 60)
+				);
+				break;
+			}
+
 			case 'addEvidence': {
 				const evidence = resolve(effect.evidence);
 				const added = addEvidence(state, evidence);
@@ -147,6 +225,17 @@ export function applyEffects(state, effects, options = {}) {
 				const evidenceId = resolve(effect.id);
 
 				if (!hasEvidence(state, evidenceId)) {
+					applyEffects(state, resolve(effect.effects), options);
+				}
+				break;
+			}
+
+			case 'ifActorMissingKnowledge': {
+				const actor = findActorById(state, resolve(effect.id));
+				const issueId = resolve(effect.issueId);
+				const actorKnowledge = actor && actor.knowledge ? actor.knowledge[issueId] : null;
+
+				if (!actorKnowledge || actorKnowledge.level === 'none') {
 					applyEffects(state, resolve(effect.effects), options);
 				}
 				break;

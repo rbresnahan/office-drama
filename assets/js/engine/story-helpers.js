@@ -45,6 +45,44 @@ function memoryByKey(state, key) {
 	return state.memories.find((memory) => memory.key === key) || null;
 }
 
+function issueById(state, id) {
+	if (!Array.isArray(state.issues)) {
+		return null;
+	}
+
+	return state.issues.find((issue) => issue.id === id) || null;
+}
+
+function actorById(state, id) {
+	if (!Array.isArray(state.actors)) {
+		return null;
+	}
+
+	return state.actors.find((actor) => actor.id === id) || null;
+}
+
+function actorKnowledgeRank(level = 'none') {
+	const map = {
+		none: 0,
+		heard: 1,
+		repeated: 2,
+		confirmed: 3,
+		involved: 4,
+	};
+
+	return map[level] || 0;
+}
+
+function actorKnowsIssue(state, actorId, issueId, minimumLevel = 'heard') {
+	const actor = actorById(state, actorId);
+
+	if (!actor || !actor.knowledge || !actor.knowledge[issueId]) {
+		return false;
+	}
+
+	return actorKnowledgeRank(actor.knowledge[issueId].level) >= actorKnowledgeRank(minimumLevel);
+}
+
 function hasMemoryTag(state, tag) {
 	if (!Array.isArray(state.memories)) {
 		return false;
@@ -161,6 +199,102 @@ export const fx = {
 		};
 	},
 
+	issue(issue) {
+		return {
+			type: 'addIssue',
+			issue,
+		};
+	},
+
+	issueSet(id, path, value) {
+		return {
+			type: 'issueSet',
+			id,
+			path,
+			value,
+		};
+	},
+
+	issueAdd(id, path, value) {
+		return {
+			type: 'issueAdd',
+			id,
+			path,
+			value,
+		};
+	},
+
+	issueContain(id, amount = 10) {
+		return {
+			type: 'issueContain',
+			id,
+			amount,
+		};
+	},
+
+	issueExpose(id, amount = 10) {
+		return {
+			type: 'issueExpose',
+			id,
+			amount,
+		};
+	},
+
+	issueLifecycle(id, lifecycleState) {
+		return {
+			type: 'issueLifecycle',
+			id,
+			lifecycleState,
+		};
+	},
+
+	issuePrecision(id, amount) {
+		return {
+			type: 'issuePrecision',
+			id,
+			amount,
+		};
+	},
+
+	actorSet(id, path, value) {
+		return {
+			type: 'actorSet',
+			id,
+			path,
+			value,
+		};
+	},
+
+	actorAdd(id, path, value) {
+		return {
+			type: 'actorAdd',
+			id,
+			path,
+			value,
+		};
+	},
+
+	actorKnowledge(id, issueId, level = 'heard', confidence = 55, source = 'player') {
+		return {
+			type: 'actorKnowledge',
+			id,
+			issueId,
+			level,
+			confidence,
+			source,
+		};
+	},
+
+	actorBelief(id, key, label, confidence = 60) {
+		return {
+			type: 'actorBelief',
+			id,
+			key,
+			label,
+			confidence,
+		};
+	},
+
 	evidence(evidence) {
 		return {
 			type: 'addEvidence',
@@ -194,6 +328,15 @@ export const fx = {
 		return {
 			type: 'ifMissingEvidence',
 			id,
+			effects,
+		};
+	},
+
+	ifActorMissingKnowledge(id, issueId, effects) {
+		return {
+			type: 'ifActorMissingKnowledge',
+			id,
+			issueId,
 			effects,
 		};
 	},
@@ -238,6 +381,59 @@ export const when = {
 		return (state) => hasMemoryTag(state, tag) || evidenceCountByTag(state, tag) > 0;
 	},
 
+	issueState(issueId, expectedState) {
+		return (state) => {
+			const issue = issueById(state, issueId);
+			return Boolean(issue && issue.lifecycleState === expectedState);
+		};
+	},
+
+	issueContainmentAtLeast(issueId, minimum) {
+		return (state) => {
+			const issue = issueById(state, issueId);
+			return Boolean(issue && issue.containment >= minimum);
+		};
+	},
+
+	issueContainmentAtMost(issueId, maximum) {
+		return (state) => {
+			const issue = issueById(state, issueId);
+			return Boolean(issue && issue.containment <= maximum);
+		};
+	},
+
+	issuePrecisionAtLeast(issueId, minimum) {
+		return (state) => {
+			const issue = issueById(state, issueId);
+			return Boolean(issue && issue.precision >= minimum);
+		};
+	},
+
+	actorDispositionAtLeast(actorId, minimum) {
+		return (state) => {
+			const actor = actorById(state, actorId);
+			return Boolean(actor && actor.disposition >= minimum);
+		};
+	},
+
+	actorSuspicionAtLeast(actorId, minimum) {
+		return (state) => {
+			const actor = actorById(state, actorId);
+			return Boolean(actor && actor.suspicion >= minimum);
+		};
+	},
+
+	actorStabilityAtMost(actorId, maximum) {
+		return (state) => {
+			const actor = actorById(state, actorId);
+			return Boolean(actor && actor.stability <= maximum);
+		};
+	},
+
+	actorKnowsIssue(actorId, issueId, minimumLevel = 'heard') {
+		return (state) => actorKnowsIssue(state, actorId, issueId, minimumLevel);
+	},
+
 	turnAtLeast(count) {
 		return (state) => Number(state.turn) >= count;
 	},
@@ -278,6 +474,18 @@ export const read = {
 
 	memoryByKey(state, key) {
 		return memoryByKey(state, key);
+	},
+
+	issueById(state, id) {
+		return issueById(state, id);
+	},
+
+	actorById(state, id) {
+		return actorById(state, id);
+	},
+
+	actorKnowsIssue(state, actorId, issueId, minimumLevel = 'heard') {
+		return actorKnowsIssue(state, actorId, issueId, minimumLevel);
 	},
 
 	knowsTag(state, tag) {

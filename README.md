@@ -1,195 +1,155 @@
-# Blackout Memory Sandbox
+# Reply All Prototype
 
-A small browser-based narrative engine built around **stable reality, degrading memory, preserved evidence, and player beliefs**.
+A browser-based narrative pressure sandbox built around **unstable information, social propagation, issue containment, degrading certainty, and dirty short-term solutions that leave residue**.
 
-This is no longer a plain branching CYOA template.
+This is no longer just a memory-mystery toy.
 
-The model is:
+The current prototype is aimed at a grounded office crisis:
 
-- the world has an underlying truth
-- the player does **not** get clean access to that truth
-- memories fade, compress, distort, or disappear over time
-- evidence is more durable than memory
-- beliefs influence choices and endings
-- endings come from **what the player commits to as true** and what they do with that commitment
+- you send one bad gossip email
+- it goes to the wrong people
+- coworkers begin interpreting, spreading, and weaponizing it
+- you try to contain the fallout before the office hardens around an official story
 
-## Core Design
+The setting is intentionally ordinary because the real subject is not "office comedy."
 
-### Reality
+The real subject is:
 
-Reality is consistent under the hood. The engine should always know what actually happened.
+**people under pressure acting on unstable information.**
 
-### Memory
+## Current Design Goal
 
-Memories are not a transcript. They are unstable fragments that degrade as turns pass.
+The project is now trying to prove a reusable pressure-logic core through one small, ugly, legible scenario.
 
-### Evidence
+The office scenario is the stress test.
 
-Evidence is externalized information: notes, photos, physical fragments, witness statements, and anything else that survives outside the player character's head.
+It lets the engine exercise:
 
-### Beliefs
+- active problem objects instead of only loose flags
+- per-actor social state
+- offscreen propagation
+- degrading issue precision under pressure
+- containment that can fail later
+- underhanded actions with lingering blowback
 
-Beliefs are interpretations, not facts. They can be right, wrong, incomplete, or emotionally convenient.
+The abstraction is broader than the theme.
 
-## Project Structure
+Future skins could still include:
 
-    .
-    ├── README.md
-    ├── assets
-    │   ├── js
-    │   │   ├── app.js
-    │   │   └── engine
-    │   │       ├── effects.js
-    │   │       ├── game.js
-    │   │       ├── guards.js
-    │   │       ├── renderer.js
-    │   │       ├── state.js
-    │   │       └── story-helpers.js
-    │   └── stories
-    │       └── demo-story.js
-    ├── data.js
-    ├── index.html
-    ├── main.js
-    └── style.css
+- social sabotage
+- trapped-space horror
+- corporate dystopia
+- sealed-facility survival
+- post-collapse rumor systems
+
+But this pass is deliberately focused on making one contained scenario actually work.
 
 ## What Changed In This Pass
 
-This pass is about **authoring ergonomics only**.
+This pass adds a middle layer the earlier sandbox did not have.
 
-The underlying model is the same, but writing stories is now less repetitive.
+### New engine support
 
-New helper file:
+- **Issue objects** with lifecycle, containment, spread risk, severity, and degrading precision.
+- **Actor objects** with disposition, suspicion, stability, talkativeness, connections, and per-issue knowledge.
+- **Offscreen propagation** so issues can move between actors without direct player input.
+- **Issue precision decay** that gets worse when too many unresolved issues exist at once.
+- **Actor and issue effect helpers** so story actions can manipulate people and crises directly.
+- **Generalized sidebar rendering** so the UI can show issues, coworkers, signals, and memory instead of pretending every prototype is the same game.
 
-- `assets/js/engine/story-helpers.js`
+### Scenario shift
 
-It provides:
+The demo story is now an office-pressure prototype instead of the original blackout investigation sample.
 
-- `scene()` for clearer scene declarations
-- `choice()` for cleaner choice objects
-- `endingNode()` for standard ending scenes
-- `paragraphs()` for readable multi-paragraph text
-- `status()` for display pill definitions
-- `fx.*` builders for effects
-- `when.*` builders for reusable conditions
-- `read.*` helpers for common state checks
+The player is trying to contain a reply-all disaster before an all-hands meeting locks the office into a version of events.
 
-## Authoring Style
+## Core Model
 
-Instead of hand-writing repetitive low-level objects like this:
+### Reality
 
-    {
-    	type: 'set',
-    	path: 'flags.reportMade',
-    	value: true,
-    }
+The engine still keeps an underlying truth.
 
-You can now write:
+### Memory
 
-    fx.set('flags.reportMade', true)
+The player does not keep clean access to every detail. Memory can still fade, compress, distort, or collapse.
 
-Instead of wiring an ending node manually, you can write:
+### Issues
 
-    ending: endingNode(getEnding)
+Problems now exist as explicit world objects.
 
-Instead of hand-writing paragraph joins, you can write:
+An issue can be:
 
-    text(state) {
-    	return paragraphs(
-    		'First paragraph.',
-    		'Second paragraph.',
-    		state.flags.example ? 'Conditional paragraph.' : null
-    	);
-    }
+- warming
+- active
+- contained
+- reactivated
+- resolved
 
-## Useful Helpers
+Each issue tracks how severe it is, how fast it can spread, how well it is currently contained, and how precisely the player still understands it.
 
-### Scene helper
+### Actors
 
-    scene({
-    	kicker: 'Town Edge',
-    	title: 'You still have the crash. For now.',
-    	text(state) {
-    		return paragraphs(
-    			'Paragraph one.',
-    			'Paragraph two.'
-    		);
-    	},
-    	choices: [
-    		choice('Go to the diner.', 'diner'),
-    	],
-    })
+Coworkers are no longer just names inside hand-authored text.
 
-### Choice helper
+Each actor can track:
 
-    choice('Go to the station.', 'station')
+- relationship/disposition
+- suspicion
+- stability
+- talkativeness
+- issue knowledge
+- office connections
 
-With options:
+### Propagation
 
-    choice('Tell Ruiz the truth.', 'station', {
-    	condition: when.knowsTag('vehicle:white'),
-    	feedback: 'Ruiz waits for something sturdier than confidence.',
-    	effects: [
-    		fx.set('flags.reportMade', true),
-    	],
-    })
+The office updates offscreen as turns advance.
 
-### Effects helpers
+People talk. Problems drift. Containment leaks.
 
-    fx.set('flags.reportMade', true)
-    fx.add('stats.stress', 1)
-    fx.reinforceMemory('hit-and-run', 10)
-    fx.preserveMemory('hit-and-run')
-    fx.distortMemory('hit-and-run', falseStage)
-    fx.evidence({ ... })
-    fx.belief('trust-mara', 'Mara is trying to help.')
-    fx.signal('Something shifts.')
+The player is not the only thing moving pieces on the board anymore.
 
-### Condition helpers
+## Project Structure
 
-    when.flag('reportMade')
-    when.not(when.flag('reportMade'))
-    when.evidence('paint-chip')
-    when.belief('trust-mayor')
-    when.knowsTag('vehicle:white')
-    when.and(when.flag('a'), when.flag('b'))
-    when.or(when.evidence('x'), when.evidence('y'))
+.
+├── README.md
+├── assets
+│   ├── js
+│   │   ├── app.js
+│   │   └── engine
+│   │       ├── effects.js
+│   │       ├── game.js
+│   │       ├── guards.js
+│   │       ├── renderer.js
+│   │       ├── state.js
+│   │       └── story-helpers.js
+│   └── stories
+│       └── demo-story.js
+├── data.js
+├── index.html
+├── main.js
+└── style.css
 
-### Read helpers
+## Authoring Notes
 
-Use these inside text functions or custom effect builders:
+The story helpers still keep authoring lightweight.
 
-    read.hasEvidence(state, 'paint-chip')
-    read.hasBelief(state, 'trust-mara')
-    read.knowsTag(state, 'vehicle:white')
-    read.memoryByKey(state, 'hit-and-run')
-    read.path(state, 'flags.reportColor')
+You can still declare scenes with `scene()` and `choice()`.
 
-## Engine Aliases Added
+You now also have effect helpers for actors and issues, such as:
 
-To reduce ceremony, the engine now supports a few aliases:
+- `fx.actorAdd('betty', 'disposition', 12)`
+- `fx.actorKnowledge('tim', 'reply-all', 'heard', 70, 'betty')`
+- `fx.issueContain('reply-all', 18)`
+- `fx.issueExpose('reply-all', 12)`
+- `fx.issueLifecycle('hr-attention', 'active')`
+- `fx.issueAdd('reply-all', 'spreadRisk', 8)`
 
-### Choices
+And condition/read helpers for questions like:
 
-- `condition` or `availableIf`
-- `disabledCondition` or `disabledIf`
-- `next` or `to`
-
-### Nodes
-
-- `text` or `body`
-- `entryFeedback` / `entryEffects` / `entryOnce`
-- or a grouped `entry` object:
-
-    entry: {
-    	feedback: 'A memory lands.',
-    	effects: [fx.signal('Something settles.')],
-    	once: true,
-    }
-
-### Redirect rules
-
-- `next` or `to`
-- `redirectOnce` or `once`
+- does this actor know the issue?
+- how suspicious is HR?
+- is the main issue still active?
+- how contained is the problem right now?
 
 ## Running It
 
@@ -197,19 +157,20 @@ Open `index.html` in a browser.
 
 The entry point is `main.js`, which imports `assets/js/app.js`.
 
-## Notes For Future Expansion
+## Next Smart Expansions
 
-Good next additions:
+Good next additions after this pass:
 
-- seeded run variation
-- NPC trust states
-- memory compression and merging
-- case-board style evidence UI
+- location-aware actor movement
+- reusable propagation rules by relationship type
+- player action categories instead of scene-specific handcrafted verbs
+- residue dashboards and searchable issue history
 - save/load
-- debug tools for inspecting objective truth during authoring
+- debug overlays for actor knowledge and issue truth
 
 Bad idea too early:
 
-- giant branching trees
+- giant office maps
 - procedural story generation
-- fully random lies with no learnable rules
+- fake AI dialogue systems with no readable state model
+- trying to make the engine universal before this slice earns it

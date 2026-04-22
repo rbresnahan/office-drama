@@ -3,49 +3,44 @@
 <head>
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-	<title>Blackout Memory</title>
+	<title>Office Drama</title>
 	<link rel="stylesheet" href="style.css" />
 </head>
 <body>
 	<main class="app shell">
 		<header class="panel hero">
-			<p id="app-eyebrow" class="eyebrow">Truth degrades when you do not secure it.</p>
-			<h1 id="app-title">Blackout Memory</h1>
+			<p id="app-eyebrow" class="eyebrow">Contain the message before the office decides what it means.</p>
+			<h1 id="app-title">Office Drama</h1>
 			<p id="app-subtitle" class="hero-copy">
-				A stormed-out town, a hit-and-run on the road in, and a mind that does not hold details for long.
+				One bad email. Six coworkers. Too many ways to stop the damage and only some of them let you keep your soul.
 			</p>
 		</header>
 
 		<section class="layout">
 			<section class="panel main-panel">
+				<div id="latest-signal" class="signal-strip"></div>
 				<div id="story" class="story-panel"></div>
 				<div id="choices" class="choices-panel"></div>
 			</section>
 
 			<aside class="sidebar">
-				<section class="panel sidebar-panel">
-					<h3>Status</h3>
-					<div id="stats"></div>
+				<section class="panel sidebar-panel sidebar-panel--wide sidebar-panel--status">
+					<div id="status-panel" class="status-strip"></div>
 				</section>
 
-				<section class="panel sidebar-panel">
-					<h3>Evidence</h3>
-					<div id="inventory"></div>
+				<section class="panel sidebar-panel sidebar-panel--wide">
+					<h3 id="section-a-title">Issues</h3>
+					<div id="section-a-panel" class="panel-body"></div>
 				</section>
 
-				<section class="panel sidebar-panel">
-					<h3>Beliefs</h3>
-					<div id="flags"></div>
+				<section class="panel sidebar-panel sidebar-panel--wide">
+					<h3 id="section-b-title">Coworkers</h3>
+					<div id="section-b-panel" class="panel-body"></div>
 				</section>
 
-				<section class="panel sidebar-panel">
-					<h3>Recent Drift</h3>
-					<div id="feedback"></div>
-				</section>
-
-				<section class="panel sidebar-panel sidebar-panel--memories">
-					<h3>Memory</h3>
-					<div id="log"></div>
+				<section class="panel sidebar-panel sidebar-panel--wide">
+					<h3 id="section-c-title">Memory</h3>
+					<div id="section-c-panel" class="panel-body"></div>
 				</section>
 			</aside>
 		</section>

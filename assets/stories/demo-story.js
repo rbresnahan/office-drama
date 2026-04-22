@@ -1,4 +1,4 @@
-import { APP_DATA, DEFAULT_MEMORY_TUNING } from '../../data.js';
+import { APP_DATA, DEFAULT_ISSUE_TUNING, DEFAULT_MEMORY_TUNING } from '../../data.js';
 import {
 	choice,
 	endingNode,
@@ -12,132 +12,174 @@ import {
 
 const canReachFinale = when.or(
 	when.flag('finaleUnlocked'),
-	when.flag('reportMade')
-);
-
-const canPressMayor = when.or(
-	when.knowsTag('vehicle:white'),
-	when.evidence('mara-note'),
-	when.evidence('security-still')
+	when.turnAtLeast(5),
+	when.issueState('celia-finding-out', 'reactivated')
 );
 
 function getEnding(state) {
-	const whiteAnchors =
-		(read.hasEvidence(state, 'paint-chip') ? 1 : 0) +
-		(read.hasEvidence(state, 'mara-note') ? 1 : 0) +
-		(read.hasEvidence(state, 'security-still') ? 1 : 0) +
-		(read.path(state, 'flags.reportColor') === 'white' ? 1 : 0);
+	const replyAll = read.issueById(state, 'reply-all');
+	const hrAttention = read.issueById(state, 'hr-attention');
+	const celiaIssue = read.issueById(state, 'celia-finding-out');
+	const residue = read.issueById(state, 'dirty-residue');
+	const dirtyPlay = Number(read.path(state, 'flags.dirtyPlayCount')) || 0;
+	const celiaWarned = read.flag(state, 'celiaWarned');
+	const frankBriefed = read.flag(state, 'frankBriefed');
+	const finalAction = read.path(state, 'flags.finalAction');
+	const replyContainment = replyAll ? replyAll.containment : 0;
+	const hrContainment = hrAttention ? hrAttention.containment : 0;
+	const residueSeverity = residue ? residue.severity : 0;
+	const celiaState = celiaIssue ? celiaIssue.lifecycleState : 'warming';
 
-	const blackAnchors =
-		(read.path(state, 'flags.reportColor') === 'black' ? 1 : 0) +
-		(read.hasBelief(state, 'trust-mayor') ? 1 : 0);
-
-	const action = read.path(state, 'flags.finalAction');
-
-	if (action === 'publish-with-mara') {
-		if (whiteAnchors >= 2) {
+	if (finalAction === 'own-it') {
+		if (dirtyPlay === 0 && celiaWarned && frankBriefed) {
 			return {
-				title: 'Ending: Exposure',
+				title: 'Ending: Brutal Professionalism',
 				text: paragraphs(
-					'Mara runs the story before dawn with the paint chip, the note, and the still. The town does what towns do when the lie is too expensive to keep: it acts shocked, then hungry. Mayor Harlow goes pale on the band shell steps. The truth that survives is ugly, partial, and enough.',
-					'You still cannot trust every corner of your own head. You just no longer have to carry the whole thing alone.'
+					'You get in front of the story before the office can finish sharpening it for you. Celia hears it from your mouth, Frank gets the clean version, and the meeting becomes damage control instead of theater.',
+					'Nobody enjoys it. That is the point. The fallout is real, your credibility survives, and the office has to settle for the boring truth instead of the juicier one.'
 				),
 			};
 		}
 
 		return {
-			title: 'Ending: Ragged Truth',
+			title: 'Ending: Honest, Late, and Painful',
 			text: paragraphs(
-				'Mara prints something real but thin. It hurts Harlow without killing him. By noon, half the town treats you like a witness and the other half like a sick man who contaminated the story with his own gaps.',
-				'You got a blade into the lie, but not deep enough to stop it from moving.'
+				'You own it, but not before the message has already lived several lives without you. HR still takes notes. Celia still looks at you like she is measuring structural failure.',
+				'You keep some dignity. You just pay retail for it.'
 			),
 		};
 	}
 
-	if (action === 'stand-with-ruiz') {
-		if (whiteAnchors >= 1 && read.flag(state, 'ruizHasEvidence') === true) {
+	if (finalAction === 'bury-it') {
+		if (replyContainment >= 70 && residueSeverity < 50 && hrContainment >= 55) {
 			return {
-				title: 'Ending: Partial Record',
+				title: 'Ending: Temporary Containment',
 				text: paragraphs(
-					'Ruiz takes what you can actually hand him and discards the parts your voice cannot support. It is not heroic. It is procedural, slow, and painfully incomplete. But it survives the morning.',
-					'The case stays open. Harlow stops smiling quite so easily. You do not get certainty. You get a paper trail, which in this town might be the next best thing.'
+					'The recall works well enough, the printer copies disappear, and the room decides to act like the whole thing was a systems hiccup plus one idiot minute. You are the idiot minute.',
+					'You survive the day. The email does not. Your relationships do not come out clean, but the building is not on fire by five.'
 				),
 			};
 		}
 
 		return {
-			title: 'Ending: Thin Statement',
+			title: 'Ending: Leaky Lid',
 			text: paragraphs(
-				'Ruiz writes down uncertainty and little else. You refuse to force detail where you no longer have it. The report is honest and nearly useless.',
-				'Nothing explodes. Nothing is solved. But for once, you do not turn doubt into a lie just to stop feeling it.'
+				'You get the crisis under a lid, but not into a coffin. Too many people heard enough, and the office keeps one eye on you even while pretending to move on.',
+				'Containment works. Erasure does not. That distinction matters more than you wanted it to.'
 			),
 		};
 	}
 
-	if (action === 'protect-harlow') {
-		if (whiteAnchors >= 1) {
+	if (finalAction === 'blame-tim') {
+		if (dirtyPlay >= 1 && residueSeverity >= 50) {
 			return {
-				title: 'Ending: Complicity',
+				title: 'Ending: Poisoned Escape',
 				text: paragraphs(
-					'Harlow thanks you in the soft voice people use when buying silence. The evidence disappears into municipal hands. The official story firms up without the pieces that could have broken it.',
-					'You walk away safer, and far dirtier than you were when the lights first went out.'
+					'You give the office a smaller villain and let it enjoy the convenience. Tim takes the hit because he is nervous, isolated, and easy to fold into the story.',
+					'It works well enough to save you today. It also leaves behind exactly the kind of stain that keeps coming back in management conversations you are not in.'
 				),
 			};
 		}
 
 		return {
-			title: 'Ending: Comfortable Lie',
+			title: 'Ending: Thin Scapegoat',
 			text: paragraphs(
-				'Harlow does not even need to hide much. You hand him confusion and call it cooperation. By morning the town has a neat version of events, and it fits because you helped it fit.',
-				'It is a clean ending for everyone except you.'
+				'You try to pin the momentum on Tim, but the office can smell when a story is only useful and not quite true. Some people buy it anyway, which is its own kind of indictment.',
+				'You are not cleared. You are merely not the only suspect-shaped object in the room.'
 			),
 		};
 	}
 
-	if (action === 'blame-drifter') {
-		if (blackAnchors >= 1) {
-			return {
-				title: 'Ending: False Resolution',
-				text: paragraphs(
-					'You give the town the kind of villain it already wanted: faceless, passing through, impossible to verify by morning. It lands because your story is confident, not because it is true.',
-					'People thank you for helping them stop looking. That is the worst part.'
-				),
-			};
-		}
-
+	if (finalAction === 'take-the-hit-quietly') {
 		return {
-			title: 'Ending: Reckless Guess',
+			title: 'Ending: HR File, Minimal Drama',
 			text: paragraphs(
-				'You force a name onto a shape that never held still long enough to deserve it. Even the town senses the weakness. The accusation dies, but the damage of making it does not.',
-				'You do not solve anything. You only prove how badly a frightened mind wants a culprit.'
+				'You do not make it elegant. You just stop making it worse. Frank logs it, Celia stays cold, and the office loses interest because you refused to hand it better entertainment.',
+				'This is not a win exactly. It is a controlled bruise instead of a public arterial spray.'
 			),
 		};
 	}
 
-	if (action === 'leave-town') {
-		if (whiteAnchors >= 1) {
+	if (finalAction === 'walk') {
+		if (celiaState === 'reactivated' || replyContainment < 45) {
 			return {
-				title: 'Ending: Flight',
+				title: 'Ending: Vacuum of Meaning',
 				text: paragraphs(
-					'You leave with more than a feeling and less than a case. Somewhere behind you, the town keeps choosing which scraps to keep and which to bury.',
-					'You preserve yourself. Whether you preserved the truth is another matter entirely.'
+					'You leave the floor before the meeting, which means the office gets to write the rest without your interference. People are rarely kind when improvising someone else\'s motive.',
+					'The crisis keeps moving after you. Walking spared your nerves, not your reputation.'
 				),
 			};
 		}
 
 		return {
-			title: 'Ending: Fog',
+			title: 'Ending: Cowardice with Good Timing',
 			text: paragraphs(
-				'You walk out before the story can harden around you. By sunrise, even the outline of it is changing. The town becomes just another place where something happened and no one agreed on what.',
-				'Maybe leaving was survival. Maybe it was surrender. Your head does not volunteer the answer.'
+				'You disappear after doing just enough to keep the whole thing from exploding on impact. The office still talks, but now it talks in a lower register and without you there to make it worse.',
+				'It is not admirable. It is not even satisfying. It is, however, effective in a small cowardly way.'
 			),
 		};
 	}
 
 	return {
 		title: 'Ending: Unresolved',
-		text: 'The night ends without commitment. That sounds peaceful until you realize indecision is just another way a lie can survive.',
+		text: 'The meeting starts before you commit to a version of events. The office is more than capable of inventing one without your help.',
 	};
+}
+
+function officeWorldStep(state, helpers) {
+	const replyAll = helpers.findIssueById('reply-all');
+	const celiaFindingOut = helpers.findIssueById('celia-finding-out');
+	const hrAttention = helpers.findIssueById('hr-attention');
+	const dirtyResidue = helpers.findIssueById('dirty-residue');
+	const timCompromised = helpers.findIssueById('tim-compromised');
+	const knowerCount = helpers.countActorsKnowingIssue('reply-all', 'heard');
+
+	if (replyAll && knowerCount >= 3 && celiaFindingOut && celiaFindingOut.lifecycleState === 'warming') {
+		helpers.setIssueLifecycle('celia-finding-out', 'active');
+		helpers.addEvent('Enough side conversations are happening that Celia finding out is no longer hypothetical.');
+	}
+
+	if (helpers.actorKnowsIssue('celia', 'reply-all', 'heard')) {
+		helpers.setIssueLifecycle('celia-finding-out', 'reactivated');
+		helpers.adjustIssue('celia-finding-out', 'containment', -18, 'add');
+		helpers.addEvent('Celia is no longer outside the blast radius.');
+	}
+
+	if (
+		hrAttention &&
+		hrAttention.lifecycleState === 'warming' &&
+		(
+			helpers.actorKnowsIssue('frank', 'reply-all', 'heard') ||
+			(read.path(state, 'flags.dirtyPlayCount') || 0) >= 1
+		)
+	) {
+		helpers.setIssueLifecycle('hr-attention', 'active');
+		helpers.addEvent('HR has stopped being theoretical and started becoming a calendar problem.');
+	}
+
+	if (read.flag(state, 'recallEnabled') === true && replyAll) {
+		helpers.containIssue('reply-all', 6);
+		helpers.adjustIssue('reply-all', 'spreadRisk', -4, 'add');
+	}
+
+	if (dirtyResidue && dirtyResidue.lifecycleState === 'active' && dirtyResidue.severity >= 60 && hrAttention) {
+		helpers.adjustIssue('hr-attention', 'spreadRisk', 6, 'add');
+		helpers.adjustIssue('hr-attention', 'containment', -6, 'add');
+	}
+
+	if (timCompromised && timCompromised.lifecycleState === 'active') {
+		helpers.adjustActor('tim', 'stability', -6, 'add');
+		helpers.adjustActor('tim', 'suspicion', 8, 'add');
+	}
+
+	if (state.turn >= 4 && knowerCount >= 4 && !helpers.actorKnowsIssue('frank', 'reply-all', 'heard')) {
+		helpers.setActorKnowledge('frank', 'reply-all', 'heard', 60, 'hallway chatter');
+		helpers.addEvent('Frank hears enough hallway static to know something is wrong.');
+	}
+
+	if (state.turn >= 5) {
+		state.flags.finaleUnlocked = true;
+	}
 }
 
 export const storyConfig = {
@@ -146,21 +188,31 @@ export const storyConfig = {
 		eyebrow: APP_DATA.eyebrow,
 		subtitle: APP_DATA.subtitle,
 	},
-	startNode: 'intro',
+	startNode: 'bullpen',
 	turnRules: {
-		maxTurns: 5,
+		maxTurns: 6,
 		signalLimit: DEFAULT_MEMORY_TUNING.signalLimit,
 		memoryDecay: DEFAULT_MEMORY_TUNING,
+		issueDecay: DEFAULT_ISSUE_TUNING,
+		worldStep: officeWorldStep,
 		events: [
 			{
 				id: 'turn-2',
 				at: 2,
-				text: 'The storm leans harder into town. People stop pretending the night will fix itself.',
+				text: 'Slack is quieter now. That is worse. It means people have switched to side conversations.',
 			},
 			{
 				id: 'turn-4',
 				at: 4,
-				text: 'The town is closing ranks. Whatever version of the story you mean to act on, it has to be soon.',
+				text: 'The office is running out of denial and moving into policy.',
+				effects: [
+					fx.issueLifecycle('hr-attention', 'active'),
+				],
+			},
+			{
+				id: 'turn-6',
+				at: 6,
+				text: 'The all-hands is starting. Whatever version of the story survives now is the one the office gets to keep.',
 				effects: [
 					fx.set('flags.finaleUnlocked', true),
 				],
@@ -170,418 +222,746 @@ export const storyConfig = {
 	initialState: {
 		turn: 0,
 		stats: {
-			stress: 1,
-			maxStress: 4,
+			stress: 2,
+			maxStress: 6,
 		},
 		flags: {
 			finaleUnlocked: false,
-			reportMade: false,
-			reportColor: null,
-			heardMayor: false,
-			talkedToMara: false,
-			ruizHasEvidence: false,
+			celiaWarned: false,
+			frankBriefed: false,
+			recallEnabled: false,
+			dirtyPlayCount: 0,
 			finalAction: null,
 		},
-		evidence: [],
-		beliefs: {},
-		signals: [
-			'You came into town with one useful memory and no guarantee it will stay useful.',
+		evidence: [
+			{
+				id: 'draft-copy',
+				title: 'Draft in Sent Items',
+				text: 'The actual email is still in your sent folder. So is the original wording you wish you had never typed.',
+				tags: ['email:sent', 'issue:reply-all'],
+				source: 'mailbox',
+				verified: true,
+				anchorMemoryKey: 'email-body',
+			},
 		],
 		memories: [
 			{
-				key: 'hit-and-run',
-				label: 'The accident before town.',
-				truthText: 'A white SUV hit someone and sped away.',
-				source: 'seen',
+				key: 'email-body',
+				label: 'What you actually wrote about Celia.',
+				truthText: 'You wrote that Celia got promoted by weaponizing fake empathy and making other people clean up her work.',
+				source: 'typed',
 				importance: 'high',
 				canCorrupt: true,
-				stability: 100,
-				confidence: 72,
+				stability: 84,
+				confidence: 80,
+				preserved: true,
 				stages: [
 					{
 						label: 'fresh',
 						minStability: 70,
-						text: 'A white SUV hit someone and sped away.',
-						recallTags: ['event:hit-and-run', 'vehicle:white', 'vehicle:suv'],
+						text: 'You wrote that Celia got promoted by weaponizing fake empathy and making other people clean up her work.',
+						recallTags: ['email:exact', 'celia:target'],
 					},
 					{
 						label: 'fading',
-						minStability: 45,
-						text: 'An SUV hit someone and left.',
-						recallTags: ['event:hit-and-run', 'vehicle:suv'],
+						minStability: 40,
+						text: 'You accused Celia of being performative and getting promoted at other people\'s expense.',
+						recallTags: ['email:mean', 'celia:target'],
 					},
 					{
 						label: 'hazy',
-						minStability: 15,
-						text: 'A vehicle hit someone.',
-						recallTags: ['event:accident'],
+						minStability: 10,
+						text: 'You sent something petty and career-limiting about Celia.',
+						recallTags: ['email:bad'],
 					},
 				],
 				corruptedStage: {
 					label: 'corrupted',
-					text: 'A black sedan hit someone and fled toward the highway.',
-					recallTags: ['event:hit-and-run', 'vehicle:black', 'vehicle:sedan'],
+					text: 'Maybe the message was harsher than you remember. Maybe it sounded deliberate.',
+					recallTags: ['email:bad', 'celia:target'],
 				},
 				lostStage: {
-					text: 'There was an accident. The rest keeps slipping out of reach.',
-					recallTags: ['event:accident'],
+					text: 'You know you crossed a line. The exact shape of it refuses to hold still.',
+					recallTags: ['email:bad'],
 				},
 			},
+			{
+				key: 'distribution-list',
+				label: 'Who was on the thread when it escaped.',
+				truthText: 'Betty was definitely on the thread. Tim and Devon probably were. Frank was not meant to be.',
+				source: 'seen',
+				importance: 'high',
+				canCorrupt: true,
+				stability: 72,
+				confidence: 68,
+				stages: [
+					{
+						label: 'fresh',
+						minStability: 65,
+						text: 'Betty definitely saw it. Tim and Devon were on the list. Frank was supposed to be outside it.',
+						recallTags: ['betty:knows', 'tim:possible', 'devon:possible'],
+					},
+					{
+						label: 'fading',
+						minStability: 35,
+						text: 'Betty saw it. Tim or Devon probably did too. HR might still be outside the blast radius.',
+						recallTags: ['betty:knows', 'tim:possible'],
+					},
+					{
+						label: 'hazy',
+						minStability: 10,
+						text: 'At least one wrong person saw it, and that is already enough.',
+						recallTags: ['someone:knows'],
+					},
+				],
+				corruptedStage: {
+					label: 'corrupted',
+					text: 'Frank may have been on the original thread after all.',
+					recallTags: ['frank:maybe'],
+				},
+				lostStage: {
+					text: 'You know the message escaped the intended room. The exact perimeter is gone.',
+					recallTags: ['someone:knows'],
+				},
+			},
+		],
+		issues: [
+			{
+				id: 'reply-all',
+				title: 'Reply-all email',
+				truthText: 'A gossip email about Celia escaped into the office and is now moving faster than you are.',
+				severity: 88,
+				spreadRisk: 74,
+				precision: 92,
+				containment: 18,
+				lifecycleState: 'active',
+				linkedActors: ['betty', 'tim', 'devon', 'celia'],
+				summaryStages: [
+					{
+						label: 'focused',
+						minPrecision: 75,
+						text: 'Your gossip email about Celia is loose in the office, and at least one person is already enjoying it.',
+					},
+					{
+						label: 'blurred',
+						minPrecision: 40,
+						text: 'The wrong people have the message, and the room is starting to form theories faster than facts.',
+					},
+					{
+						label: 'vague',
+						minPrecision: 0,
+						text: 'A bad message is moving through the office and changing shape as it goes.',
+					},
+				],
+			},
+			{
+				id: 'celia-finding-out',
+				title: 'Celia finding out',
+				truthText: 'The target is still outside the core loop, but not for long.',
+				severity: 94,
+				spreadRisk: 52,
+				precision: 84,
+				containment: 36,
+				lifecycleState: 'warming',
+				linkedActors: ['celia', 'betty', 'frank'],
+				summaryStages: [
+					{
+						label: 'focused',
+						minPrecision: 75,
+						text: 'Celia does not know yet, but the number of ways she can hear it is multiplying.',
+					},
+					{
+						label: 'blurred',
+						minPrecision: 40,
+						text: 'Celia is near the edge of the story now. One bad hallway conversation could finish the trip.',
+					},
+					{
+						label: 'vague',
+						minPrecision: 0,
+						text: 'The target is no longer safely outside the fallout.',
+					},
+				],
+			},
+			{
+				id: 'hr-attention',
+				title: 'HR attention',
+				truthText: 'Frank does not need to care much for this to become official.',
+				severity: 82,
+				spreadRisk: 36,
+				precision: 78,
+				containment: 62,
+				lifecycleState: 'warming',
+				linkedActors: ['frank'],
+				summaryStages: [
+					{
+						label: 'focused',
+						minPrecision: 75,
+						text: 'HR has not fully stepped in, but the threshold is getting lower every minute.',
+					},
+					{
+						label: 'blurred',
+						minPrecision: 40,
+						text: 'Policy is drifting closer. That is rarely a compliment.',
+					},
+					{
+						label: 'vague',
+						text: 'The problem is developing paperwork teeth.',
+					},
+				],
+			},
+			{
+				id: 'dirty-residue',
+				title: 'Dirty residue',
+				truthText: 'The office may forgive the email before it forgives whatever you do to hide it.',
+				severity: 12,
+				spreadRisk: 20,
+				precision: 72,
+				containment: 80,
+				lifecycleState: 'warming',
+				linkedActors: ['tim', 'frank'],
+				summaryStages: [
+					{
+						label: 'focused',
+						minPrecision: 75,
+						text: 'You have not crossed into really ugly tactics yet, but the door is open.',
+					},
+					{
+						label: 'blurred',
+						minPrecision: 40,
+						text: 'Containment is starting to cost character, not just effort.',
+					},
+					{
+						label: 'vague',
+						text: 'The cure is starting to smell worse than the wound.',
+					},
+				],
+			},
+			{
+				id: 'tim-compromised',
+				title: 'Tim compromised',
+				truthText: 'Tim is nervous enough to become a tool, a leak, or a casualty depending on what you do.',
+				severity: 30,
+				spreadRisk: 18,
+				precision: 70,
+				containment: 90,
+				lifecycleState: 'warming',
+				linkedActors: ['tim', 'frank'],
+				summaryStages: [
+					{
+						label: 'focused',
+						minPrecision: 75,
+						text: 'Tim is still mostly fine, which means you still have the chance to leave him that way.',
+					},
+					{
+						label: 'blurred',
+						minPrecision: 40,
+						text: 'Tim is becoming part of the strategy whether he deserves it or not.',
+					},
+					{
+						label: 'vague',
+						text: 'Someone weaker than you is being drawn into the blast radius.',
+					},
+				],
+			},
+		],
+		actors: [
+			{
+				id: 'betty',
+				name: 'Betty',
+				role: 'Operations coordinator',
+				location: 'Break room',
+				disposition: -5,
+				stability: 54,
+				suspicion: 18,
+				talkativeness: 86,
+				connections: ['tim', 'celia', 'frank'],
+				knowledge: {
+					'reply-all': {
+						level: 'confirmed',
+						confidence: 88,
+						source: 'thread',
+					},
+				},
+			},
+			{
+				id: 'tim',
+				name: 'Tim',
+				role: 'Analyst',
+				location: 'Printer bay',
+				disposition: 8,
+				stability: 48,
+				suspicion: 10,
+				talkativeness: 42,
+				connections: ['betty', 'frank', 'devon'],
+				knowledge: {},
+			},
+			{
+				id: 'devon',
+				name: 'Devon',
+				role: 'IT admin',
+				location: 'IT room',
+				disposition: 4,
+				stability: 70,
+				suspicion: 12,
+				talkativeness: 24,
+				connections: ['tim', 'frank'],
+				knowledge: {
+					'reply-all': {
+						level: 'heard',
+						confidence: 52,
+						source: 'mail logs',
+					},
+				},
+			},
+			{
+				id: 'frank',
+				name: 'Frank',
+				role: 'HR manager',
+				location: 'HR',
+				disposition: -10,
+				stability: 80,
+				suspicion: 20,
+				talkativeness: 18,
+				connections: ['celia', 'betty'],
+				knowledge: {},
+			},
+			{
+				id: 'celia',
+				name: 'Celia',
+				role: 'Director of ops',
+				location: 'Conference room',
+				disposition: 6,
+				stability: 78,
+				suspicion: 6,
+				talkativeness: 30,
+				connections: ['frank', 'betty'],
+				knowledge: {},
+			},
+		],
+		signals: [
+			'You have one office morning to keep a stupid email from turning into institutional memory.',
 		],
 	},
 	display: {
 		status: [
 			status('Turn', (state) => String(state.turn)),
 			status('Stress', (state) => `${state.stats.stress} / ${state.stats.maxStress}`),
-			status('Town', (state, context) => {
+			status('All-hands', (state, context) => {
 				if (state.flags.finaleUnlocked === true) {
-					return 'Closing in';
+					return 'Starting now';
 				}
 
-				return `${context.turnsUntilFinale} move${context.turnsUntilFinale === 1 ? '' : 's'} until the town hardens around a story.`;
+				return `${context.turnsUntilFinale} move${context.turnsUntilFinale === 1 ? '' : 's'} left`;
 			}),
+		],
+		sections: [
+			{
+				title: 'Issues',
+				type: 'issues',
+			},
+			{
+				title: 'Coworkers',
+				type: 'actors',
+			},
+			{
+				title: 'Recent Drift',
+				type: 'signals',
+			},
+			{
+				title: 'Memory',
+				type: 'memories',
+			},
 		],
 	},
 	nodes: {
-		intro: scene({
-			kicker: 'Town Edge',
-			title: 'You still have the crash. For now.',
+		bullpen: scene({
+			kicker: 'Open Office Floor',
+			title: 'The email is already alive now.',
 			text(state) {
-				const memory = read.memoryByKey(state, 'hit-and-run');
+				const issue = read.issueById(state, 'reply-all');
+				const memory = read.memoryByKey(state, 'email-body');
+				const distribution = read.memoryByKey(state, 'distribution-list');
 
 				return paragraphs(
-					'The power is out clear through Brackenridge. Storefront glass holds dead reflections. The only thing in your head with any bite left is the scene before town.',
-					memory ? `Right now, it still feels like this: ${memory.currentText}` : 'Something happened before you got here, but the edges are already going soft.',
-					'If you are going to use what you know, you need to decide what to preserve before the night starts rewriting it for you.'
+					'You are back at your desk, pretending your monitor can protect you from the social physics you just released into the building.',
+					issue ? `Right now the problem feels like this: ${issue.currentText}` : null,
+					memory ? `You still remember the message clearly enough to hate yourself with specificity: ${memory.currentText}` : null,
+					distribution ? `Your current model of the blast radius: ${distribution.currentText}` : null,
+					'This is the whole day now. Contain it, redirect it, or watch the office turn your worst minute into policy.'
 				);
 			},
 			choices: [
-				choice('Go back toward the roadside where it happened.', 'crash-site'),
-				choice('Head into the diner where the generator is still humming.', 'diner'),
-				choice('Walk to the square where Mayor Harlow is gathering the town.', 'square'),
-				choice('Find the police station before the memory gets any worse.', 'station'),
-			],
-		}),
-
-		'crash-site': scene({
-			kicker: 'Roadside Culvert',
-			title: 'Metal, rain, and the shape of impact.',
-			text(state) {
-				if (read.hasEvidence(state, 'paint-chip')) {
-					return paragraphs(
-						'The ditch still smells like hot metal and wet dirt.',
-						'The white paint chip in your pocket is steadier than the memory you pulled it from. That alone tells you something ugly about the night.'
-					);
-				}
-
-				return paragraphs(
-					'Skid marks drag toward the culvert and vanish into darkness.',
-					'There is dried blood where someone went down, and a scatter of debris where the vehicle clipped the shoulder before it took off.'
-				);
-			},
-			choices: [
-				choice('Pocket the paint chip caught in the gravel.', 'crash-site', {
-					condition: when.not(when.evidence('paint-chip')),
-					feedback: 'You secure a paint chip. The color survives outside your head now.',
-					effects: [
-						fx.evidence({
-							id: 'paint-chip',
-							title: 'White paint chip',
-							text: 'A flake of white automotive paint from the crash site.',
-							tags: ['vehicle:white', 'vehicle:suv', 'evidence:crash'],
-							source: 'crash site',
-							verified: true,
-							anchorMemoryKey: 'hit-and-run',
-						}),
-						fx.reinforceMemory('hit-and-run', 20),
-					],
-				}),
-				choice('Study the skid marks and replay the impact.', 'crash-site', {
-					feedback: 'You replay the impact until a few edges sharpen.',
-					effects: [
-						fx.reinforceMemory('hit-and-run', 10),
-						fx.add('stats.stress', 1),
-					],
-				}),
-				choice('Go to the diner.', 'diner'),
-				choice('Take what you have to the station.', 'station'),
-				choice('Cut through the dark square.', 'square'),
-				choice('The town is hardening around a story. Go to the band shell.', 'finale', {
+				choice('Go to the break room and deal with Betty first.', 'break-room'),
+				choice('Go to the printer bay before paper makes this worse.', 'printer-bay'),
+				choice('Go to IT and see what Devon can still do.', 'it-room'),
+				choice('Go to HR before HR comes to you.', 'hr'),
+				choice('Go toward Celia before someone else beats you there.', 'celia-office'),
+				choice('The meeting is here. Force a version of the story.', 'finale', {
 					condition: canReachFinale,
 				}),
 			],
 		}),
 
-		diner: scene({
-			kicker: "Mara's Diner",
-			title: 'Light, coffee, and a woman who notices too much.',
+		'break-room': scene({
+			kicker: 'Break Room',
+			title: 'Betty is a fuse with lipstick.',
 			text(state) {
-				if (read.flag(state, 'talkedToMara')) {
-					return paragraphs(
-						'Mara keeps the register closed and the coffee hot. The generator rattles under the floorboards like a tired jaw.',
-						'Now that you have spoken, she is watching you the way people watch a witness who might fall apart or finally say the thing that matters.'
-					);
-				}
+				const betty = read.actorById(state, 'betty');
 
 				return paragraphs(
-					'The diner is the only lit room on Main. Mara has candles on the counter and a face that says she has already heard three bad versions of tonight.',
-					'She looks at you once and decides you are either useful or in trouble. Maybe both.'
+					'Betty is stirring coffee she is not going to drink. That means she is staying put long enough to spread information recreationally.',
+					betty ? `Current read: ${betty.currentSummary}` : null,
+					'You do not need her loyalty. You need her to find a more entertaining problem than yours.'
 				);
 			},
 			choices: [
-				choice('Tell Mara what you think you saw.', 'diner', {
-					condition: when.not(when.flag('talkedToMara')),
-					feedback(state) {
-						if (read.knowsTag(state, 'vehicle:white')) {
-							return 'Mara writes down what the town would rather you forget.';
-						}
+				choice('Ask Betty to delete the message and keep your name out of it.', 'break-room', {
+					condition: when.not(when.flag('bettySoftened')),
+					feedback: 'Betty smiles in a way that suggests leverage has just changed hands, but she does pocket the thrill for now.',
+					effects: [
+						fx.set('flags.bettySoftened', true),
+						fx.actorAdd('betty', 'disposition', 14),
+						fx.actorAdd('betty', 'suspicion', 6),
+						fx.issueContain('reply-all', 14),
+						fx.issuePrecision('reply-all', 6),
+					],
+				}),
+				choice('Feed Betty a side rumor about layoffs to redirect her appetite.', 'break-room', {
+					condition: when.not(when.flag('bettyDistracted')),
+					feedback: 'Betty immediately pivots to a shinier cruelty vector. Efficient. Gross. Effective.',
+					effects: [
+						fx.set('flags.bettyDistracted', true),
+						fx.add('stats.stress', 1),
+						fx.add('flags.dirtyPlayCount', 1),
+						fx.issueContain('reply-all', 18),
+						fx.issueAdd('dirty-residue', 'severity', 22),
+						fx.issueLifecycle('dirty-residue', 'active'),
+						fx.actorAdd('betty', 'disposition', -8),
+						fx.actorAdd('betty', 'suspicion', 10),
+					],
+				}),
+				choice('Tell Betty Celia is about to hear it anyway, so she should stop freelancing.', 'break-room', {
+					condition: when.flag('celiaWarned'),
+					feedback: 'Nothing dries up casual gossip like a target who already knows.',
+					effects: [
+						fx.issueContain('reply-all', 10),
+						fx.actorAdd('betty', 'stability', -4),
+					],
+				}),
+				choice('Head to the printer bay.', 'printer-bay'),
+				choice('Go back to the bullpen.', 'bullpen'),
+				choice('Go to the band of fluorescent judgment.', 'finale', {
+					condition: canReachFinale,
+				}),
+			],
+		}),
 
-						return 'You can tell Mara it was bad. You cannot keep the color still long enough to say it cleanly.';
+		'printer-bay': scene({
+			kicker: 'Printer Bay',
+			title: 'Paper is slower than email and somehow worse.',
+			text(state) {
+				const tim = read.actorById(state, 'tim');
+				const compromised = read.issueById(state, 'tim-compromised');
+
+				return paragraphs(
+					'Printers are where private stupidity becomes shared office furniture. Tim is here, hovering near the tray with the expression of a man who knows something and wishes he did not.',
+					tim ? `Current read on Tim: ${tim.currentSummary}` : null,
+					compromised ? `His trajectory feels like this: ${compromised.currentText}` : null
+				);
+			},
+			choices: [
+				choice('Grab the printed copies and shred them.', 'printer-bay', {
+					condition: when.not(when.flag('printerCopiesRemoved')),
+					feedback: 'Paper is stupidly powerful. So is removing it before someone waves it around.',
+					effects: [
+						fx.set('flags.printerCopiesRemoved', true),
+						fx.issueContain('reply-all', 16),
+						fx.issueContain('celia-finding-out', 8),
+						fx.evidence({
+							id: 'shredded-copy',
+							title: 'Shredded printout',
+							text: 'You killed the easiest physical copy before it could start doing laps.',
+							tags: ['issue:reply-all', 'paper:removed'],
+							source: 'printer bay',
+							verified: true,
+						}),
+					],
+				}),
+				choice('Tell Tim the email is handled and he should stay out of it.', 'printer-bay', {
+					feedback: 'Tim wants out of the blast radius more than he wants truth. That is useful.',
+					effects: [
+						fx.actorAdd('tim', 'disposition', 12),
+						fx.actorAdd('tim', 'stability', 10),
+						fx.issueContain('reply-all', 10),
+					],
+				}),
+				choice('Jam the printer so no one else gets a clean copy.', 'printer-bay', {
+					condition: when.not(when.flag('printerJammed')),
+					feedback: 'You buy time the dumb mechanical way.',
+					effects: [
+						fx.set('flags.printerJammed', true),
+						fx.add('flags.dirtyPlayCount', 1),
+						fx.issueContain('reply-all', 12),
+						fx.issueAdd('dirty-residue', 'severity', 14),
+						fx.issueLifecycle('dirty-residue', 'active'),
+						fx.actorAdd('tim', 'suspicion', 12),
+					],
+				}),
+				choice('Slip a flask into Tim\'s drawer so he misses the meeting.', 'printer-bay', {
+					condition: when.and(
+						when.not(when.flag('timSetUp')),
+						when.turnAtLeast(2)
+					),
+					feedback: 'There it is: the quick ugly option. Effective on paper. Rotten in the bloodstream.',
+					effects: [
+						fx.set('flags.timSetUp', true),
+						fx.add('flags.dirtyPlayCount', 1),
+						fx.issueLifecycle('tim-compromised', 'active'),
+						fx.issueAdd('tim-compromised', 'severity', 34),
+						fx.issueAdd('dirty-residue', 'severity', 30),
+						fx.issueLifecycle('dirty-residue', 'active'),
+						fx.issueContain('reply-all', 14),
+						fx.actorAdd('tim', 'stability', -18),
+						fx.actorAdd('tim', 'suspicion', 26),
+						fx.actorAdd('frank', 'suspicion', 8),
+					],
+				}),
+				choice('Go to IT.', 'it-room'),
+				choice('Go back to the bullpen.', 'bullpen'),
+			],
+		}),
+
+		'it-room': scene({
+			kicker: 'IT Room',
+			title: 'Devon can still touch the pipes.',
+			text(state) {
+				const devon = read.actorById(state, 'devon');
+				const replyAll = read.issueById(state, 'reply-all');
+
+				return paragraphs(
+					'Devon already looks tired of people discovering technology only when they need a miracle. This is not a miracle. It is systems triage with a witness problem.',
+					devon ? `Current read on Devon: ${devon.currentSummary}` : null,
+					replyAll ? `Operationally, the problem still looks like this: ${replyAll.currentText}` : null
+				);
+			},
+			choices: [
+				choice('Ask Devon for a legitimate recall and kill-switch on forwarding.', 'it-room', {
+					condition: when.not(when.flag('recallEnabled')),
+					feedback: 'Devon does not like you more, but he likes preventable chaos less.',
+					effects: [
+						fx.set('flags.recallEnabled', true),
+						fx.issueContain('reply-all', 20),
+						fx.issueAdd('reply-all', 'spreadRisk', -10),
+						fx.actorAdd('devon', 'disposition', 8),
+						fx.actorKnowledge('devon', 'reply-all', 'confirmed', 82, 'mail logs'),
+					],
+				}),
+				choice('Ask Devon to purge logs that would prove timing and recipients.', 'it-room', {
+					condition: when.not(when.flag('logsPurged')),
+					feedback: 'Devon hates this, which means he is correctly identifying it as a bad idea.',
+					effects: [
+						fx.set('flags.logsPurged', true),
+						fx.add('flags.dirtyPlayCount', 1),
+						fx.issueContain('reply-all', 16),
+						fx.issueContain('celia-finding-out', 10),
+						fx.issueAdd('dirty-residue', 'severity', 26),
+						fx.issueLifecycle('dirty-residue', 'active'),
+						fx.issueAdd('hr-attention', 'spreadRisk', 10),
+						fx.actorAdd('devon', 'disposition', -14),
+						fx.actorAdd('devon', 'suspicion', 22),
+					],
+				}),
+				choice('Show Devon the draft so you both stop arguing about what was actually said.', 'it-room', {
+					condition: when.not(when.flag('devonSawDraft')),
+					feedback: 'Specificity calms technical people and terrifies everyone else.',
+					effects: [
+						fx.set('flags.devonSawDraft', true),
+						fx.reinforceMemory('email-body', 12),
+						fx.actorAdd('devon', 'disposition', 6),
+						fx.issuePrecision('reply-all', 10),
+					],
+				}),
+				choice('Go to HR.', 'hr'),
+				choice('Go back to the bullpen.', 'bullpen'),
+			],
+		}),
+
+		hr: scene({
+			kicker: 'HR',
+			title: 'Frank is not a person. He is process wearing loafers.',
+			text(state) {
+				const frank = read.actorById(state, 'frank');
+				const hrIssue = read.issueById(state, 'hr-attention');
+
+				return paragraphs(
+					'Frank has the calm of a man who will let you panic at full volume and then summarize it in a paragraph for legal preservation.',
+					frank ? `Current read on Frank: ${frank.currentSummary}` : null,
+					hrIssue ? `Policy pressure currently feels like this: ${hrIssue.currentText}` : null
+				);
+			},
+			choices: [
+				choice('Preemptively tell Frank you sent the email and you are containing it.', 'hr', {
+					condition: when.not(when.flag('frankBriefed')),
+					feedback: 'You trade drama for paperwork. Sometimes that is the adult move. Sometimes it is just less embarrassing.',
+					effects: [
+						fx.set('flags.frankBriefed', true),
+						fx.actorKnowledge('frank', 'reply-all', 'confirmed', 78, 'you'),
+						fx.issueLifecycle('hr-attention', 'active'),
+						fx.issueContain('reply-all', 8),
+						fx.issueContain('hr-attention', 10),
+						fx.actorAdd('frank', 'disposition', 6),
+					],
+				}),
+				choice('Hint that Tim may have turned a bad email into a broader compliance issue.', 'hr', {
+					condition: when.flag('timSetUp'),
+					feedback: 'You move Frank\'s flashlight onto Tim. It is ugly and it works exactly because it is ugly.',
+					effects: [
+						fx.issueAdd('dirty-residue', 'severity', 18),
+						fx.issueLifecycle('dirty-residue', 'active'),
+						fx.issueContain('reply-all', 10),
+						fx.issueLifecycle('tim-compromised', 'active'),
+						fx.actorAdd('frank', 'suspicion', 16),
+					],
+				}),
+				choice('Say nothing useful and see whether Frank already knows.', 'hr', {
+					feedback(state) {
+						return read.actorKnowsIssue(state, 'frank', 'reply-all', 'heard')
+							? 'Frank knows enough to make silence look strategic.'
+							: 'Frank mostly sees a person trying not to become an incident report.';
 					},
 					effects(state) {
-						const effects = [
-							fx.set('flags.talkedToMara', true),
-							fx.belief('trust-mara', 'Mara is trying to help.'),
-						];
-
-						if (read.knowsTag(state, 'vehicle:white')) {
-							effects.push(
-								fx.evidence({
-									id: 'mara-note',
-									title: "Mara's napkin note",
-									text: "Council SUV 14 is white. It is usually tied to the mayor's office.",
-									tags: ['vehicle:white', 'vehicle:suv', 'mayor:connected'],
-									source: 'Mara',
-									verified: false,
-								})
-							);
+						if (read.actorKnowsIssue(state, 'frank', 'reply-all', 'heard')) {
+							return [
+								fx.issueAdd('hr-attention', 'spreadRisk', 10),
+								fx.actorAdd('frank', 'suspicion', 10),
+							];
 						}
 
-						return effects;
+						return [
+							fx.actorAdd('frank', 'suspicion', 4),
+						];
 					},
 				}),
-				choice('Take the blurred security still from the cork board.', 'diner', {
+				choice('Go to Celia before HR becomes the secondary problem.', 'celia-office'),
+				choice('Go back to the bullpen.', 'bullpen'),
+			],
+		}),
+
+		'celia-office': scene({
+			kicker: 'Outside Conference Room B',
+			title: 'You can still choose who tells Celia. That window is shutting.',
+			text(state) {
+				const celiaIssue = read.issueById(state, 'celia-finding-out');
+				const celia = read.actorById(state, 'celia');
+
+				return paragraphs(
+					'Celia is reviewing meeting notes and has no idea how close she is to becoming the center of everyone else\'s coping mechanism.',
+					celiaIssue ? `The situation around her currently feels like this: ${celiaIssue.currentText}` : null,
+					celia ? `Current read on Celia: ${celia.currentSummary}` : null
+				);
+			},
+			choices: [
+				choice('Tell Celia directly before the office can decorate it.', 'celia-office', {
+					condition: when.not(when.flag('celiaWarned')),
+					feedback: 'Celia goes still. It is somehow more frightening than yelling.',
+					effects: [
+						fx.set('flags.celiaWarned', true),
+						fx.actorKnowledge('celia', 'reply-all', 'confirmed', 86, 'you'),
+						fx.issueContain('reply-all', 12),
+						fx.issueContain('celia-finding-out', 24),
+						fx.issueLifecycle('celia-finding-out', 'contained'),
+						fx.actorAdd('celia', 'disposition', -10),
+					],
+				}),
+				choice('Apologize without minimizing it.', 'celia-office', {
+					condition: when.flag('celiaWarned'),
+					feedback: 'For one second the room contains two adults instead of one adult and one flailing liability.',
+					effects: [
+						fx.actorAdd('celia', 'disposition', 8),
+						fx.issueContain('celia-finding-out', 10),
+						fx.issueContain('reply-all', 6),
+					],
+				}),
+				choice('Tell Celia the wording was uglier than the office version will eventually be.', 'celia-office', {
 					condition: when.and(
-						when.flag('talkedToMara'),
-						when.not(when.evidence('security-still'))
+						when.flag('celiaWarned'),
+						when.not(when.flag('toldCeliaExactWords'))
 					),
-					feedback: 'The still is blurry, but blur beats absence.',
+					feedback: 'Specificity hurts, but it also prevents imagination from doing your job for it.',
 					effects: [
-						fx.evidence({
-							id: 'security-still',
-							title: 'Blurred security still',
-							text: 'A pale SUV shape caught leaving the square at speed. The plate is useless, the body type is not.',
-							tags: ['vehicle:white', 'vehicle:suv', 'evidence:camera'],
-							source: 'diner camera',
-							verified: true,
-							anchorMemoryKey: 'hit-and-run',
-						}),
+						fx.set('flags.toldCeliaExactWords', true),
+						fx.reinforceMemory('email-body', 10),
+						fx.issuePrecision('reply-all', 12),
+						fx.actorAdd('celia', 'disposition', 4),
 					],
 				}),
-				choice("Take Mara's help and go to the station.", 'station'),
-				choice('Leave for the square.', 'square'),
-				choice('Go back to the crash site.', 'crash-site'),
-				choice('The town is hardening around a story. Go to the band shell.', 'finale', {
-					condition: canReachFinale,
-				}),
-			],
-		}),
-
-		square: scene({
-			kicker: 'Main Square',
-			title: 'Mayor Harlow is already writing the night for everyone else.',
-			text(state) {
-				if (read.flag(state, 'heardMayor')) {
-					return paragraphs(
-						'Harlow is still working the crowd with both hands visible and his concern carefully measured.',
-						read.hasBelief(state, 'trust-mayor')
-							? 'Now that his version is in your head, it keeps offering itself as the one that would make the night easier.'
-							: 'You have already heard his clean version of events. Clean is not the same thing as true.'
-					);
-				}
-
-				return paragraphs(
-					'Mayor Harlow stands under the band shell with a flashlight and the kind of voice that assumes people need him more than facts.',
-					'The town is waiting for a story it can live with. He looks ready to hand them one.'
-				);
-			},
-			choices: [
-				choice('Let Harlow tell you what happened.', 'square', {
-					condition: when.not(when.flag('heardMayor')),
-					feedback: 'Harlow says it plainly enough that your mind starts to treat the lie like a handrail.',
-					effects: [
-						fx.set('flags.heardMayor', true),
-						fx.belief('trust-mayor', 'Mayor Harlow is protecting me.'),
-						fx.distortMemory('hit-and-run', {
-							label: 'corrupted',
-							text: 'A black sedan hit someone and fled toward the highway.',
-							recallTags: ['event:hit-and-run', 'vehicle:black', 'vehicle:sedan'],
-						}),
-						fx.add('stats.stress', 1),
-					],
-				}),
-				choice('Ask Harlow why so many people keep mentioning council vehicles.', 'square', {
-					condition: canPressMayor,
-					feedback: 'His smile tightens. For the first time tonight, the mayor looks like a man who could lose.',
-					effects: [
-						fx.add('stats.stress', 1),
-					],
-				}),
-				choice('Slip away to the diner.', 'diner'),
-				choice('Go to the station.', 'station'),
-				choice('Head back toward the crash site.', 'crash-site'),
-				choice('Step onto the band shell and force the night to choose a story.', 'finale', {
-					condition: canReachFinale,
-				}),
-			],
-		}),
-
-		station: scene({
-			kicker: 'Police Station',
-			title: 'This is where memory becomes record or mistake.',
-			text(state) {
-				if (read.flag(state, 'reportMade')) {
-					if (read.path(state, 'flags.reportColor') === 'white') {
-						return paragraphs(
-							'Detective Ruiz has your statement in front of him and a face that says he trusts paper more than people.',
-							'He heard "white SUV." Whether he believes you depends on what you can put on the desk besides your own voice.'
-						);
-					}
-
-					if (read.path(state, 'flags.reportColor') === 'black') {
-						return paragraphs(
-							'Ruiz wrote down "black sedan" because you said it like you meant it.',
-							'He has seen confident witnesses be wrong before. The problem is that the town loves confidence even when the facts do not.'
-						);
-					}
-
-					return paragraphs(
-						'Ruiz has a short, honest statement and very little else.',
-						'Uncertainty does not travel as well as a clean lie, but it does less damage on the way.'
-					);
-				}
-
-				return paragraphs(
-					'Detective Ruiz is working by lantern light and paperwork. He looks exhausted enough to be useful.',
-					'This is the room where your version of the night can become a record or a mistake.'
-				);
-			},
-			choices: [
-				choice('Tell Ruiz, "It was a white SUV."', 'station', {
-					condition: when.not(when.flag('reportMade')),
-					disabledIf: when.not(when.knowsTag('vehicle:white')),
-					unavailableText: 'You reach for the color, but it will not stay put long enough to say it out loud.',
-					feedback: 'Ruiz writes down white SUV and waits for something sturdier than your certainty.',
-					effects: [
-						fx.set('flags.reportMade', true),
-						fx.set('flags.reportColor', 'white'),
-						fx.add('stats.stress', -1),
-					],
-				}),
-				choice('Tell Ruiz, "It was a black sedan."', 'station', {
-					condition: when.not(when.flag('reportMade')),
-					disabledIf: when.not(when.knowsTag('vehicle:black')),
-					unavailableText: 'A darker version of the night presses at you, but it is still too slippery to claim.',
-					feedback: 'Ruiz writes down black sedan. The statement sounds cleaner than your head feels.',
-					effects: [
-						fx.set('flags.reportMade', true),
-						fx.set('flags.reportColor', 'black'),
-						fx.add('stats.stress', -1),
-					],
-				}),
-				choice('Tell Ruiz, "I do not remember enough to say."', 'station', {
-					condition: when.not(when.flag('reportMade')),
-					feedback: 'You choose uncertainty over invention. It feels worse now and may age better.',
-					effects: [
-						fx.set('flags.reportMade', true),
-						fx.set('flags.reportColor', 'uncertain'),
-					],
-				}),
-				choice("Put your surviving evidence on Ruiz's desk.", 'station', {
-					condition: when.or(
-						when.evidence('paint-chip'),
-						when.evidence('mara-note'),
-						when.evidence('security-still')
-					),
-					disabledIf: when.flag('ruizHasEvidence'),
-					unavailableText: 'Ruiz already has what you were able to save from yourself.',
-					feedback: 'Physical evidence lands better than memory ever will.',
-					effects: [
-						fx.set('flags.ruizHasEvidence', true),
-					],
-				}),
-				choice('Go back to the diner.', 'diner'),
-				choice('Head to the square.', 'square'),
-				choice('Return to the roadside.', 'crash-site'),
-				choice('Go to the band shell and choose what this night becomes.', 'finale', {
+				choice('Retreat to the bullpen and take stock.', 'bullpen'),
+				choice('The meeting is happening. Stop stalling.', 'finale', {
 					condition: canReachFinale,
 				}),
 			],
 		}),
 
 		finale: scene({
-			kicker: 'Band Shell',
-			title: 'The town is ready to keep whichever version hurts least.',
+			kicker: 'All-Hands',
+			title: 'Now the office picks a story unless you do.',
 			text(state) {
+				const replyAll = read.issueById(state, 'reply-all');
+				const hrAttention = read.issueById(state, 'hr-attention');
+				const dirtyResidue = read.issueById(state, 'dirty-residue');
+
 				return paragraphs(
-					'The crowd has thinned into the kind of people who stay when a story is about to harden into fact.',
-					'Harlow is nearby. Ruiz is nearby. Mara is nearby. So is the version of you that will have to live with whatever you choose next.',
-					read.hasBelief(state, 'trust-mayor')
-						? "Harlow's version still offers itself as the painless way out."
-						: null,
-					read.hasBelief(state, 'trust-mara')
-						? 'Mara keeps looking at you like truth does not have to be neat to be worth saving.'
-						: null
+					'Everyone is here physically or almost here socially, which is basically the same thing in an office. This is the moment where all your containment either becomes narrative control or turns out to have been elaborate denial.',
+					replyAll ? `Main issue: ${replyAll.currentText}` : null,
+					hrAttention ? `HR pressure: ${hrAttention.currentText}` : null,
+					dirtyResidue ? `What your tactics are doing to you: ${dirtyResidue.currentText}` : null
 				);
 			},
 			choices: [
-				choice('Give everything to Mara and let her publish tonight.', 'ending', {
+				choice('Stand up and own the email before anyone can weaponize it harder.', 'ending', {
+					feedback: 'You choose exposure with your name still attached.',
+					effects: [
+						fx.set('flags.finalAction', 'own-it'),
+					],
+				}),
+				choice('Lean on recall, missing copies, and procedural fog to bury it.', 'ending', {
 					condition: when.or(
-						when.evidence('paint-chip'),
-						when.evidence('mara-note'),
-						when.evidence('security-still')
+						when.flag('recallEnabled'),
+						when.flag('printerCopiesRemoved')
 					),
-					feedback: 'You choose exposure over control.',
+					feedback: 'You choose containment over confession and hope the room is tired enough to accept it.',
 					effects: [
-						fx.set('flags.finalAction', 'publish-with-mara'),
+						fx.set('flags.finalAction', 'bury-it'),
 					],
 				}),
-				choice('Stand with Ruiz, hand over what survives, and admit what does not.', 'ending', {
+				choice('Let Tim absorb the social blast and step aside.', 'ending', {
 					condition: when.or(
-						when.flag('reportMade'),
-						when.evidence('paint-chip'),
-						when.evidence('security-still')
+						when.flag('timSetUp'),
+						when.issueState('tim-compromised', 'active')
 					),
-					feedback: 'You choose a record, however incomplete.',
+					feedback: 'You choose a smaller victim and a dirtier mirror.',
 					effects: [
-						fx.set('flags.finalAction', 'stand-with-ruiz'),
+						fx.set('flags.finalAction', 'blame-tim'),
 					],
 				}),
-				choice('Hand the evidence to Harlow and ask him to make it disappear.', 'ending', {
-					feedback: 'You choose safety over truth.',
+				choice('Take the HR hit quietly and refuse to make new damage.', 'ending', {
+					feedback: 'You choose paperwork, shame, and the smallest possible radius.',
 					effects: [
-						fx.set('flags.finalAction', 'protect-harlow'),
+						fx.set('flags.finalAction', 'take-the-hit-quietly'),
 					],
 				}),
-				choice('Name the highway drifter and let the town stop looking.', 'ending', {
-					condition: when.or(
-						when.belief('trust-mayor'),
-						when.path('flags.reportColor', 'black')
-					),
-					feedback: 'You hand the town a suspect-shaped relief valve.',
+				choice('Leave the floor before the room closes over you.', 'ending', {
+					feedback: 'You choose absence and let everyone else finish the architecture.',
 					effects: [
-						fx.set('flags.finalAction', 'blame-drifter'),
-					],
-				}),
-				choice('Walk out of town before the memory changes again.', 'ending', {
-					feedback: 'You choose survival and whatever that costs.',
-					effects: [
-						fx.set('flags.finalAction', 'leave-town'),
+						fx.set('flags.finalAction', 'walk'),
 					],
 				}),
 			],
 		}),
 
-		ending: endingNode(getEnding),
+		ending: endingNode(getEnding, {
+			kicker: 'Day End',
+			restartText: 'Run the morning again.',
+		}),
 	},
 };

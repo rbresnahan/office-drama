@@ -1,14 +1,21 @@
 export const APP_DATA = {
-	title: 'Blackout Memory',
-	eyebrow: 'Truth degrades when you do not secure it.',
+	title: 'Reply All',
+	eyebrow: 'Contain the message before the office decides what it means.',
 	subtitle:
-		'A stormed-out town, a hit-and-run on the road in, and a mind that does not hold details for long.',
+		'One bad email. Six coworkers. Too many ways to stop the damage and only some of them let you keep your soul.',
 };
 
 export const DEFAULT_MEMORY_TUNING = {
-	baseDecay: 18,
-	stressMultiplier: 4,
-	preservedDecay: 4,
-	highImportanceAdjustment: -3,
-	signalLimit: 6,
+	baseDecay: 10,
+	stressMultiplier: 2,
+	preservedDecay: 3,
+	highImportanceAdjustment: -2,
+	signalLimit: 8,
+};
+
+export const DEFAULT_ISSUE_TUNING = {
+	basePrecisionDecay: 6,
+	overloadPrecisionPenalty: 4,
+	containmentDecay: 5,
+	maxTransfersPerIssue: 2,
 };
