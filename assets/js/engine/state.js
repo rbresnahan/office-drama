@@ -93,6 +93,88 @@ function knowledgeLevelRank(level = 'none') {
 	return KNOWLEDGE_RANK[level] || 0;
 }
 
+function normalizeLogicCategories(categories = []) {
+	return categories.map((category) => ({
+		id: category.id,
+		label: category.label || category.id,
+		values: Array.isArray(category.values)
+			? category.values.map((value) => {
+				if (typeof value === 'string') {
+					return {
+						id: value,
+						label: value,
+					};
+				}
+
+				return {
+					id: value.id,
+					label: value.label || value.id,
+				};
+			})
+			: [],
+	}));
+}
+
+function createLogicState(seed = {}, actors = []) {
+	const categories = normalizeLogicCategories(seed.categories || []);
+	const logicActors = Array.isArray(seed.actors) && seed.actors.length
+		? seed.actors.map((actor) => {
+			if (typeof actor === 'string') {
+				return {
+					id: actor,
+					label: actor,
+				};
+			}
+
+			return {
+				id: actor.id,
+				label: actor.label || actor.id,
+			};
+		})
+		: actors.map((actor) => ({
+			id: actor.id,
+			label: actor.name,
+		}));
+
+	const notebook = {};
+
+	logicActors.forEach((actor) => {
+		notebook[actor.id] = notebook[actor.id] || {};
+
+		categories.forEach((category) => {
+			notebook[actor.id][category.id] = notebook[actor.id][category.id] || {};
+
+			category.values.forEach((value) => {
+				const seededMark = seed.notebook
+					&& seed.notebook[actor.id]
+					&& seed.notebook[actor.id][category.id]
+					? seed.notebook[actor.id][category.id][value.id]
+					: null;
+
+				notebook[actor.id][category.id][value.id] = seededMark || 'unknown';
+			});
+		});
+	});
+
+	const logic = {
+		title: seed.title || 'Office Logic Board',
+		helpText: seed.helpText || 'Click a cell to cycle blank → match → exclude.',
+		categories,
+		actors: logicActors,
+		truths: deepClone(seed.truths || {}),
+		notebook,
+		progress: {
+			correctMatches: 0,
+			totalMatches: logicActors.length * categories.length,
+			incorrectMatches: 0,
+			solved: false,
+		},
+	};
+
+	applyLogicPresentation(logic);
+	return logic;
+}
+
 export function createInitialState(baseInitialState = {}) {
 	const state = deepClone(baseInitialState);
 
@@ -103,6 +185,8 @@ export function createInitialState(baseInitialState = {}) {
 	state.memories = Array.isArray(state.memories) ? state.memories.map(createMemoryFromSeed) : [];
 	state.issues = Array.isArray(state.issues) ? state.issues.map(createIssueFromSeed) : [];
 	state.actors = Array.isArray(state.actors) ? state.actors.map(createActorFromSeed) : [];
+	state.relationships = Array.isArray(state.relationships) ? state.relationships.map(createRelationshipFromSeed) : [];
+	state.logic = createLogicState(state.logic || {}, state.actors);
 	state.beliefs = state.beliefs || {};
 	state.signals = Array.isArray(state.signals) ? state.signals : [];
 	state.firedTurnEvents = Array.isArray(state.firedTurnEvents) ? state.firedTurnEvents : [];
@@ -119,6 +203,10 @@ export function createInitialState(baseInitialState = {}) {
 
 	state.actors.forEach((actor) => {
 		applyActorPresentation(actor);
+	});
+
+	state.relationships.forEach((relationship) => {
+		applyRelationshipPresentation(relationship);
 	});
 
 	return state;
@@ -193,6 +281,20 @@ export function createActorFromSeed(seed = {}) {
 	return actor;
 }
 
+export function createRelationshipFromSeed(seed = {}) {
+	const relationship = {
+		id: seed.id || `${seed.from}:${seed.to}`,
+		from: seed.from,
+		to: seed.to,
+		value: typeof seed.value === 'number' ? seed.value : 0,
+		currentLabel: 'neutral',
+		currentSummary: '',
+	};
+
+	applyRelationshipPresentation(relationship);
+	return relationship;
+}
+
 export function findMemoryByKey(state, key) {
 	return state.memories.find((memory) => memory.key === key) || null;
 }
@@ -203,6 +305,22 @@ export function findIssueById(state, id) {
 
 export function findActorById(state, id) {
 	return state.actors.find((actor) => actor.id === id) || null;
+}
+
+export function findRelationship(state, from, to) {
+	return state.relationships.find((relationship) => relationship.from === from && relationship.to === to) || null;
+}
+
+function ensureRelationship(state, from, to) {
+	const existing = findRelationship(state, from, to);
+
+	if (existing) {
+		return existing;
+	}
+
+	const relationship = createRelationshipFromSeed({ from, to, value: 0 });
+	state.relationships.push(relationship);
+	return relationship;
 }
 
 export function addMemory(state, seed) {
@@ -404,6 +522,20 @@ export function adjustActor(state, actorId, path, value, mode = 'set') {
 	return actor;
 }
 
+export function adjustRelationship(state, from, to, value, mode = 'add') {
+	const relationship = ensureRelationship(state, from, to);
+
+	if (mode === 'set') {
+		relationship.value = Number(value) || 0;
+	} else {
+		relationship.value = (Number(relationship.value) || 0) + (Number(value) || 0);
+	}
+
+	relationship.value = clamp(relationship.value, -100, 100);
+	applyRelationshipPresentation(relationship);
+	return relationship;
+}
+
 export function adjustIssue(state, issueId, path, value, mode = 'set') {
 	const issue = findIssueById(state, issueId);
 
@@ -486,6 +618,39 @@ export function shiftIssuePrecision(state, issueId, amount) {
 	issue.precision = clamp(issue.precision + amount, 0, 100);
 	applyIssuePresentation(issue);
 	return issue;
+}
+
+export function getLogicCell(state, actorId, categoryId, valueId) {
+	if (!state.logic || !state.logic.notebook[actorId] || !state.logic.notebook[actorId][categoryId]) {
+		return 'unknown';
+	}
+
+	return state.logic.notebook[actorId][categoryId][valueId] || 'unknown';
+}
+
+export function setLogicCell(state, actorId, categoryId, valueId, mark = 'unknown') {
+	if (!state.logic || !state.logic.notebook[actorId] || !state.logic.notebook[actorId][categoryId]) {
+		return null;
+	}
+
+	state.logic.notebook[actorId][categoryId][valueId] = mark;
+	applyLogicPresentation(state.logic);
+	return mark;
+}
+
+export function cycleLogicCell(state, actorId, categoryId, valueId) {
+	const current = getLogicCell(state, actorId, categoryId, valueId);
+	const next = current === 'unknown'
+		? 'match'
+		: current === 'match'
+			? 'exclude'
+			: 'unknown';
+
+	return setLogicCell(state, actorId, categoryId, valueId, next);
+}
+
+export function isLogicSolved(state) {
+	return Boolean(state.logic && state.logic.progress && state.logic.progress.solved);
 }
 
 export function hasEvidence(state, id) {
@@ -808,4 +973,78 @@ export function applyActorPresentation(actor) {
 
 	actor.currentMood = mood;
 	actor.currentSummary = summary;
+}
+
+export function applyRelationshipPresentation(relationship) {
+	if (relationship.value >= 45) {
+		relationship.currentLabel = 'aligned';
+		relationship.currentSummary = 'currently aligned';
+		return;
+	}
+
+	if (relationship.value >= 15) {
+		relationship.currentLabel = 'warm';
+		relationship.currentSummary = 'currently cooperative';
+		return;
+	}
+
+	if (relationship.value <= -45) {
+		relationship.currentLabel = 'hostile';
+		relationship.currentSummary = 'actively hostile';
+		return;
+	}
+
+	if (relationship.value <= -15) {
+		relationship.currentLabel = 'friction';
+		relationship.currentSummary = 'in visible friction';
+		return;
+	}
+
+	relationship.currentLabel = 'neutral';
+	relationship.currentSummary = 'holding neutral';
+}
+
+export function applyLogicPresentation(logic) {
+	let correctMatches = 0;
+	let incorrectMatches = 0;
+	let solved = true;
+
+	logic.actors.forEach((actor) => {
+		logic.categories.forEach((category) => {
+			const truth = logic.truths
+				&& logic.truths[actor.id]
+				? logic.truths[actor.id][category.id]
+				: null;
+			let rowSolved = false;
+
+			category.values.forEach((value) => {
+				const mark = logic.notebook[actor.id][category.id][value.id];
+				const isTruth = truth === value.id;
+
+				if (mark === 'match' && isTruth) {
+					correctMatches += 1;
+					rowSolved = true;
+				}
+
+				if (mark === 'match' && !isTruth) {
+					incorrectMatches += 1;
+				}
+			});
+
+			if (!rowSolved) {
+				solved = false;
+			}
+		});
+	});
+
+	if (incorrectMatches > 0) {
+		solved = false;
+	}
+
+	logic.progress = {
+		correctMatches,
+		totalMatches: logic.actors.length * logic.categories.length,
+		incorrectMatches,
+		solved,
+	};
 }

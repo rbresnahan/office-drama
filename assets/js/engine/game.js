@@ -1,24 +1,29 @@
 import { applyEffects } from './effects.js';
 import { getProcessedChoices, processNodeRedirects } from './guards.js';
 import {
+	addIssue,
 	addSignal,
+	adjustActor,
+	adjustIssue,
+	adjustRelationship,
+	containIssue,
 	countActorsKnowingIssue,
 	countEvidenceByTag,
 	createInitialState,
+	cycleLogicCell,
 	decayIssues,
 	decayMemories,
+	exposeIssue,
 	findActorById,
 	findIssueById,
+	findRelationship,
 	hasEvidence,
+	isLogicSolved,
 	knowsTag,
 	propagateIssues,
 	resolveValue,
 	actorKnowsIssue,
 	setActorKnowledge,
-	adjustActor,
-	adjustIssue,
-	containIssue,
-	exposeIssue,
 	setIssueLifecycle,
 	shiftIssuePrecision,
 } from './state.js';
@@ -71,6 +76,11 @@ export class Game {
 		});
 	}
 
+	cycleLogicCell(actorId, categoryId, valueId) {
+		cycleLogicCell(this.state, actorId, categoryId, valueId);
+		this.render();
+	}
+
 	resolve(value) {
 		return resolveValue(value, this.state);
 	}
@@ -79,19 +89,23 @@ export class Game {
 		return {
 			findActorById: (id) => findActorById(this.state, id),
 			findIssueById: (id) => findIssueById(this.state, id),
+			findRelationship: (from, to) => findRelationship(this.state, from, to),
 			actorKnowsIssue: (actorId, issueId, minimumLevel = 'heard') => actorKnowsIssue(this.state, actorId, issueId, minimumLevel),
 			setActorKnowledge: (actorId, issueId, level = 'heard', confidence = 55, source = 'script') => {
 				return setActorKnowledge(this.state, actorId, issueId, level, confidence, source);
 			},
 			adjustActor: (actorId, path, value, mode = 'set') => adjustActor(this.state, actorId, path, value, mode),
+			adjustRelationship: (from, to, value, mode = 'add') => adjustRelationship(this.state, from, to, value, mode),
 			adjustIssue: (issueId, path, value, mode = 'set') => adjustIssue(this.state, issueId, path, value, mode),
 			containIssue: (issueId, amount = 10) => containIssue(this.state, issueId, amount),
 			exposeIssue: (issueId, amount = 10) => exposeIssue(this.state, issueId, amount),
 			setIssueLifecycle: (issueId, lifecycleState) => setIssueLifecycle(this.state, issueId, lifecycleState),
 			shiftIssuePrecision: (issueId, amount) => shiftIssuePrecision(this.state, issueId, amount),
 			countActorsKnowingIssue: (issueId, minimumLevel = 'heard') => countActorsKnowingIssue(this.state, issueId, minimumLevel),
+			addIssue: (issue) => addIssue(this.state, issue),
 			addEvent: (message) => this.addEvent(message),
 			applyEffects: (effects) => this.applyEffects(effects),
+			isLogicSolved: () => isLogicSolved(this.state),
 		};
 	}
 
@@ -244,6 +258,10 @@ export class Game {
 				knowsTag: (tag) => knowsTag(this.state, tag),
 				countEvidenceByTag: (tag) => countEvidenceByTag(this.state, tag),
 				countActorsKnowingIssue: (issueId, minimumLevel = 'heard') => countActorsKnowingIssue(this.state, issueId, minimumLevel),
+				isLogicSolved: () => isLogicSolved(this.state),
+			},
+			handlers: {
+				onLogicCell: (actorId, categoryId, valueId) => this.cycleLogicCell(actorId, categoryId, valueId),
 			},
 		});
 

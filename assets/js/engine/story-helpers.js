@@ -61,6 +61,14 @@ function actorById(state, id) {
 	return state.actors.find((actor) => actor.id === id) || null;
 }
 
+function relationshipByPair(state, from, to) {
+	if (!Array.isArray(state.relationships)) {
+		return null;
+	}
+
+	return state.relationships.find((relationship) => relationship.from === from && relationship.to === to) || null;
+}
+
 function actorKnowledgeRank(level = 'none') {
 	const map = {
 		none: 0,
@@ -274,6 +282,24 @@ export const fx = {
 		};
 	},
 
+	relationshipSet(from, to, value) {
+		return {
+			type: 'relationshipSet',
+			from,
+			to,
+			value,
+		};
+	},
+
+	relationshipAdd(from, to, value) {
+		return {
+			type: 'relationshipAdd',
+			from,
+			to,
+			value,
+		};
+	},
+
 	actorKnowledge(id, issueId, level = 'heard', confidence = 55, source = 'player') {
 		return {
 			type: 'actorKnowledge',
@@ -430,8 +456,26 @@ export const when = {
 		};
 	},
 
+	relationshipAtLeast(from, to, minimum) {
+		return (state) => {
+			const relationship = relationshipByPair(state, from, to);
+			return Boolean(relationship && relationship.value >= minimum);
+		};
+	},
+
+	relationshipAtMost(from, to, maximum) {
+		return (state) => {
+			const relationship = relationshipByPair(state, from, to);
+			return Boolean(relationship && relationship.value <= maximum);
+		};
+	},
+
 	actorKnowsIssue(actorId, issueId, minimumLevel = 'heard') {
 		return (state) => actorKnowsIssue(state, actorId, issueId, minimumLevel);
+	},
+
+	logicSolved() {
+		return (state) => Boolean(state.logic && state.logic.progress && state.logic.progress.solved);
 	},
 
 	turnAtLeast(count) {
@@ -484,8 +528,20 @@ export const read = {
 		return actorById(state, id);
 	},
 
+	relationshipByPair(state, from, to) {
+		return relationshipByPair(state, from, to);
+	},
+
 	actorKnowsIssue(state, actorId, issueId, minimumLevel = 'heard') {
 		return actorKnowsIssue(state, actorId, issueId, minimumLevel);
+	},
+
+	logicSolved(state) {
+		return Boolean(state.logic && state.logic.progress && state.logic.progress.solved);
+	},
+
+	logicProgress(state) {
+		return state.logic && state.logic.progress ? state.logic.progress : null;
 	},
 
 	knowsTag(state, tag) {

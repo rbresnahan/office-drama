@@ -11,11 +11,13 @@ const renderer = new Renderer({
 		a: document.getElementById('section-a-panel'),
 		b: document.getElementById('section-b-panel'),
 		c: document.getElementById('section-c-panel'),
+		d: document.getElementById('section-d-panel'),
 	},
 	sectionTitleEls: {
 		a: document.getElementById('section-a-title'),
 		b: document.getElementById('section-b-title'),
 		c: document.getElementById('section-c-title'),
+		d: document.getElementById('section-d-title'),
 	},
 	titleEl: document.getElementById('app-title'),
 	subtitleEl: document.getElementById('app-subtitle'),

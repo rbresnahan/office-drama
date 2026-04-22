@@ -25,12 +25,23 @@ function getEnding(state) {
 	const celiaWarned = read.flag(state, 'celiaWarned');
 	const frankBriefed = read.flag(state, 'frankBriefed');
 	const finalAction = read.path(state, 'flags.finalAction');
+	const logicSolved = read.logicSolved(state);
 	const replyContainment = replyAll ? replyAll.containment : 0;
 	const hrContainment = hrAttention ? hrAttention.containment : 0;
 	const residueSeverity = residue ? residue.severity : 0;
 	const celiaState = celiaIssue ? celiaIssue.lifecycleState : 'warming';
 
 	if (finalAction === 'own-it') {
+		if (dirtyPlay === 0 && celiaWarned && frankBriefed && logicSolved) {
+			return {
+				title: 'Ending: You Finally Read the Room Correctly',
+				text: paragraphs(
+					'You move first, tell the truth cleanly, and do it with the right sequence because you actually understood the office instead of just reacting to it.',
+					'Betty loses the fun, Tim stabilizes, Frank gets process, Celia gets directness. For once, your social model was better than the gossip engine.'
+				),
+			};
+		}
+
 		if (dirtyPlay === 0 && celiaWarned && frankBriefed) {
 			return {
 				title: 'Ending: Brutal Professionalism',
@@ -132,6 +143,8 @@ function officeWorldStep(state, helpers) {
 	const hrAttention = helpers.findIssueById('hr-attention');
 	const dirtyResidue = helpers.findIssueById('dirty-residue');
 	const timCompromised = helpers.findIssueById('tim-compromised');
+	const bettyTimFriction = helpers.findIssueById('betty-tim-friction');
+	const bettyTowardTim = helpers.findRelationship('betty', 'tim');
 	const knowerCount = helpers.countActorsKnowingIssue('reply-all', 'heard');
 
 	if (replyAll && knowerCount >= 3 && celiaFindingOut && celiaFindingOut.lifecycleState === 'warming') {
@@ -170,6 +183,48 @@ function officeWorldStep(state, helpers) {
 	if (timCompromised && timCompromised.lifecycleState === 'active') {
 		helpers.adjustActor('tim', 'stability', -6, 'add');
 		helpers.adjustActor('tim', 'suspicion', 8, 'add');
+	}
+
+	if (
+		bettyTowardTim &&
+		bettyTowardTim.value <= -25 &&
+		!bettyTimFriction
+	) {
+		helpers.addIssue({
+			id: 'betty-tim-friction',
+			title: 'Betty and Tim friction',
+			truthText: 'A side conflict is now feeding the main crisis.',
+			severity: 44,
+			spreadRisk: 38,
+			precision: 72,
+			containment: 46,
+			lifecycleState: 'active',
+			linkedActors: ['betty', 'tim'],
+			summaryStages: [
+				{
+					label: 'focused',
+					minPrecision: 60,
+					text: 'Betty has turned on Tim hard enough that nearby people are starting to notice.',
+				},
+				{
+					label: 'blurred',
+					minPrecision: 25,
+					text: 'A side conflict is now creating extra office heat.',
+				},
+				{
+					label: 'vague',
+					minPrecision: 0,
+					text: 'Someone who used to be manageable is now making the room noisier.',
+				},
+			],
+		});
+		helpers.addEvent('Betty and Tim are now visibly in friction. Small fires are spawning off the main one.');
+	}
+
+	if (bettyTimFriction && bettyTimFriction.lifecycleState === 'active') {
+		helpers.adjustIssue('reply-all', 'spreadRisk', 4, 'add');
+		helpers.adjustActor('tim', 'suspicion', 5, 'add');
+		helpers.adjustActor('betty', 'stability', -4, 'add');
 	}
 
 	if (state.turn >= 4 && knowerCount >= 4 && !helpers.actorKnowsIssue('frank', 'reply-all', 'heard')) {
@@ -233,6 +288,64 @@ export const storyConfig = {
 			dirtyPlayCount: 0,
 			finalAction: null,
 		},
+		logic: {
+			title: 'Office Logic Board',
+			helpText: 'Each coworker has one real Pressure Point and one real Best Approach. Click cells to mark your read.',
+			actors: [
+				{ id: 'betty', label: 'Betty' },
+				{ id: 'tim', label: 'Tim' },
+				{ id: 'devon', label: 'Devon' },
+				{ id: 'frank', label: 'Frank' },
+			],
+			categories: [
+				{
+					id: 'pressurePoint',
+					label: 'Pressure Point',
+					values: [
+						{ id: 'gossip', label: 'Gossip' },
+						{ id: 'uncertainty', label: 'Uncertainty' },
+						{ id: 'disruption', label: 'Disruption' },
+						{ id: 'liability', label: 'Liability' },
+					],
+				},
+				{
+					id: 'bestApproach',
+					label: 'Best Approach',
+					values: [
+						{ id: 'distract', label: 'Distract' },
+						{ id: 'reassure', label: 'Reassure' },
+						{ id: 'verify', label: 'Verify' },
+						{ id: 'confess', label: 'Confess' },
+					],
+				},
+			],
+			truths: {
+				betty: {
+					pressurePoint: 'gossip',
+					bestApproach: 'distract',
+				},
+				tim: {
+					pressurePoint: 'uncertainty',
+					bestApproach: 'reassure',
+				},
+				devon: {
+					pressurePoint: 'disruption',
+					bestApproach: 'verify',
+				},
+				frank: {
+					pressurePoint: 'liability',
+					bestApproach: 'confess',
+				},
+			},
+		},
+		relationships: [
+			{ from: 'betty', to: 'tim', value: 22 },
+			{ from: 'tim', to: 'betty', value: 10 },
+			{ from: 'betty', to: 'celia', value: -12 },
+			{ from: 'tim', to: 'frank', value: -4 },
+			{ from: 'devon', to: 'frank', value: 8 },
+			{ from: 'frank', to: 'celia', value: 16 },
+		],
 		evidence: [
 			{
 				id: 'draft-copy',
@@ -546,6 +659,15 @@ export const storyConfig = {
 		status: [
 			status('Turn', (state) => String(state.turn)),
 			status('Stress', (state) => `${state.stats.stress} / ${state.stats.maxStress}`),
+			status('Read', (state) => {
+				const progress = read.logicProgress(state);
+
+				if (!progress) {
+					return '0 / 0';
+				}
+
+				return `${progress.correctMatches} / ${progress.totalMatches}`;
+			}),
 			status('All-hands', (state, context) => {
 				if (state.flags.finaleUnlocked === true) {
 					return 'Starting now';
@@ -564,8 +686,8 @@ export const storyConfig = {
 				type: 'actors',
 			},
 			{
-				title: 'Recent Drift',
-				type: 'signals',
+				title: 'Logic Board',
+				type: 'logic',
 			},
 			{
 				title: 'Memory',
@@ -607,10 +729,12 @@ export const storyConfig = {
 			title: 'Betty is a fuse with lipstick.',
 			text(state) {
 				const betty = read.actorById(state, 'betty');
+				const bt = read.relationshipByPair(state, 'betty', 'tim');
 
 				return paragraphs(
 					'Betty is stirring coffee she is not going to drink. That means she is staying put long enough to spread information recreationally.',
 					betty ? `Current read: ${betty.currentSummary}` : null,
+					bt ? `Betty toward Tim currently reads as: ${bt.currentSummary}.` : null,
 					'You do not need her loyalty. You need her to find a more entertaining problem than yours.'
 				);
 			},
@@ -626,7 +750,7 @@ export const storyConfig = {
 						fx.issuePrecision('reply-all', 6),
 					],
 				}),
-				choice('Feed Betty a side rumor about layoffs to redirect her appetite.', 'break-room', {
+				choice('Feed Betty a side rumor about Tim being shaky on the layoffs list.', 'break-room', {
 					condition: when.not(when.flag('bettyDistracted')),
 					feedback: 'Betty immediately pivots to a shinier cruelty vector. Efficient. Gross. Effective.',
 					effects: [
@@ -638,6 +762,8 @@ export const storyConfig = {
 						fx.issueLifecycle('dirty-residue', 'active'),
 						fx.actorAdd('betty', 'disposition', -8),
 						fx.actorAdd('betty', 'suspicion', 10),
+						fx.relationshipAdd('betty', 'tim', -48),
+						fx.relationshipAdd('tim', 'betty', -18),
 					],
 				}),
 				choice('Tell Betty Celia is about to hear it anyway, so she should stop freelancing.', 'break-room', {
@@ -666,7 +792,8 @@ export const storyConfig = {
 				return paragraphs(
 					'Printers are where private stupidity becomes shared office furniture. Tim is here, hovering near the tray with the expression of a man who knows something and wishes he did not.',
 					tim ? `Current read on Tim: ${tim.currentSummary}` : null,
-					compromised ? `His trajectory feels like this: ${compromised.currentText}` : null
+					compromised ? `His trajectory feels like this: ${compromised.currentText}` : null,
+					'If you are paying attention, Tim reads like uncertainty with shoes on.'
 				);
 			},
 			choices: [
@@ -693,6 +820,7 @@ export const storyConfig = {
 						fx.actorAdd('tim', 'disposition', 12),
 						fx.actorAdd('tim', 'stability', 10),
 						fx.issueContain('reply-all', 10),
+						fx.relationshipAdd('tim', 'betty', -6),
 					],
 				}),
 				choice('Jam the printer so no one else gets a clean copy.', 'printer-bay', {
@@ -741,7 +869,8 @@ export const storyConfig = {
 				return paragraphs(
 					'Devon already looks tired of people discovering technology only when they need a miracle. This is not a miracle. It is systems triage with a witness problem.',
 					devon ? `Current read on Devon: ${devon.currentSummary}` : null,
-					replyAll ? `Operationally, the problem still looks like this: ${replyAll.currentText}` : null
+					replyAll ? `Operationally, the problem still looks like this: ${replyAll.currentText}` : null,
+					'Specificity calms him. Vagueness wastes his morning.'
 				);
 			},
 			choices: [
@@ -796,7 +925,8 @@ export const storyConfig = {
 				return paragraphs(
 					'Frank has the calm of a man who will let you panic at full volume and then summarize it in a paragraph for legal preservation.',
 					frank ? `Current read on Frank: ${frank.currentSummary}` : null,
-					hrIssue ? `Policy pressure currently feels like this: ${hrIssue.currentText}` : null
+					hrIssue ? `Policy pressure currently feels like this: ${hrIssue.currentText}` : null,
+					'With Frank, confession beats improvisation. Liability is the only language he actually trusts.'
 				);
 			},
 			choices: [
@@ -909,12 +1039,14 @@ export const storyConfig = {
 				const replyAll = read.issueById(state, 'reply-all');
 				const hrAttention = read.issueById(state, 'hr-attention');
 				const dirtyResidue = read.issueById(state, 'dirty-residue');
+				const logicSolved = read.logicSolved(state);
 
 				return paragraphs(
 					'Everyone is here physically or almost here socially, which is basically the same thing in an office. This is the moment where all your containment either becomes narrative control or turns out to have been elaborate denial.',
 					replyAll ? `Main issue: ${replyAll.currentText}` : null,
 					hrAttention ? `HR pressure: ${hrAttention.currentText}` : null,
-					dirtyResidue ? `What your tactics are doing to you: ${dirtyResidue.currentText}` : null
+					dirtyResidue ? `What your tactics are doing to you: ${dirtyResidue.currentText}` : null,
+					logicSolved ? 'You have a full read on the room.' : 'Your logic board is still incomplete. You are acting with partial certainty.'
 				);
 			},
 			choices: [
