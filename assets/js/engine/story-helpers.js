@@ -456,26 +456,8 @@ export const when = {
 		};
 	},
 
-	relationshipAtLeast(from, to, minimum) {
-		return (state) => {
-			const relationship = relationshipByPair(state, from, to);
-			return Boolean(relationship && relationship.value >= minimum);
-		};
-	},
-
-	relationshipAtMost(from, to, maximum) {
-		return (state) => {
-			const relationship = relationshipByPair(state, from, to);
-			return Boolean(relationship && relationship.value <= maximum);
-		};
-	},
-
 	actorKnowsIssue(actorId, issueId, minimumLevel = 'heard') {
 		return (state) => actorKnowsIssue(state, actorId, issueId, minimumLevel);
-	},
-
-	logicSolved() {
-		return (state) => Boolean(state.logic && state.logic.progress && state.logic.progress.solved);
 	},
 
 	turnAtLeast(count) {
@@ -532,16 +514,16 @@ export const read = {
 		return relationshipByPair(state, from, to);
 	},
 
-	actorKnowsIssue(state, actorId, issueId, minimumLevel = 'heard') {
-		return actorKnowsIssue(state, actorId, issueId, minimumLevel);
+	logicProgress(state) {
+		return state.logic && state.logic.progress ? state.logic.progress : null;
 	},
 
 	logicSolved(state) {
 		return Boolean(state.logic && state.logic.progress && state.logic.progress.solved);
 	},
 
-	logicProgress(state) {
-		return state.logic && state.logic.progress ? state.logic.progress : null;
+	actorKnowsIssue(state, actorId, issueId, minimumLevel = 'heard') {
+		return actorKnowsIssue(state, actorId, issueId, minimumLevel);
 	},
 
 	knowsTag(state, tag) {

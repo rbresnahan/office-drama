@@ -5,6 +5,7 @@ import {
 	addSignal,
 	adjustActor,
 	adjustIssue,
+	adjustRelationship,
 	clearBelief,
 	commitBelief,
 	containIssue,
@@ -193,6 +194,16 @@ export function applyEffects(state, effects, options = {}) {
 					resolve(effect.label),
 					Number(resolve(effect.confidence) || 60)
 				);
+				break;
+			}
+
+			case 'relationshipSet': {
+				adjustRelationship(state, resolve(effect.from), resolve(effect.to), resolve(effect.value), 'set');
+				break;
+			}
+
+			case 'relationshipAdd': {
+				adjustRelationship(state, resolve(effect.from), resolve(effect.to), resolve(effect.value), 'add');
 				break;
 			}
 

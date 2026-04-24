@@ -653,6 +653,10 @@ export function isLogicSolved(state) {
 	return Boolean(state.logic && state.logic.progress && state.logic.progress.solved);
 }
 
+export function getLogicProgress(state) {
+	return state.logic && state.logic.progress ? state.logic.progress : null;
+}
+
 export function hasEvidence(state, id) {
 	return state.evidence.some((item) => item.id === id);
 }
@@ -975,71 +979,60 @@ export function applyActorPresentation(actor) {
 	actor.currentSummary = summary;
 }
 
-export function applyRelationshipPresentation(relationship) {
-	if (relationship.value >= 45) {
-		relationship.currentLabel = 'aligned';
-		relationship.currentSummary = 'currently aligned';
-		return;
+function applyRelationshipPresentation(relationship) {
+	let label = 'neutral';
+	let summary = 'No strong lean.';
+
+	if (relationship.value <= -60) {
+		label = 'hostile';
+		summary = 'Actively adversarial.';
+	} else if (relationship.value <= -20) {
+		label = 'strained';
+		summary = 'Cold enough to create friction.';
+	} else if (relationship.value >= 60) {
+		label = 'allied';
+		summary = 'Likely to protect or support.';
+	} else if (relationship.value >= 20) {
+		label = 'warm';
+		summary = 'Generally favorable.';
 	}
 
-	if (relationship.value >= 15) {
-		relationship.currentLabel = 'warm';
-		relationship.currentSummary = 'currently cooperative';
-		return;
-	}
-
-	if (relationship.value <= -45) {
-		relationship.currentLabel = 'hostile';
-		relationship.currentSummary = 'actively hostile';
-		return;
-	}
-
-	if (relationship.value <= -15) {
-		relationship.currentLabel = 'friction';
-		relationship.currentSummary = 'in visible friction';
-		return;
-	}
-
-	relationship.currentLabel = 'neutral';
-	relationship.currentSummary = 'holding neutral';
+	relationship.currentLabel = label;
+	relationship.currentSummary = summary;
 }
 
-export function applyLogicPresentation(logic) {
+function applyLogicPresentation(logic) {
+	const truths = logic.truths || {};
 	let correctMatches = 0;
 	let incorrectMatches = 0;
 	let solved = true;
 
 	logic.actors.forEach((actor) => {
 		logic.categories.forEach((category) => {
-			const truth = logic.truths
-				&& logic.truths[actor.id]
-				? logic.truths[actor.id][category.id]
-				: null;
-			let rowSolved = false;
+			const truthValue = truths?.[actor.id]?.[category.id];
+			let rowHasCorrectMatch = false;
+			let rowMatchCount = 0;
 
 			category.values.forEach((value) => {
-				const mark = logic.notebook[actor.id][category.id][value.id];
-				const isTruth = truth === value.id;
+				const mark = logic.notebook?.[actor.id]?.[category.id]?.[value.id] || 'unknown';
 
-				if (mark === 'match' && isTruth) {
-					correctMatches += 1;
-					rowSolved = true;
-				}
+				if (mark === 'match') {
+					rowMatchCount += 1;
 
-				if (mark === 'match' && !isTruth) {
-					incorrectMatches += 1;
+					if (value.id === truthValue) {
+						correctMatches += 1;
+						rowHasCorrectMatch = true;
+					} else {
+						incorrectMatches += 1;
+					}
 				}
 			});
 
-			if (!rowSolved) {
+			if (rowMatchCount !== 1 || rowHasCorrectMatch !== true) {
 				solved = false;
 			}
 		});
 	});
-
-	if (incorrectMatches > 0) {
-		solved = false;
-	}
 
 	logic.progress = {
 		correctMatches,

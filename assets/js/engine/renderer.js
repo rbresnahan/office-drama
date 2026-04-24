@@ -32,18 +32,21 @@ export class Renderer {
 	}
 
 	showError(message) {
-		this.storyEl.innerHTML = `<p class="error-text">${this.escapeHtml(message)}</p>`;
-		this.choicesEl.innerHTML = '';
+		if (this.storyEl) {
+			this.storyEl.innerHTML = `<p class="error-text">${this.escapeHtml(message)}</p>`;
+		}
+
+		if (this.choicesEl) {
+			this.choicesEl.innerHTML = '';
+		}
 	}
 
 	renderStatePanel({ state, displayConfig, context }) {
 		this.renderStatus(state, displayConfig.status || [], context);
 		this.renderLatestSignal(state.signals || []);
 
-		const sections = (Array.isArray(displayConfig.sections) ? displayConfig.sections : [])
-			.filter((config) => config.type !== 'signals');
-
-		const slots = [ 'a', 'b', 'c', 'd' ];
+		const sections = Array.isArray(displayConfig.sections) ? displayConfig.sections : [];
+		const slots = ['a', 'b', 'c', 'd'];
 
 		slots.forEach((slot, index) => {
 			const config = sections[index] || null;
@@ -52,6 +55,10 @@ export class Renderer {
 	}
 
 	renderStatus(state, statusItems, context) {
+		if (!this.statusEl) {
+			return;
+		}
+
 		this.statusEl.innerHTML = '';
 
 		if (!statusItems.length) {
@@ -121,6 +128,10 @@ export class Renderer {
 				this.renderActors(panelEl, state.actors || []);
 				break;
 
+			case 'logic':
+				this.renderLogic(panelEl, state.logic || null, context);
+				break;
+
 			case 'memories':
 				this.renderMemories(panelEl, state.memories || []);
 				break;
@@ -178,6 +189,7 @@ export class Renderer {
 						<span>contain ${this.escapeHtml(String(issue.containment))}</span>
 					</div>
 				`;
+
 				list.appendChild(wrapper);
 			});
 
@@ -197,25 +209,110 @@ export class Renderer {
 
 		actors.forEach((actor) => {
 			const wrapper = document.createElement('div');
-			wrapper.className = 'actor-item';
+			wrapper.className = 'actor-item actor-item--compact';
 
 			const moodClass = this.getMoodBadgeClass(actor.currentMood);
 
 			wrapper.innerHTML = `
-				<div class="actor-card">
-					<div class="actor-card__line">
-						<span class="actor-card__name">${this.escapeHtml(actor.name)}</span>
-						<span class="actor-card__role">${this.escapeHtml(actor.role)}</span>
-						<span class="badge badge--room">${this.escapeHtml(actor.location)}</span>
-						<span class="badge ${this.escapeHtml(moodClass)}">${this.escapeHtml(actor.currentMood)}</span>
-					</div>
+				<div class="actor-compact-line">
+					<strong>${this.escapeHtml(actor.name)}</strong>,
+					<span>${this.escapeHtml(actor.role)}</span>,
+					<span>${this.escapeHtml(actor.location)}</span>,
+					<span class="badge ${this.escapeHtml(moodClass)}">${this.escapeHtml(actor.currentMood)}</span>
 				</div>
+				<div class="actor-compact-note">${this.escapeHtml(actor.currentSummary || '')}</div>
 			`;
 
 			list.appendChild(wrapper);
 		});
 
 		targetEl.appendChild(list);
+	}
+
+	renderLogic(targetEl, logic, context) {
+		targetEl.innerHTML = '';
+
+		if (!logic || !Array.isArray(logic.categories) || !logic.categories.length) {
+			targetEl.innerHTML = '<div class="status-empty">No logic board configured.</div>';
+			return;
+		}
+
+		const board = document.createElement('div');
+		board.className = 'logic-board';
+
+		if (logic.helpText) {
+			const help = document.createElement('div');
+			help.className = 'logic-help';
+			help.textContent = logic.helpText;
+			board.appendChild(help);
+		}
+
+		logic.categories.forEach((category) => {
+			const categoryWrap = document.createElement('div');
+			categoryWrap.className = 'logic-category';
+
+			const title = document.createElement('div');
+			title.className = 'logic-category__title';
+			title.textContent = category.label;
+			categoryWrap.appendChild(title);
+
+			const grid = document.createElement('div');
+			grid.className = 'logic-grid';
+
+			const corner = document.createElement('div');
+			corner.className = 'logic-grid__corner';
+			grid.appendChild(corner);
+
+			category.values.forEach((value) => {
+				const head = document.createElement('div');
+				head.className = 'logic-grid__head';
+				head.textContent = value.label;
+				grid.appendChild(head);
+			});
+
+			logic.actors.forEach((actor) => {
+				const rowLabel = document.createElement('div');
+				rowLabel.className = 'logic-grid__row-label';
+				rowLabel.textContent = actor.label;
+				grid.appendChild(rowLabel);
+
+				category.values.forEach((value) => {
+					const mark = logic.notebook?.[actor.id]?.[category.id]?.[value.id] || 'unknown';
+					const button = document.createElement('button');
+					button.type = 'button';
+					button.className = `logic-cell logic-cell--${mark}`;
+					button.textContent = mark === 'match' ? '●' : mark === 'exclude' ? '×' : '';
+					button.setAttribute(
+						'aria-label',
+						`${actor.label}, ${category.label}, ${value.label}, ${mark}`
+					);
+
+					button.addEventListener('click', () => {
+						if (context && typeof context.onLogicCell === 'function') {
+							context.onLogicCell(actor.id, category.id, value.id);
+						}
+					});
+
+					grid.appendChild(button);
+				});
+			});
+
+			categoryWrap.appendChild(grid);
+			board.appendChild(categoryWrap);
+		});
+
+		if (logic.progress) {
+			const footer = document.createElement('div');
+			footer.className = 'logic-footer';
+			footer.innerHTML = `
+				<span class="badge badge--tracked">correct ${this.escapeHtml(String(logic.progress.correctMatches))} / ${this.escapeHtml(String(logic.progress.totalMatches))}</span>
+				<span class="badge badge--critical">wrong ${this.escapeHtml(String(logic.progress.incorrectMatches))}</span>
+				${logic.progress.solved ? '<span class="badge badge--fresh">solved</span>' : ''}
+			`;
+			board.appendChild(footer);
+		}
+
+		targetEl.appendChild(board);
 	}
 
 	renderEvidence(targetEl, evidence) {
@@ -276,7 +373,7 @@ export class Renderer {
 			return;
 		}
 
-		const sortedMemories = [ ...memories ].sort((a, b) => b.stability - a.stability);
+		const sortedMemories = [...memories].sort((a, b) => b.stability - a.stability);
 		const list = document.createElement('div');
 		list.className = 'memory-list';
 
@@ -286,7 +383,7 @@ export class Renderer {
 			wrapper.innerHTML = `
 				<div class="memory-card__line">
 					<span class="memory-card__name">${this.escapeHtml(memory.label)}</span>
-					<span class="badge badge--${memory.stage}">${this.escapeHtml(memory.stage)}</span>
+					<span class="badge badge--${this.escapeHtml(memory.stage)}">${this.escapeHtml(memory.stage)}</span>
 					${memory.preserved === true ? '<span class="badge badge--anchor">anchored</span>' : ''}
 				</div>
 				<div>${this.escapeHtml(memory.currentText)}</div>
@@ -298,73 +395,60 @@ export class Renderer {
 	}
 
 	renderNode({ nodeView, choices, onChoice }) {
-		const kickerMarkup = nodeView.kicker
-			? `<div class="story-kicker">${this.escapeHtml(nodeView.kicker)}</div>`
-			: '';
+		if (this.storyEl) {
+			const kickerHtml = nodeView.kicker
+				? `<div class="story-kicker">${this.escapeHtml(nodeView.kicker)}</div>`
+				: '';
 
-		const paragraphs = String(nodeView.text || '')
-			.split(/\n{2,}/)
-			.filter(Boolean)
-			.map((paragraph) => `<p>${this.escapeHtml(paragraph)}</p>`)
-			.join('');
+			const paragraphs = String(nodeView.text || '')
+				.split(/\n{2,}/)
+				.filter(Boolean)
+				.map((paragraph) => `<p>${this.escapeHtml(paragraph)}</p>`)
+				.join('');
 
-		this.storyEl.innerHTML = `
-			${kickerMarkup}
-			<h2 class="story-title">${this.escapeHtml(nodeView.title || '')}</h2>
-			<div class="story-body">${paragraphs}</div>
-		`;
+			this.storyEl.innerHTML = `
+				${kickerHtml}
+				<h2 class="story-title">${this.escapeHtml(nodeView.title || '')}</h2>
+				<div class="story-body">${paragraphs}</div>
+			`;
+		}
 
-		this.choicesEl.innerHTML = '';
+		if (this.choicesEl) {
+			this.choicesEl.innerHTML = '';
 
-		choices.forEach((choice) => {
-			const button = document.createElement('button');
-			button.type = 'button';
-			button.className = 'choice-button';
-			button.disabled = choice.available === false || choice.disabled === true;
+			choices.forEach((choice) => {
+				const button = document.createElement('button');
+				button.type = 'button';
+				button.className = 'choice-button';
+				button.disabled = choice.disabled === true;
 
-			const choiceText = document.createElement('span');
-			choiceText.className = 'choice-text';
-			choiceText.textContent = choice.text || 'Continue';
-			button.appendChild(choiceText);
+				const note = choice.available === false && choice.unavailableText
+					? choice.unavailableText
+					: choice.note || '';
 
-			if ((choice.available === false || choice.disabled === true) && choice.unavailableText) {
-				const choiceNote = document.createElement('span');
-				choiceNote.className = 'choice-note';
-				choiceNote.textContent = choice.unavailableText;
-				button.appendChild(choiceNote);
-			}
+				button.innerHTML = `
+					<span class="choice-text">${this.escapeHtml(choice.text || 'Continue')}</span>
+					${note ? `<span class="choice-note">${this.escapeHtml(note)}</span>` : ''}
+				`;
 
-			button.addEventListener('click', () => {
-				if (choice.available === false || choice.disabled === true) {
-					return;
-				}
-
-				onChoice(choice);
+				button.addEventListener('click', () => onChoice(choice));
+				this.choicesEl.appendChild(button);
 			});
-
-			this.choicesEl.appendChild(button);
-		});
+		}
 	}
 
 	getMoodBadgeClass(mood) {
-		const normalizedMood = String(mood || 'guarded').toLowerCase();
-
-		switch (normalizedMood) {
-			case 'settled':
-				return 'badge--mood-settled';
-
+		switch (mood) {
 			case 'open':
 				return 'badge--mood-open';
-
+			case 'settled':
+				return 'badge--mood-settled';
 			case 'watchful':
 				return 'badge--mood-watchful';
-
 			case 'hostile':
 				return 'badge--mood-hostile';
-
 			case 'shaken':
 				return 'badge--mood-shaken';
-
 			case 'guarded':
 			default:
 				return 'badge--mood-guarded';
@@ -372,11 +456,11 @@ export class Renderer {
 	}
 
 	escapeHtml(value) {
-		return String(value)
-			.replaceAll('&', '&amp;')
-			.replaceAll('<', '&lt;')
-			.replaceAll('>', '&gt;')
-			.replaceAll('"', '&quot;')
-			.replaceAll("'", '&#039;');
+		return String(value ?? '')
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/"/g, '&quot;')
+			.replace(/'/g, '&#39;');
 	}
 }

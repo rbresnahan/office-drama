@@ -729,12 +729,10 @@ export const storyConfig = {
 			title: 'Betty is a fuse with lipstick.',
 			text(state) {
 				const betty = read.actorById(state, 'betty');
-				const bt = read.relationshipByPair(state, 'betty', 'tim');
 
 				return paragraphs(
 					'Betty is stirring coffee she is not going to drink. That means she is staying put long enough to spread information recreationally.',
 					betty ? `Current read: ${betty.currentSummary}` : null,
-					bt ? `Betty toward Tim currently reads as: ${bt.currentSummary}.` : null,
 					'You do not need her loyalty. You need her to find a more entertaining problem than yours.'
 				);
 			},
@@ -792,8 +790,7 @@ export const storyConfig = {
 				return paragraphs(
 					'Printers are where private stupidity becomes shared office furniture. Tim is here, hovering near the tray with the expression of a man who knows something and wishes he did not.',
 					tim ? `Current read on Tim: ${tim.currentSummary}` : null,
-					compromised ? `His trajectory feels like this: ${compromised.currentText}` : null,
-					'If you are paying attention, Tim reads like uncertainty with shoes on.'
+					compromised ? `His trajectory feels like this: ${compromised.currentText}` : null
 				);
 			},
 			choices: [
@@ -820,7 +817,6 @@ export const storyConfig = {
 						fx.actorAdd('tim', 'disposition', 12),
 						fx.actorAdd('tim', 'stability', 10),
 						fx.issueContain('reply-all', 10),
-						fx.relationshipAdd('tim', 'betty', -6),
 					],
 				}),
 				choice('Jam the printer so no one else gets a clean copy.', 'printer-bay', {
@@ -869,8 +865,7 @@ export const storyConfig = {
 				return paragraphs(
 					'Devon already looks tired of people discovering technology only when they need a miracle. This is not a miracle. It is systems triage with a witness problem.',
 					devon ? `Current read on Devon: ${devon.currentSummary}` : null,
-					replyAll ? `Operationally, the problem still looks like this: ${replyAll.currentText}` : null,
-					'Specificity calms him. Vagueness wastes his morning.'
+					replyAll ? `Operationally, the problem still looks like this: ${replyAll.currentText}` : null
 				);
 			},
 			choices: [
@@ -925,8 +920,7 @@ export const storyConfig = {
 				return paragraphs(
 					'Frank has the calm of a man who will let you panic at full volume and then summarize it in a paragraph for legal preservation.',
 					frank ? `Current read on Frank: ${frank.currentSummary}` : null,
-					hrIssue ? `Policy pressure currently feels like this: ${hrIssue.currentText}` : null,
-					'With Frank, confession beats improvisation. Liability is the only language he actually trusts.'
+					hrIssue ? `Policy pressure currently feels like this: ${hrIssue.currentText}` : null
 				);
 			},
 			choices: [
@@ -1039,14 +1033,12 @@ export const storyConfig = {
 				const replyAll = read.issueById(state, 'reply-all');
 				const hrAttention = read.issueById(state, 'hr-attention');
 				const dirtyResidue = read.issueById(state, 'dirty-residue');
-				const logicSolved = read.logicSolved(state);
 
 				return paragraphs(
 					'Everyone is here physically or almost here socially, which is basically the same thing in an office. This is the moment where all your containment either becomes narrative control or turns out to have been elaborate denial.',
 					replyAll ? `Main issue: ${replyAll.currentText}` : null,
 					hrAttention ? `HR pressure: ${hrAttention.currentText}` : null,
-					dirtyResidue ? `What your tactics are doing to you: ${dirtyResidue.currentText}` : null,
-					logicSolved ? 'You have a full read on the room.' : 'Your logic board is still incomplete. You are acting with partial certainty.'
+					dirtyResidue ? `What your tactics are doing to you: ${dirtyResidue.currentText}` : null
 				);
 			},
 			choices: [

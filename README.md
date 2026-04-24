@@ -55,7 +55,9 @@ This pass adds a middle layer the earlier sandbox did not have.
 - **Offscreen propagation** so issues can move between actors without direct player input.
 - **Issue precision decay** that gets worse when too many unresolved issues exist at once.
 - **Actor and issue effect helpers** so story actions can manipulate people and crises directly.
-- **Generalized sidebar rendering** so the UI can show issues, coworkers, signals, and memory instead of pretending every prototype is the same game.
+- **Relationship state** so side conflicts can be created instead of only narrated.
+- **A logic-board system** with hidden trait truths, player marks, and solve tracking.
+- **Generalized sidebar rendering** so the UI can show issues, coworkers, logic, and memory instead of pretending every prototype is the same game.
 
 ### Scenario shift
 
@@ -99,6 +101,18 @@ Each actor can track:
 - talkativeness
 - issue knowledge
 - office connections
+
+The world can also track directional relationships between coworkers so a small lie can create a second-order office fire instead of only a one-line flavor change.
+
+### Logic Board
+
+The office prototype now includes a hidden deduction layer.
+
+A subset of coworkers each has one true value in each logic category.
+The player marks cells on the board while learning who is vulnerable to what and which approach works best on them.
+
+The board is not the whole game.
+It is the quiet structural layer under the social mess.
 
 ### Propagation
 
@@ -162,10 +176,11 @@ The entry point is `main.js`, which imports `assets/js/app.js`.
 Good next additions after this pass:
 
 - location-aware actor movement
+- logic truths that mutate into a second connected board after a major event
 - reusable propagation rules by relationship type
 - player action categories instead of scene-specific handcrafted verbs
 - residue dashboards and searchable issue history
-- save/load
+ save/load
 - debug overlays for actor knowledge and issue truth
 
 Bad idea too early:

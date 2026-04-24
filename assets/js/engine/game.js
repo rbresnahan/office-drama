@@ -258,9 +258,6 @@ export class Game {
 				knowsTag: (tag) => knowsTag(this.state, tag),
 				countEvidenceByTag: (tag) => countEvidenceByTag(this.state, tag),
 				countActorsKnowingIssue: (issueId, minimumLevel = 'heard') => countActorsKnowingIssue(this.state, issueId, minimumLevel),
-				isLogicSolved: () => isLogicSolved(this.state),
-			},
-			handlers: {
 				onLogicCell: (actorId, categoryId, valueId) => this.cycleLogicCell(actorId, categoryId, valueId),
 			},
 		});
