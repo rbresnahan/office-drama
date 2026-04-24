@@ -209,18 +209,38 @@ export class Renderer {
 
 		actors.forEach((actor) => {
 			const wrapper = document.createElement('div');
-			wrapper.className = 'actor-item actor-item--compact';
+			wrapper.className = `actor-item actor-item--${actor.isSubject === true ? 'subject' : 'standard'}`;
 
 			const moodClass = this.getMoodBadgeClass(actor.currentMood);
+			const deliveryLabel = actor.deliveryState || 'not_received';
+			const knowledgeLabel = actor.knowledgeState || 'none';
+			const subjectBadge = actor.isSubject === true
+				? '<span class="badge badge--critical">target</span>'
+				: '';
+
+			const subjectState = actor.isSubject === true
+				? `<span class="badge badge--watch">${this.escapeHtml(actor.subjectAwarenessState || 'unaware')}</span>`
+				: '';
 
 			wrapper.innerHTML = `
-				<div class="actor-compact-line">
-					<strong>${this.escapeHtml(actor.name)}</strong>,
-					<span>${this.escapeHtml(actor.role)}</span>,
-					<span>${this.escapeHtml(actor.location)}</span>,
-					<span class="badge ${this.escapeHtml(moodClass)}">${this.escapeHtml(actor.currentMood)}</span>
+				<div class="actor-card__line">
+					<div class="actor-card__headline">
+						<strong>${this.escapeHtml(actor.name)}</strong>
+						<span class="actor-card__role">${this.escapeHtml(actor.role || 'Staff')}</span>
+					</div>
+					<div class="actor-card__badges">
+						${subjectBadge}
+						${subjectState}
+						<span class="badge ${this.escapeHtml(moodClass)}">${this.escapeHtml(actor.currentMood || 'guarded')}</span>
+					</div>
 				</div>
 				<div class="actor-compact-note">${this.escapeHtml(actor.currentSummary || '')}</div>
+				<div class="meter-row">
+					<span>like ${this.escapeHtml(String(actor.playerLikability ?? '0'))}</span>
+					<span>suspicion ${this.escapeHtml(String(actor.playerSuspicion ?? actor.suspicion ?? '0'))}</span>
+					<span>${this.escapeHtml(deliveryLabel)}</span>
+					<span>${this.escapeHtml(knowledgeLabel)}</span>
+				</div>
 			`;
 
 			list.appendChild(wrapper);
@@ -388,6 +408,7 @@ export class Renderer {
 				</div>
 				<div>${this.escapeHtml(memory.currentText)}</div>
 			`;
+
 			list.appendChild(wrapper);
 		});
 

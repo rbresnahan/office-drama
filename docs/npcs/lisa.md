@@ -2,11 +2,11 @@
 
 ### Identity
 - Role: Office Administrator
-- Age Range: Late 30s to early 40s
-- Status: Married
-- Kids: 1 or 2
-- Public Persona: Pleasant, reliable, socially easy
-- Private Nature: Observant, patient, quietly opinionated
+- Age Range: Late 20s to early 30s
+- Status: Single
+- Kids: 0
+- Public Persona: Pleasant, reliable, patient, socially easy
+- Private Nature: Observant, quietly opinionated, slight risk taker, street smart
 - Core Trait: Relational stabilizer
 - Weakness: Being taken for granted
 - Trigger: Realizing someone is using her kindness as cover

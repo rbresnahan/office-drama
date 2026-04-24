@@ -1,8 +1,8 @@
 export const APP_DATA = {
 	title: 'Reply All',
-	eyebrow: 'Contain the message before the office decides what it means.',
+	eyebrow: 'Delay discovery. Shape the room. Survive the reveal.',
 	subtitle:
-		'One bad email. Six coworkers. Too many ways to stop the damage and only some of them let you keep your soul.',
+		'You sent a bad email about one coworker. Recall only partly worked. Keep them from finding out too early—and if they do, survive the fallout.',
 };
 
 export const DEFAULT_MEMORY_TUNING = {

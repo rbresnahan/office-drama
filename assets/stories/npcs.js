@@ -1,0 +1,163 @@
+function clone(value) {
+	return JSON.parse(JSON.stringify(value));
+}
+
+export const NPC_ORDER = [
+	'betty',
+	'tim',
+	'frank',
+	'celia',
+	'devon',
+	'lisa',
+];
+
+export const NPC_SEEDS = {
+	betty: {
+		id: 'betty',
+		name: 'Betty',
+		role: 'Operations Coordinator',
+		playerLikability: 65,
+		playerSuspicion: 0,
+		mood: 'engaged',
+		deliveryState: 'not_received',
+		knowledgeState: 'none',
+		isSubject: false,
+		subjectAwarenessState: 'unaware',
+		primaryAllyId: 'tim',
+		secondaryAllyId: 'lisa',
+		rivalId: 'celia',
+		traits: {
+			intelligence: 45,
+			socialAwareness: 85,
+			courage: 60,
+			gossipAppetite: 95,
+			ruleFollowing: 25,
+			gullibility: 35,
+		},
+	},
+	tim: {
+		id: 'tim',
+		name: 'Tim',
+		role: 'Analyst',
+		playerLikability: 55,
+		playerSuspicion: 0,
+		mood: 'cautious',
+		deliveryState: 'not_received',
+		knowledgeState: 'none',
+		isSubject: false,
+		subjectAwarenessState: 'unaware',
+		primaryAllyId: 'betty',
+		secondaryAllyId: 'frank',
+		rivalId: null,
+		traits: {
+			intelligence: 65,
+			socialAwareness: 55,
+			courage: 30,
+			gossipAppetite: 40,
+			ruleFollowing: 85,
+			gullibility: 55,
+		},
+	},
+	frank: {
+		id: 'frank',
+		name: 'Frank',
+		role: 'HR Manager',
+		playerLikability: 50,
+		playerSuspicion: 0,
+		mood: 'neutral',
+		deliveryState: 'not_received',
+		knowledgeState: 'none',
+		isSubject: false,
+		subjectAwarenessState: 'unaware',
+		primaryAllyId: 'celia',
+		secondaryAllyId: 'tim',
+		rivalId: 'betty',
+		traits: {
+			intelligence: 85,
+			socialAwareness: 75,
+			courage: 70,
+			gossipAppetite: 45,
+			ruleFollowing: 90,
+			gullibility: 15,
+		},
+	},
+	celia: {
+		id: 'celia',
+		name: 'Celia',
+		role: 'Accounting',
+		playerLikability: 48,
+		playerSuspicion: 0,
+		mood: 'distant',
+		deliveryState: 'not_received',
+		knowledgeState: 'none',
+		isSubject: false,
+		subjectAwarenessState: 'unaware',
+		primaryAllyId: 'frank',
+		secondaryAllyId: 'lisa',
+		rivalId: 'betty',
+		traits: {
+			intelligence: 88,
+			socialAwareness: 82,
+			courage: 78,
+			gossipAppetite: 30,
+			ruleFollowing: 80,
+			gullibility: 12,
+		},
+	},
+	devon: {
+		id: 'devon',
+		name: 'Devon',
+		role: 'IT / Systems Administrator',
+		playerLikability: 70,
+		playerSuspicion: 0,
+		mood: 'detached',
+		deliveryState: 'not_received',
+		knowledgeState: 'none',
+		isSubject: false,
+		subjectAwarenessState: 'unaware',
+		primaryAllyId: null,
+		secondaryAllyId: 'frank',
+		rivalId: null,
+		traits: {
+			intelligence: 90,
+			socialAwareness: 68,
+			courage: 55,
+			gossipAppetite: 15,
+			ruleFollowing: 55,
+			gullibility: 10,
+		},
+	},
+	lisa: {
+		id: 'lisa',
+		name: 'Lisa',
+		role: 'Office Administrator',
+		playerLikability: 78,
+		playerSuspicion: 0,
+		mood: 'warm',
+		deliveryState: 'not_received',
+		knowledgeState: 'none',
+		isSubject: false,
+		subjectAwarenessState: 'unaware',
+		primaryAllyId: 'player',
+		secondaryAllyId: 'betty',
+		rivalId: null,
+		traits: {
+			intelligence: 72,
+			socialAwareness: 88,
+			courage: 58,
+			gossipAppetite: 48,
+			ruleFollowing: 62,
+			gullibility: 28,
+		},
+	},
+};
+
+export function createNpcRoster() {
+	return NPC_ORDER.map((id) => clone(NPC_SEEDS[id]));
+}
+
+export function getNpcSeed(id) {
+	const seed = NPC_SEEDS[id];
+
+	return seed ? clone(seed) : null;
+}

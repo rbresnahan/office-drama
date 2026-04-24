@@ -61,6 +61,7 @@ function setAtPath(target, path, value) {
 const KNOWLEDGE_RANK = {
 	none: 0,
 	heard: 1,
+	suspects: 2,
 	repeated: 2,
 	confirmed: 3,
 	involved: 4,
@@ -73,7 +74,7 @@ function normalizeKnowledge(knowledge = {}) {
 		if (typeof value === 'string') {
 			normalized[issueId] = {
 				level: value,
-				confidence: value === 'confirmed' ? 80 : 55,
+				confidence: value === 'confirmed' ? 80 : value === 'suspects' ? 65 : 55,
 				source: 'seed',
 			};
 			return;
@@ -175,12 +176,89 @@ function createLogicState(seed = {}, actors = []) {
 	return logic;
 }
 
+function deriveConnections(seed = {}) {
+	if (Array.isArray(seed.connections) && seed.connections.length) {
+		return [ ...seed.connections ];
+	}
+
+	const derived = [ seed.primaryAllyId, seed.secondaryAllyId ]
+		.filter(Boolean)
+		.filter((id) => id !== 'player');
+
+	return Array.from(new Set(derived));
+}
+
+function deriveDisposition(seed = {}) {
+	if (typeof seed.disposition === 'number') {
+		return seed.disposition;
+	}
+
+	if (typeof seed.playerLikability === 'number') {
+		return clamp(seed.playerLikability - 50, -100, 100);
+	}
+
+	return 0;
+}
+
+function deriveSuspicion(seed = {}) {
+	if (typeof seed.suspicion === 'number') {
+		return seed.suspicion;
+	}
+
+	if (typeof seed.playerSuspicion === 'number') {
+		return seed.playerSuspicion;
+	}
+
+	return 0;
+}
+
+function deriveStability(seed = {}) {
+	if (typeof seed.stability === 'number') {
+		return seed.stability;
+	}
+
+	const courage = Number(seed?.traits?.courage);
+	const ruleFollowing = Number(seed?.traits?.ruleFollowing);
+
+	if (!Number.isNaN(courage) || !Number.isNaN(ruleFollowing)) {
+		const values = [ courage, ruleFollowing ].filter((value) => Number.isFinite(value));
+		const average = values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 60;
+
+		return clamp(Math.round(average), 0, 100);
+	}
+
+	return 60;
+}
+
+function deriveTalkativeness(seed = {}) {
+	if (typeof seed.talkativeness === 'number') {
+		return seed.talkativeness;
+	}
+
+	const gossipAppetite = Number(seed?.traits?.gossipAppetite);
+
+	if (Number.isFinite(gossipAppetite)) {
+		return clamp(gossipAppetite, 0, 100);
+	}
+
+	return 50;
+}
+
 export function createInitialState(baseInitialState = {}) {
 	const state = deepClone(baseInitialState);
 
 	state.turn = Number(state.turn) || 0;
 	state.stats = state.stats || {};
 	state.flags = state.flags || {};
+	state.emailTargetId = state.emailTargetId || state.flags.emailTargetId || null;
+	state.deliveryPatternId = state.deliveryPatternId || state.flags.deliveryPatternId || null;
+	state.officeFocusState = state.officeFocusState || 'background';
+	state.gamePhase = state.gamePhase || 'containment';
+	state.fairIntervention = state.fairIntervention || {
+		pending: false,
+		minimumTurnsRemaining: 0,
+		subjectCanAutoRead: false,
+	};
 	state.evidence = Array.isArray(state.evidence) ? state.evidence : [];
 	state.memories = Array.isArray(state.memories) ? state.memories.map(createMemoryFromSeed) : [];
 	state.issues = Array.isArray(state.issues) ? state.issues.map(createIssueFromSeed) : [];
@@ -265,14 +343,25 @@ export function createActorFromSeed(seed = {}) {
 		name: seed.name || seed.id || 'Coworker',
 		role: seed.role || 'Staff',
 		location: seed.location || 'Office',
-		disposition: typeof seed.disposition === 'number' ? seed.disposition : 0,
-		stability: typeof seed.stability === 'number' ? seed.stability : 60,
-		suspicion: typeof seed.suspicion === 'number' ? seed.suspicion : 0,
-		talkativeness: typeof seed.talkativeness === 'number' ? seed.talkativeness : 50,
+		disposition: deriveDisposition(seed),
+		stability: deriveStability(seed),
+		suspicion: deriveSuspicion(seed),
+		talkativeness: deriveTalkativeness(seed),
 		pressure: typeof seed.pressure === 'number' ? seed.pressure : 0,
-		connections: Array.isArray(seed.connections) ? [ ...seed.connections ] : [],
+		connections: deriveConnections(seed),
 		knowledge: normalizeKnowledge(seed.knowledge),
 		beliefs: seed.beliefs ? deepClone(seed.beliefs) : {},
+		playerLikability: typeof seed.playerLikability === 'number' ? seed.playerLikability : clamp(deriveDisposition(seed) + 50, 0, 100),
+		playerSuspicion: typeof seed.playerSuspicion === 'number' ? seed.playerSuspicion : deriveSuspicion(seed),
+		mood: seed.mood || null,
+		deliveryState: seed.deliveryState || 'not_received',
+		knowledgeState: seed.knowledgeState || 'none',
+		isSubject: seed.isSubject === true,
+		subjectAwarenessState: seed.subjectAwarenessState || 'unaware',
+		primaryAllyId: seed.primaryAllyId || null,
+		secondaryAllyId: seed.secondaryAllyId || null,
+		rivalId: seed.rivalId || null,
+		traits: deepClone(seed.traits || {}),
 		currentMood: 'guarded',
 		currentSummary: '',
 	};
@@ -282,11 +371,23 @@ export function createActorFromSeed(seed = {}) {
 }
 
 export function createRelationshipFromSeed(seed = {}) {
+	const leftId = seed.leftId || seed.from;
+	const rightId = seed.rightId || seed.to;
+	const bondStrength = typeof seed.bondStrength === 'number' ? seed.bondStrength : null;
 	const relationship = {
-		id: seed.id || `${seed.from}:${seed.to}`,
-		from: seed.from,
-		to: seed.to,
-		value: typeof seed.value === 'number' ? seed.value : 0,
+		id: seed.id || seed.pairId || `${leftId}:${rightId}`,
+		pairId: seed.pairId || null,
+		leftId: leftId || null,
+		rightId: rightId || null,
+		from: leftId || seed.from,
+		to: rightId || seed.to,
+		value: typeof seed.value === 'number' ? seed.value : (bondStrength !== null ? clamp(bondStrength - 50, -100, 100) : 0),
+		bondStrength,
+		sentimentTransferStrength: typeof seed.sentimentTransferStrength === 'number' ? seed.sentimentTransferStrength : null,
+		isMutual: seed.isMutual !== false,
+		isActive: seed.isActive !== false,
+		strain: typeof seed.strain === 'number' ? seed.strain : 0,
+		isolatedUntilTurn: seed.isolatedUntilTurn ?? null,
 		currentLabel: 'neutral',
 		currentSummary: '',
 	};
@@ -308,7 +409,14 @@ export function findActorById(state, id) {
 }
 
 export function findRelationship(state, from, to) {
-	return state.relationships.find((relationship) => relationship.from === from && relationship.to === to) || null;
+	return state.relationships.find((relationship) => {
+		const directMatch = relationship.from === from && relationship.to === to;
+		const pairMatch = relationship.leftId === from && relationship.rightId === to;
+		const reversePairMatch = relationship.isMutual === true && relationship.leftId === to && relationship.rightId === from;
+		const reverseLegacyMatch = relationship.isMutual === true && relationship.from === to && relationship.to === from;
+
+		return directMatch || pairMatch || reversePairMatch || reverseLegacyMatch;
+	}) || null;
 }
 
 function ensureRelationship(state, from, to) {
@@ -318,7 +426,7 @@ function ensureRelationship(state, from, to) {
 		return existing;
 	}
 
-	const relationship = createRelationshipFromSeed({ from, to, value: 0 });
+	const relationship = createRelationshipFromSeed({ from, to, value: 0, isMutual: false });
 	state.relationships.push(relationship);
 	return relationship;
 }
@@ -482,6 +590,7 @@ export function setActorKnowledge(state, actorId, issueId, level = 'heard', conf
 		actor.knowledge[issueId].confidence = Math.max(actor.knowledge[issueId].confidence, Number(confidence) || 0);
 	}
 
+	actor.knowledgeState = actor.knowledge[issueId].level;
 	applyActorPresentation(actor);
 	return actor.knowledge[issueId];
 }
@@ -506,8 +615,16 @@ export function adjustActor(state, actorId, path, value, mode = 'set') {
 		actor.disposition = clamp(actor.disposition, -100, 100);
 	}
 
+	if (typeof actor.playerLikability === 'number') {
+		actor.playerLikability = clamp(actor.playerLikability, 0, 100);
+	}
+
 	if (typeof actor.suspicion === 'number') {
 		actor.suspicion = clamp(actor.suspicion, 0, 100);
+	}
+
+	if (typeof actor.playerSuspicion === 'number') {
+		actor.playerSuspicion = clamp(actor.playerSuspicion, 0, 100);
 	}
 
 	if (typeof actor.stability === 'number') {
@@ -516,6 +633,14 @@ export function adjustActor(state, actorId, path, value, mode = 'set') {
 
 	if (typeof actor.pressure === 'number') {
 		actor.pressure = clamp(actor.pressure, 0, 100);
+	}
+
+	if (path === 'playerLikability' && typeof actor.playerLikability === 'number') {
+		actor.disposition = clamp(actor.playerLikability - 50, -100, 100);
+	}
+
+	if (path === 'playerSuspicion' && typeof actor.playerSuspicion === 'number') {
+		actor.suspicion = actor.playerSuspicion;
 	}
 
 	applyActorPresentation(actor);
@@ -958,19 +1083,38 @@ export function applyActorPresentation(actor) {
 	let mood = 'guarded';
 	let summary = 'Watching the room and choosing words carefully.';
 
-	if (actor.suspicion >= 70) {
+	if (actor.isSubject === true) {
+		if (actor.subjectAwarenessState === 'confirmed') {
+			mood = 'hostile';
+			summary = 'They know the email is about them. Clean containment is over.';
+		} else if (actor.subjectAwarenessState === 'suspicious' || actor.subjectAwarenessState === 'at_risk') {
+			mood = 'watchful';
+			summary = 'One bad beat away from realizing the room is behaving strangely around them.';
+		}
+	}
+
+	if (actor.deliveryState === 'received_unread' && actor.isSubject !== true) {
+		mood = 'watchful';
+		summary = 'They have the message but have not opened it yet.';
+	}
+
+	if (actor.deliveryState === 'received_read' && actor.isSubject !== true) {
+		summary = 'They have seen the email and are now part of the spread risk.';
+	}
+
+	if (actor.playerSuspicion >= 70 || actor.suspicion >= 70) {
 		mood = 'watchful';
 		summary = 'Tracking motives, timing, and anything that smells wrong.';
-	} else if (actor.disposition <= -25) {
+	} else if (actor.playerLikability <= 25 || actor.disposition <= -25) {
 		mood = 'hostile';
 		summary = 'Ready to make your day worse if given an excuse.';
-	} else if (actor.disposition >= 25 && actor.stability >= 55) {
+	} else if ((actor.playerLikability >= 65 || actor.disposition >= 25) && actor.stability >= 55) {
 		mood = 'open';
 		summary = 'Still reachable if you do not push too hard.';
 	} else if (actor.stability <= 35) {
 		mood = 'shaken';
 		summary = 'Unsteady enough to talk, react, or make this bigger.';
-	} else if (actor.pressure <= 15 && actor.suspicion <= 20) {
+	} else if (actor.pressure <= 15 && actor.playerSuspicion <= 20 && actor.suspicion <= 20) {
 		mood = 'settled';
 		summary = 'Not calm exactly, but not looking for blood either.';
 	}
@@ -982,17 +1126,21 @@ export function applyActorPresentation(actor) {
 function applyRelationshipPresentation(relationship) {
 	let label = 'neutral';
 	let summary = 'No strong lean.';
+	const effectiveValue = clamp((Number(relationship.value) || 0) - (Number(relationship.strain) || 0), -100, 100);
 
-	if (relationship.value <= -60) {
+	if (relationship.isActive === false) {
+		label = 'inactive';
+		summary = 'Currently offline as a reliable path.';
+	} else if (effectiveValue <= -60) {
 		label = 'hostile';
 		summary = 'Actively adversarial.';
-	} else if (relationship.value <= -20) {
+	} else if (effectiveValue <= -20) {
 		label = 'strained';
 		summary = 'Cold enough to create friction.';
-	} else if (relationship.value >= 60) {
+	} else if (effectiveValue >= 60) {
 		label = 'allied';
 		summary = 'Likely to protect or support.';
-	} else if (relationship.value >= 20) {
+	} else if (effectiveValue >= 20) {
 		label = 'warm';
 		summary = 'Generally favorable.';
 	}

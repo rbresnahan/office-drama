@@ -13,7 +13,6 @@ import {
 	cycleLogicCell,
 	decayIssues,
 	decayMemories,
-	exposeIssue,
 	findActorById,
 	findIssueById,
 	findRelationship,
@@ -26,6 +25,7 @@ import {
 	setActorKnowledge,
 	setIssueLifecycle,
 	shiftIssuePrecision,
+	exposeIssue,
 } from './state.js';
 
 export class Game {
@@ -112,6 +112,18 @@ export class Game {
 	advanceTurn() {
 		this.state.turn += 1;
 
+		if (this.state.fairIntervention && this.state.fairIntervention.pending === true) {
+			const remaining = Number(this.state.fairIntervention.minimumTurnsRemaining) || 0;
+
+			if (remaining > 0) {
+				this.state.fairIntervention.minimumTurnsRemaining = Math.max(remaining - 1, 0);
+			}
+
+			if ((Number(this.state.fairIntervention.minimumTurnsRemaining) || 0) <= 0) {
+				this.state.fairIntervention.subjectCanAutoRead = true;
+			}
+		}
+
 		const memorySignals = decayMemories(this.state, this.turnRules.memoryDecay || {});
 		memorySignals.forEach((message) => {
 			this.addEvent(message);
@@ -122,13 +134,17 @@ export class Game {
 			this.addEvent(message);
 		});
 
-		const propagationSignals = propagateIssues(this.state, this.turnRules.issueDecay || {});
-		propagationSignals.forEach((message) => {
+		const worldHelpers = this.getWorldHelpers();
+		const spreadSignals = typeof this.turnRules.spreadStep === 'function'
+			? this.turnRules.spreadStep(this.state, worldHelpers) || []
+			: propagateIssues(this.state, this.turnRules.issueDecay || {});
+
+		spreadSignals.forEach((message) => {
 			this.addEvent(message);
 		});
 
 		if (typeof this.turnRules.worldStep === 'function') {
-			this.turnRules.worldStep(this.state, this.getWorldHelpers());
+			this.turnRules.worldStep(this.state, worldHelpers);
 		}
 
 		(this.turnRules.events || []).forEach((eventData) => {

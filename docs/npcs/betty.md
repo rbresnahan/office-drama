@@ -6,13 +6,13 @@
 - Status: Married
 - Kids: 0
 - Public Persona: Bubbly, funny, socially magnetic
-- Private Nature: Competitive, petty, insecure when ignored
+- Private Nature: Competitive, high-sensation seeker, dislikes physical danger, values intense feelings
 - Core Trait: Social opportunist
 - Weakness: Jealousy
 - Trigger: Feeling replaced, excluded, or made to look unimportant
 
 ### Player-Facing State
-- Starting PlayerLikability: 69
+- Starting PlayerLikability: 65
 - Starting PlayerSuspicion: 0
 - Starting Mood: Engaged
 - Initial Read: Feels friendly, but her attention is never neutral
@@ -36,10 +36,10 @@
 - Sentiment Transfer Strength: 75
 - Hidden Bond Truth: Betty and Tim are tight, but both are more loyal to the emotional comfort of the relationship than to any real principle
 - Break Condition: Jealousy, visible selfishness, public embarrassment, feeling abandoned
-- Reinforcement Condition: Shared gossip, private validation, being treated like an insider
+- Reinforcement Condition: Shared gossip, private validation, being treated like an insider, low-risk adventure
 
 ### Manipulation Hooks
-- Best Way To Persuade: Redirect her toward a shinier social target
+- Best Way To Persuade: Redirect her toward a shinier social target, being included in an adventure
 - Worst Way To Persuade: Moralize at her or ask her to behave for the good of the group
 - What They Want: Relevance, entertainment, social leverage
 - What They Fear: Looking foolish, looking needy, becoming socially unimportant

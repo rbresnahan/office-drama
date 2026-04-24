@@ -1,191 +1,170 @@
-# Reply All Prototype
+# Reply All
 
-A browser-based narrative pressure sandbox built around **unstable information, social propagation, issue containment, degrading certainty, and dirty short-term solutions that leave residue**.
-
-This is no longer just a memory-mystery toy.
-
-The current prototype is aimed at a grounded office crisis:
-
-- you send one bad gossip email
-- it goes to the wrong people
-- coworkers begin interpreting, spreading, and weaponizing it
-- you try to contain the fallout before the office hardens around an official story
-
-The setting is intentionally ordinary because the real subject is not "office comedy."
-
-The real subject is:
-
-**people under pressure acting on unstable information.**
+A browser-based office sabotage prototype built around one bad email, partial recall failure, social spread, and late-stage fallout management.
 
 ## Current Design Goal
 
-The project is now trying to prove a reusable pressure-logic core through one small, ugly, legible scenario.
+The current prototype is focused on one small but nasty scenario:
 
-The office scenario is the stress test.
+- you send a bad email about one coworker
+- recall only partially works
+- some people receive it
+- some people read it
+- you try to stop the office from hardening around the worst version of events
+- if the subject reads it early, the run shifts into end-game / defensive mode
+- the ideal outcome is that the subject first learns about it at the all-hands, under conditions the player has shaped
 
-It lets the engine exercise:
+This is not trying to be a giant human simulator.
 
-- active problem objects instead of only loose flags
-- per-actor social state
-- offscreen propagation
-- degrading issue precision under pressure
-- containment that can fail later
-- underhanded actions with lingering blowback
+It is trying to prove a small, replayable pressure system with:
+- concrete actions
+- social propagation
+- hidden player sentiment
+- relationship-driven spread
+- readable escalation
+- and a strong public climax
 
-The abstraction is broader than the theme.
+## Prototype Pillars
 
-Future skins could still include:
+### 1. One selected subject
+Each run selects one existing NPC as the subject of the email.
 
-- social sabotage
-- trapped-space horror
-- corporate dystopia
-- sealed-facility survival
-- post-collapse rumor systems
+### 2. Partial recall
+The player can never fully unsend the email.
+The opening state is created by who received it and whether they have read it.
 
-But this pass is deliberately focused on making one contained scenario actually work.
+### 3. Fair intervention
+If the subject got the email, the player must still get at least one meaningful chance to intervene before the subject auto-reads it.
 
-## What Changed In This Pass
+### 4. Per-turn spread
+The office updates in turns.
+People tell allies, escalate upward, or carry rumors based on who they are and what the player failed to contain.
 
-This pass adds a middle layer the earlier sandbox did not have.
+### 5. End-game shift
+Once the subject reads the email, the run is no longer clean prevention.
+It becomes fallout management, reframing, scapegoating, and survival.
 
-### New engine support
+### 6. All-hands payoff
+The all-hands is the public resolution chamber.
+It should reflect the room the player created, not just one final button press.
 
-- **Issue objects** with lifecycle, containment, spread risk, severity, and degrading precision.
-- **Actor objects** with disposition, suspicion, stability, talkativeness, connections, and per-issue knowledge.
-- **Offscreen propagation** so issues can move between actors without direct player input.
-- **Issue precision decay** that gets worse when too many unresolved issues exist at once.
-- **Actor and issue effect helpers** so story actions can manipulate people and crises directly.
-- **Relationship state** so side conflicts can be created instead of only narrated.
-- **A logic-board system** with hidden trait truths, player marks, and solve tracking.
-- **Generalized sidebar rendering** so the UI can show issues, coworkers, logic, and memory instead of pretending every prototype is the same game.
+## Current Cast
 
-### Scenario shift
+Prototype 1 uses six NPCs:
 
-The demo story is now an office-pressure prototype instead of the original blackout investigation sample.
+- Betty
+- Tim
+- Frank
+- Celia
+- Devon
+- Lisa
 
-The player is trying to contain a reply-all disaster before an all-hands meeting locks the office into a version of events.
+These six are enough to support:
+- a strong social alliance
+- a procedural alliance
+- a player-trust relationship
+- a fact-driven outlier
+- blame shifts
+- rumor chains
+- intervention risk
+- and replayable variation
 
-## Core Model
+## Core Design Docs
 
-### Reality
+The design-side source of truth lives in `docs/`.
 
-The engine still keeps an underlying truth.
+Important files:
+- `docs/legend.md`
+- `docs/relationships.md`
+- `docs/actions-phase-1.md`
+- `docs/email-spread.md`
+- `docs/spread-resolution.md`
+- `docs/all-hands-rules.md`
+- `docs/run-setup.md`
+- `docs/npcs/`
 
-### Memory
+These files are used to lock system meaning before implementation changes are made.
 
-The player does not keep clean access to every detail. Memory can still fade, compress, distort, or collapse.
+## Current Project Structure
 
-### Issues
+    .
+    ├── README.md
+    ├── assets
+    │   ├── js
+    │   │   ├── app.js
+    │   │   └── engine
+    │   │       ├── effects.js
+    │   │       ├── game.js
+    │   │       ├── guards.js
+    │   │       ├── renderer.js
+    │   │       ├── state.js
+    │   │       └── story-helpers.js
+    │   └── stories
+    │       └── demo-story.js
+    ├── data.js
+    ├── docs
+    │   ├── README.md
+    │   ├── STATUS.md
+    │   ├── actions-phase-1.md
+    │   ├── all-hands-rules.md
+    │   ├── email-spread.md
+    │   ├── legend.md
+    │   ├── npcs
+    │   │   ├── betty.md
+    │   │   ├── celia.md
+    │   │   ├── devon.md
+    │   │   ├── frank.md
+    │   │   ├── lisa.md
+    │   │   ├── npc-template.md
+    │   │   └── tim.md
+    │   ├── relationships.md
+    │   ├── run-setup.md
+    │   └── spread-resolution.md
+    ├── index.html
+    ├── main.js
+    └── style.css
 
-Problems now exist as explicit world objects.
+## Current Engine Reality
 
-An issue can be:
+The codebase still contains earlier prototype structures and UI elements from the prior sandbox phase.
 
-- warming
-- active
-- contained
-- reactivated
-- resolved
+That is fine.
 
-Each issue tracks how severe it is, how fast it can spread, how well it is currently contained, and how precisely the player still understands it.
+The next implementation pass should focus on translating the current docs into live story data and state before doing broader cleanup.
 
-### Actors
-
-Coworkers are no longer just names inside hand-authored text.
-
-Each actor can track:
-
-- relationship/disposition
-- suspicion
-- stability
-- talkativeness
-- issue knowledge
-- office connections
-
-The world can also track directional relationships between coworkers so a small lie can create a second-order office fire instead of only a one-line flavor change.
-
-### Logic Board
-
-The office prototype now includes a hidden deduction layer.
-
-A subset of coworkers each has one true value in each logic category.
-The player marks cells on the board while learning who is vulnerable to what and which approach works best on them.
-
-The board is not the whole game.
-It is the quiet structural layer under the social mess.
-
-### Propagation
-
-The office updates offscreen as turns advance.
-
-People talk. Problems drift. Containment leaks.
-
-The player is not the only thing moving pieces on the board anymore.
-
-## Project Structure
-
-.
-├── README.md
-├── assets
-│   ├── js
-│   │   ├── app.js
-│   │   └── engine
-│   │       ├── effects.js
-│   │       ├── game.js
-│   │       ├── guards.js
-│   │       ├── renderer.js
-│   │       ├── state.js
-│   │       └── story-helpers.js
-│   └── stories
-│       └── demo-story.js
-├── data.js
-├── index.html
-├── main.js
-└── style.css
-
-## Authoring Notes
-
-The story helpers still keep authoring lightweight.
-
-You can still declare scenes with `scene()` and `choice()`.
-
-You now also have effect helpers for actors and issues, such as:
-
-- `fx.actorAdd('betty', 'disposition', 12)`
-- `fx.actorKnowledge('tim', 'reply-all', 'heard', 70, 'betty')`
-- `fx.issueContain('reply-all', 18)`
-- `fx.issueExpose('reply-all', 12)`
-- `fx.issueLifecycle('hr-attention', 'active')`
-- `fx.issueAdd('reply-all', 'spreadRisk', 8)`
-
-And condition/read helpers for questions like:
-
-- does this actor know the issue?
-- how suspicious is HR?
-- is the main issue still active?
-- how contained is the problem right now?
+In other words:
+- do not rebuild the engine first
+- move the live design into data first
+- then wire behavior to it
+- then simplify whatever no longer belongs
 
 ## Running It
 
-Open `index.html` in a browser.
+Serve locally and open in a browser.
 
-The entry point is `main.js`, which imports `assets/js/app.js`.
+Example:
 
-## Next Smart Expansions
+    python3 -m http.server 8000
 
-Good next additions after this pass:
+Then visit:
 
-- location-aware actor movement
-- logic truths that mutate into a second connected board after a major event
-- reusable propagation rules by relationship type
-- player action categories instead of scene-specific handcrafted verbs
-- residue dashboards and searchable issue history
- save/load
-- debug overlays for actor knowledge and issue truth
+    http://localhost:8000
 
-Bad idea too early:
+## Development Rule
 
-- giant office maps
-- procedural story generation
-- fake AI dialogue systems with no readable state model
-- trying to make the engine universal before this slice earns it
+Prototype first.
+
+Do not expand scope just because a system sounds interesting.
+
+Priority order:
+1. readable systems
+2. concrete actions
+3. reactive social fallout
+4. strong public climax
+5. replayability
+
+Not priority:
+- giant realism
+- huge cast
+- perfect simulation
+- procedural dialogue sludge

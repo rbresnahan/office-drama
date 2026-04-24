@@ -12,7 +12,7 @@
 - Trigger: Being treated like he is dumb or interchangeable
 
 ### Player-Facing State
-- Starting PlayerLikability: 52
+- Starting PlayerLikability: 70
 - Starting PlayerSuspicion: 0
 - Starting Mood: Detached
 - Initial Read: Hard to read, not socially invested

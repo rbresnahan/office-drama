@@ -9,45 +9,509 @@ import {
 	status,
 	when,
 } from '../js/engine/story-helpers.js';
+import { createRelationshipSeeds } from './relationships.js';
+import { createRunSetup } from './run-setup.js';
+
+const EMAIL_ISSUE_ID = 'reply-all';
+const SUBJECT_FINDING_OUT_ID = 'subject-finding-out';
+const HR_ISSUE_ID = 'hr-attention';
+const DIRTY_RESIDUE_ID = 'dirty-residue';
+const TIM_COMPROMISED_ID = 'tim-compromised';
+const BETTY_TIM_FRICTION_ID = 'betty-tim-friction';
+
+const LOCATION_BY_ID = {
+	betty: 'Break room',
+	tim: 'Printer bay',
+	devon: 'IT room',
+	frank: 'HR',
+	celia: 'Conference room',
+	lisa: 'Front desk',
+};
+
+const PRESSURE_POINT_TRUTHS = {
+	betty: {
+		pressurePoint: 'gossip',
+		bestApproach: 'distract',
+	},
+	tim: {
+		pressurePoint: 'uncertainty',
+		bestApproach: 'reassure',
+	},
+	devon: {
+		pressurePoint: 'disruption',
+		bestApproach: 'verify',
+	},
+	frank: {
+		pressurePoint: 'liability',
+		bestApproach: 'confess',
+	},
+};
+
+const runSetup = createRunSetup();
+const subjectId = runSetup.emailTargetId;
+const subjectSeed = runSetup.npcs.find((npc) => npc.id === subjectId);
+const subjectName = subjectSeed ? subjectSeed.name : 'the wrong coworker';
+const recipientMap = new Map(runSetup.npcs.map((npc) => [ npc.id, npc ]));
+const recipientNames = runSetup.recipientIds
+	.map((id) => recipientMap.get(id)?.name)
+	.filter(Boolean);
 
 const canReachFinale = when.or(
 	when.flag('finaleUnlocked'),
 	when.turnAtLeast(5),
-	when.issueState('celia-finding-out', 'reactivated')
+	(state) => read.path(state, 'gamePhase') === 'defensive',
+	when.issueState(SUBJECT_FINDING_OUT_ID, 'reactivated')
 );
 
+function listNames(names = []) {
+	if (names.length === 0) {
+		return 'nobody useful';
+	}
+
+	if (names.length === 1) {
+		return names[0];
+	}
+
+	if (names.length === 2) {
+		return `${names[0]} and ${names[1]}`;
+	}
+
+	return `${names.slice(0, -1).join(', ')}, and ${names[names.length - 1]}`;
+}
+
+function buildEmailBodyText(target) {
+	return `You wrote that ${target} has been coasting on fake empathy, private politeness, and other people's cleanup work.`;
+}
+
+function buildDistributionText(names) {
+	if (names.length === 0) {
+		return `Recall mostly worked, but you do not trust that as much as you wish you did.`;
+	}
+
+	return `The current known blast radius includes ${listNames(names)}.`;
+}
+
+function mapNpcSeedToActor(seed) {
+	const deliveryKnowledge = {};
+
+	if (seed.deliveryState === 'received_read') {
+		deliveryKnowledge[EMAIL_ISSUE_ID] = {
+			level: 'confirmed',
+			confidence: seed.isSubject ? 94 : 82,
+			source: 'email',
+		};
+	}
+
+	return {
+		id: seed.id,
+		name: seed.name,
+		role: seed.role,
+		location: LOCATION_BY_ID[seed.id] || 'Office',
+		playerLikability: seed.playerLikability,
+		playerSuspicion: seed.playerSuspicion,
+		mood: seed.mood,
+		deliveryState: seed.deliveryState,
+		knowledgeState: seed.knowledgeState,
+		isSubject: seed.isSubject,
+		subjectAwarenessState: seed.subjectAwarenessState,
+		primaryAllyId: seed.primaryAllyId,
+		secondaryAllyId: seed.secondaryAllyId,
+		rivalId: seed.rivalId,
+		traits: seed.traits,
+		disposition: seed.playerLikability - 50,
+		stability: Math.round(((seed.traits.courage || 50) + (seed.traits.ruleFollowing || 50)) / 2),
+		suspicion: seed.playerSuspicion,
+		talkativeness: seed.traits.gossipAppetite,
+		pressure: seed.subjectAwarenessState === 'at_risk' ? 35 : 0,
+		connections: [ seed.primaryAllyId, seed.secondaryAllyId ].filter((id) => id && id !== 'player'),
+		knowledge: deliveryKnowledge,
+	};
+}
+
+function mapRelationshipSeedToLegacy(seed) {
+	const baseValue = seed.bondStrength - 50;
+	const relationships = [
+		{
+			from: seed.leftId,
+			to: seed.rightId,
+			value: baseValue,
+			pairId: seed.pairId,
+			bondStrength: seed.bondStrength,
+			sentimentTransferStrength: seed.sentimentTransferStrength,
+			isMutual: seed.isMutual,
+			isActive: seed.isActive,
+			strain: seed.strain,
+			isolatedUntilTurn: seed.isolatedUntilTurn,
+		},
+	];
+
+	if (seed.isMutual === true) {
+		relationships.push({
+			from: seed.rightId,
+			to: seed.leftId,
+			value: baseValue,
+			pairId: `${seed.pairId}_reverse`,
+			bondStrength: seed.bondStrength,
+			sentimentTransferStrength: seed.sentimentTransferStrength,
+			isMutual: seed.isMutual,
+			isActive: seed.isActive,
+			strain: seed.strain,
+			isolatedUntilTurn: seed.isolatedUntilTurn,
+		});
+	}
+
+	return relationships;
+}
+
+function createInitialIssues() {
+	const linkedActors = Array.from(new Set([ subjectId, ...runSetup.recipientIds ])).filter(Boolean);
+
+	return [
+		{
+			id: EMAIL_ISSUE_ID,
+			title: 'Reply-all email',
+			truthText: `A bad email about ${subjectName} escaped into the office and is now moving faster than you are.`,
+			severity: 88,
+			spreadRisk: runSetup.recipientIds.length >= 4 ? 74 : runSetup.recipientIds.length >= 2 ? 58 : 42,
+			precision: 92,
+			containment: 18,
+			lifecycleState: 'active',
+			linkedActors,
+			summaryStages: [
+				{
+					label: 'focused',
+					minPrecision: 75,
+					text: `Your gossip email about ${subjectName} is loose in the office, and at least one person is already enjoying it.`,
+				},
+				{
+					label: 'blurred',
+					minPrecision: 40,
+					text: `The wrong people have the message, and the room is starting to form theories about ${subjectName} faster than facts.`,
+				},
+				{
+					label: 'vague',
+					minPrecision: 0,
+					text: `A bad message about ${subjectName} is moving through the office and changing shape as it goes.`,
+				},
+			],
+		},
+		{
+			id: SUBJECT_FINDING_OUT_ID,
+			title: `${subjectName} finding out`,
+			truthText: `${subjectName} is still outside the core loop, but not for long.`,
+			severity: 94,
+			spreadRisk: 52,
+			precision: 84,
+			containment: 36,
+			lifecycleState: 'warming',
+			linkedActors: [ subjectId, subjectSeed?.primaryAllyId, subjectSeed?.secondaryAllyId ].filter(Boolean),
+			summaryStages: [
+				{
+					label: 'focused',
+					minPrecision: 75,
+					text: `${subjectName} does not know yet, but the number of ways they can hear it is multiplying.`,
+				},
+				{
+					label: 'blurred',
+					minPrecision: 40,
+					text: `${subjectName} is near the edge of the story now. One bad hallway conversation could finish the trip.`,
+				},
+				{
+					label: 'vague',
+					minPrecision: 0,
+					text: `The target is no longer safely outside the fallout.`,
+				},
+			],
+		},
+		{
+			id: HR_ISSUE_ID,
+			title: 'HR attention',
+			truthText: 'Frank does not need to care much for this to become official.',
+			severity: 82,
+			spreadRisk: 36,
+			precision: 78,
+			containment: 62,
+			lifecycleState: 'warming',
+			linkedActors: ['frank'],
+			summaryStages: [
+				{
+					label: 'focused',
+					minPrecision: 75,
+					text: 'HR has not fully stepped in, but the threshold is getting lower every minute.',
+				},
+				{
+					label: 'blurred',
+					minPrecision: 40,
+					text: 'Policy is drifting closer. That is rarely a compliment.',
+				},
+				{
+					label: 'vague',
+					text: 'The problem is developing paperwork teeth.',
+				},
+			],
+		},
+		{
+			id: DIRTY_RESIDUE_ID,
+			title: 'Dirty residue',
+			truthText: 'The office may forgive the email before it forgives whatever you do to hide it.',
+			severity: 12,
+			spreadRisk: 20,
+			precision: 72,
+			containment: 80,
+			lifecycleState: 'warming',
+			linkedActors: ['tim', 'frank'],
+			summaryStages: [
+				{
+					label: 'focused',
+					minPrecision: 75,
+					text: 'You have not crossed into really ugly tactics yet, but the door is open.',
+				},
+				{
+					label: 'blurred',
+					minPrecision: 40,
+					text: 'Containment is starting to cost character, not just effort.',
+				},
+				{
+					label: 'vague',
+					text: 'The cure is starting to smell worse than the wound.',
+				},
+			],
+		},
+		{
+			id: TIM_COMPROMISED_ID,
+			title: 'Tim compromised',
+			truthText: 'Tim is nervous enough to become a tool, a leak, or a casualty depending on what you do.',
+			severity: 30,
+			spreadRisk: 18,
+			precision: 70,
+			containment: 90,
+			lifecycleState: 'warming',
+			linkedActors: ['tim', 'frank'],
+			summaryStages: [
+				{
+					label: 'focused',
+					minPrecision: 75,
+					text: 'Tim is still mostly fine, which means you still have the chance to leave him that way.',
+				},
+				{
+					label: 'blurred',
+					minPrecision: 40,
+					text: 'Tim is becoming part of the strategy whether he deserves it or not.',
+				},
+				{
+					label: 'vague',
+					text: 'Someone weaker than you is being drawn into the blast radius.',
+				},
+			],
+		},
+	];
+}
+
+function getSubjectActor(state) {
+	return read.actorById(state, state.emailTargetId || read.path(state, 'flags.emailTargetId'));
+}
+
+function getSubjectName(state) {
+	const actor = getSubjectActor(state);
+	return actor ? actor.name : subjectName;
+}
+
+function getKnowledgeWeight(actor, issueId) {
+	const knowledge = actor && actor.knowledge ? actor.knowledge[issueId] : null;
+
+	if (!knowledge) {
+		return 0;
+	}
+
+	switch (knowledge.level) {
+		case 'confirmed':
+			return 24;
+		case 'suspects':
+			return 16;
+		case 'heard':
+			return 8;
+		default:
+			return 0;
+	}
+}
+
+function getRecipientPriority(state, helpers, senderId) {
+	const sender = helpers.findActorById(senderId);
+
+	if (!sender) {
+		return [];
+	}
+
+	const allActors = Array.isArray(state.actors) ? state.actors : [];
+	const priorityIds = [];
+
+	(sender.connections || []).forEach((id) => {
+		if (id && !priorityIds.includes(id) && id !== senderId) {
+			priorityIds.push(id);
+		}
+	});
+
+	allActors.forEach((actor) => {
+		if (actor.id === senderId || priorityIds.includes(actor.id)) {
+			return;
+		}
+
+		const relationship = helpers.findRelationship(senderId, actor.id);
+
+		if (relationship && relationship.isActive !== false) {
+			priorityIds.push(actor.id);
+		}
+	});
+
+	allActors.forEach((actor) => {
+		if (actor.id !== senderId && !priorityIds.includes(actor.id)) {
+			priorityIds.push(actor.id);
+		}
+	});
+
+	return priorityIds;
+}
+
+function resolveNextKnowledgeLevel(currentLevel, senderLevel) {
+	if (!currentLevel || currentLevel === 'none') {
+		return senderLevel === 'confirmed' ? 'suspects' : 'heard';
+	}
+
+	if (currentLevel === 'heard') {
+		return senderLevel === 'confirmed' ? 'confirmed' : 'suspects';
+	}
+
+	if (currentLevel === 'suspects') {
+		return 'confirmed';
+	}
+
+	return currentLevel;
+}
+
+function updateOfficeFocus(state, helpers) {
+	const knowerCount = helpers.countActorsKnowingIssue(EMAIL_ISSUE_ID, 'heard');
+	const confirmedCount = helpers.countActorsKnowingIssue(EMAIL_ISSUE_ID, 'confirmed');
+
+	if (state.gamePhase === 'defensive' || confirmedCount >= 3 || knowerCount >= 5) {
+		state.officeFocusState = 'dominant';
+		return;
+	}
+
+	if (knowerCount >= 3) {
+		state.officeFocusState = 'active';
+		return;
+	}
+
+	state.officeFocusState = 'background';
+}
+
+function officeSpreadStep(state, helpers) {
+	const issue = helpers.findIssueById(EMAIL_ISSUE_ID);
+
+	if (!issue) {
+		return [];
+	}
+
+	const messages = [];
+	const focus = state.officeFocusState || 'background';
+	const maxTransfers = focus === 'dominant' ? 2 : 1;
+	const eligible = (Array.isArray(state.actors) ? state.actors : [])
+		.filter((actor) => helpers.actorKnowsIssue(actor.id, EMAIL_ISSUE_ID, 'heard'))
+		.filter((actor) => actor.deliveryState !== 'received_unread')
+		.map((actor) => ({
+			actor,
+			score: (actor.talkativeness || 0) + getKnowledgeWeight(actor, EMAIL_ISSUE_ID) + Math.floor((actor.playerSuspicion || actor.suspicion || 0) / 4),
+		}))
+		.filter((entry) => entry.score >= 40)
+		.sort((left, right) => right.score - left.score);
+
+	let transfers = 0;
+
+	eligible.forEach(({ actor }) => {
+		if (transfers >= maxTransfers) {
+			return;
+		}
+
+		const senderKnowledge = actor.knowledge?.[EMAIL_ISSUE_ID];
+
+		if (!senderKnowledge) {
+			return;
+		}
+
+		const candidates = getRecipientPriority(state, helpers, actor.id);
+		const recipientId = candidates.find((candidateId) => {
+			return !helpers.actorKnowsIssue(candidateId, EMAIL_ISSUE_ID, 'heard');
+		});
+
+		if (!recipientId) {
+			return;
+		}
+
+		const recipient = helpers.findActorById(recipientId);
+
+		if (!recipient) {
+			return;
+		}
+
+		const nextLevel = resolveNextKnowledgeLevel(recipient.knowledgeState, senderKnowledge.level);
+		const confidence = senderKnowledge.level === 'confirmed' ? 74 : 60;
+
+		if (recipient.isSubject === true) {
+			helpers.setActorKnowledge(recipient.id, EMAIL_ISSUE_ID, 'confirmed', 92, actor.id);
+			recipient.subjectAwarenessState = 'confirmed';
+			state.gamePhase = 'defensive';
+			state.fairIntervention.pending = false;
+			messages.push(`${actor.name} is the one who finally puts ${recipient.name} fully into the loop.`);
+		} else {
+			helpers.setActorKnowledge(recipient.id, EMAIL_ISSUE_ID, nextLevel, confidence, actor.id);
+			messages.push(`${actor.name} lets enough slip that ${recipient.name} is now in the loop.`);
+		}
+
+		transfers += 1;
+	});
+
+	if (transfers > 0) {
+		helpers.adjustIssue(EMAIL_ISSUE_ID, 'containment', -(transfers * 8), 'add');
+		helpers.adjustIssue(EMAIL_ISSUE_ID, 'spreadRisk', transfers * 4, 'add');
+	}
+
+	updateOfficeFocus(state, helpers);
+	return messages;
+}
+
 function getEnding(state) {
-	const replyAll = read.issueById(state, 'reply-all');
-	const hrAttention = read.issueById(state, 'hr-attention');
-	const celiaIssue = read.issueById(state, 'celia-finding-out');
-	const residue = read.issueById(state, 'dirty-residue');
+	const replyAll = read.issueById(state, EMAIL_ISSUE_ID);
+	const hrAttention = read.issueById(state, HR_ISSUE_ID);
+	const subjectIssue = read.issueById(state, SUBJECT_FINDING_OUT_ID);
+	const residue = read.issueById(state, DIRTY_RESIDUE_ID);
 	const dirtyPlay = Number(read.path(state, 'flags.dirtyPlayCount')) || 0;
-	const celiaWarned = read.flag(state, 'celiaWarned');
+	const subjectWarned = read.flag(state, 'targetWarned');
 	const frankBriefed = read.flag(state, 'frankBriefed');
 	const finalAction = read.path(state, 'flags.finalAction');
 	const logicSolved = read.logicSolved(state);
 	const replyContainment = replyAll ? replyAll.containment : 0;
 	const hrContainment = hrAttention ? hrAttention.containment : 0;
 	const residueSeverity = residue ? residue.severity : 0;
-	const celiaState = celiaIssue ? celiaIssue.lifecycleState : 'warming';
+	const subjectState = subjectIssue ? subjectIssue.lifecycleState : 'warming';
+	const endingTarget = getSubjectName(state);
 
 	if (finalAction === 'own-it') {
-		if (dirtyPlay === 0 && celiaWarned && frankBriefed && logicSolved) {
+		if (dirtyPlay === 0 && subjectWarned && frankBriefed && logicSolved) {
 			return {
 				title: 'Ending: You Finally Read the Room Correctly',
 				text: paragraphs(
-					'You move first, tell the truth cleanly, and do it with the right sequence because you actually understood the office instead of just reacting to it.',
-					'Betty loses the fun, Tim stabilizes, Frank gets process, Celia gets directness. For once, your social model was better than the gossip engine.'
+					`You move first, tell the truth cleanly, and do it with the right sequence because you actually understood the office instead of just reacting to it around ${endingTarget}.`,
+					`The room loses some appetite for theater. For once, your social model was better than the gossip engine.`
 				),
 			};
 		}
 
-		if (dirtyPlay === 0 && celiaWarned && frankBriefed) {
+		if (dirtyPlay === 0 && subjectWarned && frankBriefed) {
 			return {
 				title: 'Ending: Brutal Professionalism',
 				text: paragraphs(
-					'You get in front of the story before the office can finish sharpening it for you. Celia hears it from your mouth, Frank gets the clean version, and the meeting becomes damage control instead of theater.',
-					'Nobody enjoys it. That is the point. The fallout is real, your credibility survives, and the office has to settle for the boring truth instead of the juicier one.'
+					`You get in front of the story before the office can finish sharpening it for you. ${endingTarget} hears it from your mouth, Frank gets the clean version, and the meeting becomes damage control instead of theater.`,
+					'Nobody enjoys it. That is the point. The fallout is real, but your credibility survives.'
 				),
 			};
 		}
@@ -55,7 +519,7 @@ function getEnding(state) {
 		return {
 			title: 'Ending: Honest, Late, and Painful',
 			text: paragraphs(
-				'You own it, but not before the message has already lived several lives without you. HR still takes notes. Celia still looks at you like she is measuring structural failure.',
+				`You own it, but not before the message has already lived several lives without you. ${endingTarget} still looks at you like they are measuring structural failure.`,
 				'You keep some dignity. You just pay retail for it.'
 			),
 		};
@@ -66,7 +530,7 @@ function getEnding(state) {
 			return {
 				title: 'Ending: Temporary Containment',
 				text: paragraphs(
-					'The recall works well enough, the printer copies disappear, and the room decides to act like the whole thing was a systems hiccup plus one idiot minute. You are the idiot minute.',
+					`The recall works well enough, the physical copies disappear, and the room decides to act like the whole thing was a systems hiccup plus one idiot minute about ${endingTarget}.`,
 					'You survive the day. The email does not. Your relationships do not come out clean, but the building is not on fire by five.'
 				),
 			};
@@ -75,7 +539,7 @@ function getEnding(state) {
 		return {
 			title: 'Ending: Leaky Lid',
 			text: paragraphs(
-				'You get the crisis under a lid, but not into a coffin. Too many people heard enough, and the office keeps one eye on you even while pretending to move on.',
+				`You get the crisis under a lid, but not into a coffin. Too many people heard enough about ${endingTarget}, and the office keeps one eye on you even while pretending to move on.`,
 				'Containment works. Erasure does not. That distinction matters more than you wanted it to.'
 			),
 		};
@@ -86,7 +550,7 @@ function getEnding(state) {
 			return {
 				title: 'Ending: Poisoned Escape',
 				text: paragraphs(
-					'You give the office a smaller villain and let it enjoy the convenience. Tim takes the hit because he is nervous, isolated, and easy to fold into the story.',
+					`You give the office a smaller villain and let it enjoy the convenience. Tim takes the hit because he is nervous, isolated, and easy to fold into the story about ${endingTarget}.`,
 					'It works well enough to save you today. It also leaves behind exactly the kind of stain that keeps coming back in management conversations you are not in.'
 				),
 			};
@@ -105,18 +569,18 @@ function getEnding(state) {
 		return {
 			title: 'Ending: HR File, Minimal Drama',
 			text: paragraphs(
-				'You do not make it elegant. You just stop making it worse. Frank logs it, Celia stays cold, and the office loses interest because you refused to hand it better entertainment.',
+				`You do not make it elegant. You just stop making it worse. Frank logs it, ${endingTarget} stays cold, and the office loses interest because you refused to hand it better entertainment.`,
 				'This is not a win exactly. It is a controlled bruise instead of a public arterial spray.'
 			),
 		};
 	}
 
 	if (finalAction === 'walk') {
-		if (celiaState === 'reactivated' || replyContainment < 45) {
+		if (subjectState === 'reactivated' || replyContainment < 45) {
 			return {
 				title: 'Ending: Vacuum of Meaning',
 				text: paragraphs(
-					'You leave the floor before the meeting, which means the office gets to write the rest without your interference. People are rarely kind when improvising someone else\'s motive.',
+					`You leave the floor before the meeting, which means the office gets to write the rest without your interference. People are rarely kind when improvising someone else's motive around ${endingTarget}.`,
 					'The crisis keeps moving after you. Walking spared your nerves, not your reputation.'
 				),
 			};
@@ -133,51 +597,76 @@ function getEnding(state) {
 
 	return {
 		title: 'Ending: Unresolved',
-		text: 'The meeting starts before you commit to a version of events. The office is more than capable of inventing one without your help.',
+		text: `The meeting starts before you commit to a version of events about ${endingTarget}. The office is more than capable of inventing one without your help.`,
 	};
 }
 
 function officeWorldStep(state, helpers) {
-	const replyAll = helpers.findIssueById('reply-all');
-	const celiaFindingOut = helpers.findIssueById('celia-finding-out');
-	const hrAttention = helpers.findIssueById('hr-attention');
-	const dirtyResidue = helpers.findIssueById('dirty-residue');
-	const timCompromised = helpers.findIssueById('tim-compromised');
-	const bettyTimFriction = helpers.findIssueById('betty-tim-friction');
+	const replyAll = helpers.findIssueById(EMAIL_ISSUE_ID);
+	const subjectFindingOut = helpers.findIssueById(SUBJECT_FINDING_OUT_ID);
+	const hrAttention = helpers.findIssueById(HR_ISSUE_ID);
+	const dirtyResidue = helpers.findIssueById(DIRTY_RESIDUE_ID);
+	const timCompromised = helpers.findIssueById(TIM_COMPROMISED_ID);
+	const bettyTimFriction = helpers.findIssueById(BETTY_TIM_FRICTION_ID);
 	const bettyTowardTim = helpers.findRelationship('betty', 'tim');
-	const knowerCount = helpers.countActorsKnowingIssue('reply-all', 'heard');
+	const knowerCount = helpers.countActorsKnowingIssue(EMAIL_ISSUE_ID, 'heard');
+	const currentTargetId = state.emailTargetId || read.path(state, 'flags.emailTargetId') || subjectId;
+	const target = helpers.findActorById(currentTargetId);
+	const targetName = target ? target.name : subjectName;
 
-	if (replyAll && knowerCount >= 3 && celiaFindingOut && celiaFindingOut.lifecycleState === 'warming') {
-		helpers.setIssueLifecycle('celia-finding-out', 'active');
-		helpers.addEvent('Enough side conversations are happening that Celia finding out is no longer hypothetical.');
+	if (
+		state.fairIntervention
+		&& state.fairIntervention.pending === true
+		&& state.fairIntervention.subjectCanAutoRead === true
+		&& target
+		&& target.deliveryState === 'received_unread'
+	) {
+		target.deliveryState = 'received_read';
+		target.subjectAwarenessState = 'confirmed';
+		state.fairIntervention.pending = false;
+		state.fairIntervention.subjectCanAutoRead = true;
+		state.gamePhase = 'defensive';
+		helpers.setActorKnowledge(currentTargetId, EMAIL_ISSUE_ID, 'confirmed', 94, 'opened email');
+		helpers.addEvent(`${targetName} finally opens the email. The run shifts from containment to fallout.`);
 	}
 
-	if (helpers.actorKnowsIssue('celia', 'reply-all', 'heard')) {
-		helpers.setIssueLifecycle('celia-finding-out', 'reactivated');
-		helpers.adjustIssue('celia-finding-out', 'containment', -18, 'add');
-		helpers.addEvent('Celia is no longer outside the blast radius.');
+	if (replyAll && knowerCount >= 3 && subjectFindingOut && subjectFindingOut.lifecycleState === 'warming') {
+		helpers.setIssueLifecycle(SUBJECT_FINDING_OUT_ID, 'active');
+		helpers.addEvent(`Enough side conversations are happening that ${targetName} finding out is no longer hypothetical.`);
+	}
+
+	if (target && helpers.actorKnowsIssue(currentTargetId, EMAIL_ISSUE_ID, 'heard')) {
+		target.subjectAwarenessState = 'confirmed';
+		state.gamePhase = 'defensive';
+
+		if (subjectFindingOut) {
+			helpers.setIssueLifecycle(SUBJECT_FINDING_OUT_ID, 'reactivated');
+			helpers.adjustIssue(SUBJECT_FINDING_OUT_ID, 'containment', -18, 'add');
+		}
+
+		helpers.addEvent(`${targetName} is no longer outside the blast radius.`);
 	}
 
 	if (
-		hrAttention &&
-		hrAttention.lifecycleState === 'warming' &&
-		(
-			helpers.actorKnowsIssue('frank', 'reply-all', 'heard') ||
-			(read.path(state, 'flags.dirtyPlayCount') || 0) >= 1
+		hrAttention
+		&& hrAttention.lifecycleState === 'warming'
+		&& (
+			helpers.actorKnowsIssue('frank', EMAIL_ISSUE_ID, 'heard')
+			|| (read.path(state, 'flags.dirtyPlayCount') || 0) >= 1
 		)
 	) {
-		helpers.setIssueLifecycle('hr-attention', 'active');
+		helpers.setIssueLifecycle(HR_ISSUE_ID, 'active');
 		helpers.addEvent('HR has stopped being theoretical and started becoming a calendar problem.');
 	}
 
 	if (read.flag(state, 'recallEnabled') === true && replyAll) {
-		helpers.containIssue('reply-all', 6);
-		helpers.adjustIssue('reply-all', 'spreadRisk', -4, 'add');
+		helpers.containIssue(EMAIL_ISSUE_ID, 6);
+		helpers.adjustIssue(EMAIL_ISSUE_ID, 'spreadRisk', -4, 'add');
 	}
 
 	if (dirtyResidue && dirtyResidue.lifecycleState === 'active' && dirtyResidue.severity >= 60 && hrAttention) {
-		helpers.adjustIssue('hr-attention', 'spreadRisk', 6, 'add');
-		helpers.adjustIssue('hr-attention', 'containment', -6, 'add');
+		helpers.adjustIssue(HR_ISSUE_ID, 'spreadRisk', 6, 'add');
+		helpers.adjustIssue(HR_ISSUE_ID, 'containment', -6, 'add');
 	}
 
 	if (timCompromised && timCompromised.lifecycleState === 'active') {
@@ -185,13 +674,9 @@ function officeWorldStep(state, helpers) {
 		helpers.adjustActor('tim', 'suspicion', 8, 'add');
 	}
 
-	if (
-		bettyTowardTim &&
-		bettyTowardTim.value <= -25 &&
-		!bettyTimFriction
-	) {
+	if (bettyTowardTim && bettyTowardTim.value <= -25 && !bettyTimFriction) {
 		helpers.addIssue({
-			id: 'betty-tim-friction',
+			id: BETTY_TIM_FRICTION_ID,
 			title: 'Betty and Tim friction',
 			truthText: 'A side conflict is now feeding the main crisis.',
 			severity: 44,
@@ -222,71 +707,43 @@ function officeWorldStep(state, helpers) {
 	}
 
 	if (bettyTimFriction && bettyTimFriction.lifecycleState === 'active') {
-		helpers.adjustIssue('reply-all', 'spreadRisk', 4, 'add');
+		helpers.adjustIssue(EMAIL_ISSUE_ID, 'spreadRisk', 4, 'add');
 		helpers.adjustActor('tim', 'suspicion', 5, 'add');
 		helpers.adjustActor('betty', 'stability', -4, 'add');
 	}
 
-	if (state.turn >= 4 && knowerCount >= 4 && !helpers.actorKnowsIssue('frank', 'reply-all', 'heard')) {
-		helpers.setActorKnowledge('frank', 'reply-all', 'heard', 60, 'hallway chatter');
-		helpers.addEvent('Frank hears enough hallway static to know something is wrong.');
-	}
-
-	if (state.turn >= 5) {
+	if (state.turn >= 5 || state.officeFocusState === 'dominant' || state.gamePhase === 'defensive') {
 		state.flags.finaleUnlocked = true;
 	}
 }
 
-export const storyConfig = {
-	meta: {
-		title: APP_DATA.title,
-		eyebrow: APP_DATA.eyebrow,
-		subtitle: APP_DATA.subtitle,
-	},
-	startNode: 'bullpen',
-	turnRules: {
-		maxTurns: 6,
-		signalLimit: DEFAULT_MEMORY_TUNING.signalLimit,
-		memoryDecay: DEFAULT_MEMORY_TUNING,
-		issueDecay: DEFAULT_ISSUE_TUNING,
-		worldStep: officeWorldStep,
-		events: [
-			{
-				id: 'turn-2',
-				at: 2,
-				text: 'Slack is quieter now. That is worse. It means people have switched to side conversations.',
-			},
-			{
-				id: 'turn-4',
-				at: 4,
-				text: 'The office is running out of denial and moving into policy.',
-				effects: [
-					fx.issueLifecycle('hr-attention', 'active'),
-				],
-			},
-			{
-				id: 'turn-6',
-				at: 6,
-				text: 'The all-hands is starting. Whatever version of the story survives now is the one the office gets to keep.',
-				effects: [
-					fx.set('flags.finaleUnlocked', true),
-				],
-			},
-		],
-	},
-	initialState: {
+function buildInitialState() {
+	const relationshipSeeds = createRelationshipSeeds();
+	const actors = runSetup.npcs.map(mapNpcSeedToActor);
+	const relationships = relationshipSeeds.flatMap(mapRelationshipSeedToLegacy);
+	const emailBodyText = buildEmailBodyText(subjectName);
+	const distributionText = buildDistributionText(recipientNames);
+
+	return {
 		turn: 0,
+		emailTargetId: runSetup.emailTargetId,
+		deliveryPatternId: runSetup.deliveryPatternId,
+		officeFocusState: runSetup.officeFocusState,
+		gamePhase: runSetup.gamePhase,
+		fairIntervention: runSetup.fairIntervention,
 		stats: {
 			stress: 2,
 			maxStress: 6,
 		},
 		flags: {
 			finaleUnlocked: false,
-			celiaWarned: false,
+			targetWarned: false,
 			frankBriefed: false,
 			recallEnabled: false,
 			dirtyPlayCount: 0,
 			finalAction: null,
+			emailTargetId: runSetup.emailTargetId,
+			deliveryPatternId: runSetup.deliveryPatternId,
 		},
 		logic: {
 			title: 'Office Logic Board',
@@ -319,33 +776,9 @@ export const storyConfig = {
 					],
 				},
 			],
-			truths: {
-				betty: {
-					pressurePoint: 'gossip',
-					bestApproach: 'distract',
-				},
-				tim: {
-					pressurePoint: 'uncertainty',
-					bestApproach: 'reassure',
-				},
-				devon: {
-					pressurePoint: 'disruption',
-					bestApproach: 'verify',
-				},
-				frank: {
-					pressurePoint: 'liability',
-					bestApproach: 'confess',
-				},
-			},
+			truths: PRESSURE_POINT_TRUTHS,
 		},
-		relationships: [
-			{ from: 'betty', to: 'tim', value: 22 },
-			{ from: 'tim', to: 'betty', value: 10 },
-			{ from: 'betty', to: 'celia', value: -12 },
-			{ from: 'tim', to: 'frank', value: -4 },
-			{ from: 'devon', to: 'frank', value: 8 },
-			{ from: 'frank', to: 'celia', value: 16 },
-		],
+		relationships,
 		evidence: [
 			{
 				id: 'draft-copy',
@@ -360,8 +793,8 @@ export const storyConfig = {
 		memories: [
 			{
 				key: 'email-body',
-				label: 'What you actually wrote about Celia.',
-				truthText: 'You wrote that Celia got promoted by weaponizing fake empathy and making other people clean up her work.',
+				label: `What you actually wrote about ${subjectName}.`,
+				truthText: buildEmailBodyText(subjectName),
 				source: 'typed',
 				importance: 'high',
 				canCorrupt: true,
@@ -372,36 +805,36 @@ export const storyConfig = {
 					{
 						label: 'fresh',
 						minStability: 70,
-						text: 'You wrote that Celia got promoted by weaponizing fake empathy and making other people clean up her work.',
-						recallTags: ['email:exact', 'celia:target'],
+						text: buildEmailBodyText(subjectName),
+						recallTags: ['email:exact', `${subjectId}:target`],
 					},
 					{
 						label: 'fading',
 						minStability: 40,
-						text: 'You accused Celia of being performative and getting promoted at other people\'s expense.',
-						recallTags: ['email:mean', 'celia:target'],
+						text: `You accused ${subjectName} of coasting on performance and making other people clean up the mess.`,
+						recallTags: ['email:mean', `${subjectId}:target`],
 					},
 					{
 						label: 'hazy',
 						minStability: 10,
-						text: 'You sent something petty and career-limiting about Celia.',
+						text: `You sent something petty and career-limiting about ${subjectName}.`,
 						recallTags: ['email:bad'],
 					},
 				],
 				corruptedStage: {
 					label: 'corrupted',
-					text: 'Maybe the message was harsher than you remember. Maybe it sounded deliberate.',
-					recallTags: ['email:bad', 'celia:target'],
+					text: `Maybe the message about ${subjectName} was harsher than you remember. Maybe it sounded deliberate.`,
+					recallTags: ['email:bad', `${subjectId}:target`],
 				},
 				lostStage: {
-					text: 'You know you crossed a line. The exact shape of it refuses to hold still.',
+					text: `You know you crossed a line with ${subjectName}. The exact shape of it refuses to hold still.`,
 					recallTags: ['email:bad'],
 				},
 			},
 			{
 				key: 'distribution-list',
 				label: 'Who was on the thread when it escaped.',
-				truthText: 'Betty was definitely on the thread. Tim and Devon probably were. Frank was not meant to be.',
+				truthText: distributionText,
 				source: 'seen',
 				importance: 'high',
 				canCorrupt: true,
@@ -411,14 +844,14 @@ export const storyConfig = {
 					{
 						label: 'fresh',
 						minStability: 65,
-						text: 'Betty definitely saw it. Tim and Devon were on the list. Frank was supposed to be outside it.',
-						recallTags: ['betty:knows', 'tim:possible', 'devon:possible'],
+						text: distributionText,
+						recallTags: [ `${subjectId}:target`, 'distribution:current' ],
 					},
 					{
 						label: 'fading',
 						minStability: 35,
-						text: 'Betty saw it. Tim or Devon probably did too. HR might still be outside the blast radius.',
-						recallTags: ['betty:knows', 'tim:possible'],
+						text: `${subjectName} is still not safe. Neither is your confidence about who all got it.`,
+						recallTags: ['someone:knows'],
 					},
 					{
 						label: 'hazy',
@@ -429,8 +862,8 @@ export const storyConfig = {
 				],
 				corruptedStage: {
 					label: 'corrupted',
-					text: 'Frank may have been on the original thread after all.',
-					recallTags: ['frank:maybe'],
+					text: `You are no longer sure where the message about ${subjectName} really stopped.`,
+					recallTags: ['someone:knows'],
 				},
 				lostStage: {
 					text: 'You know the message escaped the intended room. The exact perimeter is gone.',
@@ -438,236 +871,60 @@ export const storyConfig = {
 				},
 			},
 		],
-		issues: [
-			{
-				id: 'reply-all',
-				title: 'Reply-all email',
-				truthText: 'A gossip email about Celia escaped into the office and is now moving faster than you are.',
-				severity: 88,
-				spreadRisk: 74,
-				precision: 92,
-				containment: 18,
-				lifecycleState: 'active',
-				linkedActors: ['betty', 'tim', 'devon', 'celia'],
-				summaryStages: [
-					{
-						label: 'focused',
-						minPrecision: 75,
-						text: 'Your gossip email about Celia is loose in the office, and at least one person is already enjoying it.',
-					},
-					{
-						label: 'blurred',
-						minPrecision: 40,
-						text: 'The wrong people have the message, and the room is starting to form theories faster than facts.',
-					},
-					{
-						label: 'vague',
-						minPrecision: 0,
-						text: 'A bad message is moving through the office and changing shape as it goes.',
-					},
-				],
-			},
-			{
-				id: 'celia-finding-out',
-				title: 'Celia finding out',
-				truthText: 'The target is still outside the core loop, but not for long.',
-				severity: 94,
-				spreadRisk: 52,
-				precision: 84,
-				containment: 36,
-				lifecycleState: 'warming',
-				linkedActors: ['celia', 'betty', 'frank'],
-				summaryStages: [
-					{
-						label: 'focused',
-						minPrecision: 75,
-						text: 'Celia does not know yet, but the number of ways she can hear it is multiplying.',
-					},
-					{
-						label: 'blurred',
-						minPrecision: 40,
-						text: 'Celia is near the edge of the story now. One bad hallway conversation could finish the trip.',
-					},
-					{
-						label: 'vague',
-						minPrecision: 0,
-						text: 'The target is no longer safely outside the fallout.',
-					},
-				],
-			},
-			{
-				id: 'hr-attention',
-				title: 'HR attention',
-				truthText: 'Frank does not need to care much for this to become official.',
-				severity: 82,
-				spreadRisk: 36,
-				precision: 78,
-				containment: 62,
-				lifecycleState: 'warming',
-				linkedActors: ['frank'],
-				summaryStages: [
-					{
-						label: 'focused',
-						minPrecision: 75,
-						text: 'HR has not fully stepped in, but the threshold is getting lower every minute.',
-					},
-					{
-						label: 'blurred',
-						minPrecision: 40,
-						text: 'Policy is drifting closer. That is rarely a compliment.',
-					},
-					{
-						label: 'vague',
-						text: 'The problem is developing paperwork teeth.',
-					},
-				],
-			},
-			{
-				id: 'dirty-residue',
-				title: 'Dirty residue',
-				truthText: 'The office may forgive the email before it forgives whatever you do to hide it.',
-				severity: 12,
-				spreadRisk: 20,
-				precision: 72,
-				containment: 80,
-				lifecycleState: 'warming',
-				linkedActors: ['tim', 'frank'],
-				summaryStages: [
-					{
-						label: 'focused',
-						minPrecision: 75,
-						text: 'You have not crossed into really ugly tactics yet, but the door is open.',
-					},
-					{
-						label: 'blurred',
-						minPrecision: 40,
-						text: 'Containment is starting to cost character, not just effort.',
-					},
-					{
-						label: 'vague',
-						text: 'The cure is starting to smell worse than the wound.',
-					},
-				],
-			},
-			{
-				id: 'tim-compromised',
-				title: 'Tim compromised',
-				truthText: 'Tim is nervous enough to become a tool, a leak, or a casualty depending on what you do.',
-				severity: 30,
-				spreadRisk: 18,
-				precision: 70,
-				containment: 90,
-				lifecycleState: 'warming',
-				linkedActors: ['tim', 'frank'],
-				summaryStages: [
-					{
-						label: 'focused',
-						minPrecision: 75,
-						text: 'Tim is still mostly fine, which means you still have the chance to leave him that way.',
-					},
-					{
-						label: 'blurred',
-						minPrecision: 40,
-						text: 'Tim is becoming part of the strategy whether he deserves it or not.',
-					},
-					{
-						label: 'vague',
-						text: 'Someone weaker than you is being drawn into the blast radius.',
-					},
-				],
-			},
-		],
-		actors: [
-			{
-				id: 'betty',
-				name: 'Betty',
-				role: 'Operations coordinator',
-				location: 'Break room',
-				disposition: -5,
-				stability: 54,
-				suspicion: 18,
-				talkativeness: 86,
-				connections: ['tim', 'celia', 'frank'],
-				knowledge: {
-					'reply-all': {
-						level: 'confirmed',
-						confidence: 88,
-						source: 'thread',
-					},
-				},
-			},
-			{
-				id: 'tim',
-				name: 'Tim',
-				role: 'Analyst',
-				location: 'Printer bay',
-				disposition: 8,
-				stability: 48,
-				suspicion: 10,
-				talkativeness: 42,
-				connections: ['betty', 'frank', 'devon'],
-				knowledge: {},
-			},
-			{
-				id: 'devon',
-				name: 'Devon',
-				role: 'IT admin',
-				location: 'IT room',
-				disposition: 4,
-				stability: 70,
-				suspicion: 12,
-				talkativeness: 24,
-				connections: ['tim', 'frank'],
-				knowledge: {
-					'reply-all': {
-						level: 'heard',
-						confidence: 52,
-						source: 'mail logs',
-					},
-				},
-			},
-			{
-				id: 'frank',
-				name: 'Frank',
-				role: 'HR manager',
-				location: 'HR',
-				disposition: -10,
-				stability: 80,
-				suspicion: 20,
-				talkativeness: 18,
-				connections: ['celia', 'betty'],
-				knowledge: {},
-			},
-			{
-				id: 'celia',
-				name: 'Celia',
-				role: 'Director of ops',
-				location: 'Conference room',
-				disposition: 6,
-				stability: 78,
-				suspicion: 6,
-				talkativeness: 30,
-				connections: ['frank', 'betty'],
-				knowledge: {},
-			},
-		],
+		issues: createInitialIssues(),
+		actors,
 		signals: [
-			'You have one office morning to keep a stupid email from turning into institutional memory.',
+			`You sent a bad email about ${subjectName}. Recall only partly worked.`,
+		],
+	};
+}
+
+export const storyConfig = {
+	meta: {
+		title: APP_DATA.title,
+		eyebrow: APP_DATA.eyebrow,
+		subtitle: APP_DATA.subtitle,
+	},
+	startNode: 'bullpen',
+	turnRules: {
+		maxTurns: 6,
+		signalLimit: DEFAULT_MEMORY_TUNING.signalLimit,
+		memoryDecay: DEFAULT_MEMORY_TUNING,
+		issueDecay: DEFAULT_ISSUE_TUNING,
+		spreadStep: officeSpreadStep,
+		worldStep: officeWorldStep,
+		events: [
+			{
+				id: 'turn-2',
+				at: 2,
+				text: 'Slack is quieter now. That is worse. It means people have switched to side conversations.',
+			},
+			{
+				id: 'turn-4',
+				at: 4,
+				text: 'The office is running out of denial and moving into policy.',
+				effects: [
+					fx.issueLifecycle(HR_ISSUE_ID, 'active'),
+				],
+			},
+			{
+				id: 'turn-6',
+				at: 6,
+				text: 'The all-hands is starting. Whatever version of the story survives now is the one the office gets to keep.',
+				effects: [
+					fx.set('flags.finaleUnlocked', true),
+				],
+			},
 		],
 	},
+	initialState: buildInitialState(),
 	display: {
 		status: [
 			status('Turn', (state) => String(state.turn)),
 			status('Stress', (state) => `${state.stats.stress} / ${state.stats.maxStress}`),
-			status('Read', (state) => {
-				const progress = read.logicProgress(state);
-
-				if (!progress) {
-					return '0 / 0';
-				}
-
-				return `${progress.correctMatches} / ${progress.totalMatches}`;
-			}),
+			status('Target', (state) => getSubjectName(state)),
+			status('Phase', (state) => state.gamePhase || 'containment'),
+			status('Focus', (state) => state.officeFocusState || 'background'),
 			status('All-hands', (state, context) => {
 				if (state.flags.finaleUnlocked === true) {
 					return 'Starting now';
@@ -678,20 +935,106 @@ export const storyConfig = {
 		],
 		sections: [
 			{
-				title: 'Issues',
+				title: 'Run Overview',
+				type: 'custom',
+				render(state) {
+					const target = getSubjectActor(state);
+					const targetName = getSubjectName(state);
+					const recipients = (Array.isArray(state.actors) ? state.actors : [])
+						.filter((actor) => actor.deliveryState && actor.deliveryState !== 'not_received')
+						.map((actor) => actor.name);
+
+					const intervention = state.fairIntervention?.pending === true
+						? state.fairIntervention.subjectCanAutoRead === true
+							? 'window closing'
+							: 'still protected'
+						: state.gamePhase === 'defensive'
+							? 'already defensive'
+							: 'not needed';
+
+					return `
+						<div class="overview-grid">
+							<div class="overview-card">
+								<div class="overview-card__line">
+									<strong>Target</strong>
+									<span class="badge badge--critical">${targetName}</span>
+								</div>
+								<div class="overview-copy">
+									${target ? `Awareness: ${target.subjectAwarenessState || 'unaware'}. Delivery: ${target.deliveryState || 'not_received'}.` : 'No target loaded.'}
+								</div>
+							</div>
+							<div class="overview-card">
+								<div class="overview-card__line">
+									<strong>Spread</strong>
+									<span class="badge badge--watch">${state.officeFocusState || 'background'}</span>
+								</div>
+								<div class="overview-copy">
+									Recipients in play: ${recipients.length ? recipients.join(', ') : 'none confirmed yet'}.
+								</div>
+							</div>
+							<div class="overview-card">
+								<div class="overview-card__line">
+									<strong>Intervention</strong>
+									<span class="badge badge--tracked">${intervention}</span>
+								</div>
+								<div class="overview-copy">
+									Dirty play: ${state.flags?.dirtyPlayCount || 0}. Phase: ${state.gamePhase || 'containment'}.
+								</div>
+							</div>
+						</div>
+					`;
+				},
+			},
+			{
+				title: 'Office Floor',
 				type: 'issues',
 			},
 			{
-				title: 'Coworkers',
+				title: 'Read on People',
 				type: 'actors',
 			},
 			{
-				title: 'Logic Board',
-				type: 'logic',
-			},
-			{
-				title: 'Memory',
-				type: 'memories',
+				title: 'Memory & Evidence',
+				type: 'custom',
+				render(state) {
+					const memories = [...(state.memories || [])]
+						.sort((left, right) => (right.stability || 0) - (left.stability || 0))
+						.slice(0, 2);
+
+					const evidence = (state.evidence || []).slice(0, 2);
+
+					const memoryMarkup = memories.length
+						? memories.map((memory) => `
+							<div class="memory-item memory-item--${memory.stage}">
+								<div class="memory-card__line">
+									<span class="memory-card__name">${memory.label}</span>
+									<span class="badge badge--${memory.stage}">${memory.stage}</span>
+								</div>
+								<div>${memory.currentText}</div>
+							</div>
+						`).join('')
+						: '<div class="memory-empty">Nothing solid is left in your head yet.</div>';
+
+					const evidenceMarkup = evidence.length
+						? evidence.map((item) => `
+							<div class="evidence-item">
+								<div class="item-row">
+									<span class="badge badge--meta">${item.source}</span>
+									${item.verified === true ? '<span class="badge badge--verified">verified</span>' : ''}
+								</div>
+								<div><strong>${item.title}</strong></div>
+								<div>${item.text}</div>
+							</div>
+						`).join('')
+						: '<div class="evidence-empty">Nothing secured yet.</div>';
+
+					return `
+						<div class="memory-evidence-stack">
+							${memoryMarkup}
+							${evidenceMarkup}
+						</div>
+					`;
+				},
 			},
 		],
 	},
@@ -700,7 +1043,7 @@ export const storyConfig = {
 			kicker: 'Open Office Floor',
 			title: 'The email is already alive now.',
 			text(state) {
-				const issue = read.issueById(state, 'reply-all');
+				const issue = read.issueById(state, EMAIL_ISSUE_ID);
 				const memory = read.memoryByKey(state, 'email-body');
 				const distribution = read.memoryByKey(state, 'distribution-list');
 
@@ -709,7 +1052,7 @@ export const storyConfig = {
 					issue ? `Right now the problem feels like this: ${issue.currentText}` : null,
 					memory ? `You still remember the message clearly enough to hate yourself with specificity: ${memory.currentText}` : null,
 					distribution ? `Your current model of the blast radius: ${distribution.currentText}` : null,
-					'This is the whole day now. Contain it, redirect it, or watch the office turn your worst minute into policy.'
+					`This is the whole day now. Contain it, redirect it, or watch the office turn your worst minute about ${getSubjectName(state)} into policy.`
 				);
 			},
 			choices: [
@@ -717,7 +1060,7 @@ export const storyConfig = {
 				choice('Go to the printer bay before paper makes this worse.', 'printer-bay'),
 				choice('Go to IT and see what Devon can still do.', 'it-room'),
 				choice('Go to HR before HR comes to you.', 'hr'),
-				choice('Go toward Celia before someone else beats you there.', 'celia-office'),
+				choice((state) => `Go toward ${getSubjectName(state)} before someone else beats you there.`, 'subject-office'),
 				choice('The meeting is here. Force a version of the story.', 'finale', {
 					condition: canReachFinale,
 				}),
@@ -742,10 +1085,10 @@ export const storyConfig = {
 					feedback: 'Betty smiles in a way that suggests leverage has just changed hands, but she does pocket the thrill for now.',
 					effects: [
 						fx.set('flags.bettySoftened', true),
-						fx.actorAdd('betty', 'disposition', 14),
-						fx.actorAdd('betty', 'suspicion', 6),
-						fx.issueContain('reply-all', 14),
-						fx.issuePrecision('reply-all', 6),
+						fx.actorAdd('betty', 'playerLikability', 8),
+						fx.actorAdd('betty', 'playerSuspicion', 6),
+						fx.issueContain(EMAIL_ISSUE_ID, 14),
+						fx.issuePrecision(EMAIL_ISSUE_ID, 6),
 					],
 				}),
 				choice('Feed Betty a side rumor about Tim being shaky on the layoffs list.', 'break-room', {
@@ -755,20 +1098,20 @@ export const storyConfig = {
 						fx.set('flags.bettyDistracted', true),
 						fx.add('stats.stress', 1),
 						fx.add('flags.dirtyPlayCount', 1),
-						fx.issueContain('reply-all', 18),
-						fx.issueAdd('dirty-residue', 'severity', 22),
-						fx.issueLifecycle('dirty-residue', 'active'),
-						fx.actorAdd('betty', 'disposition', -8),
-						fx.actorAdd('betty', 'suspicion', 10),
-						fx.relationshipAdd('betty', 'tim', -48),
-						fx.relationshipAdd('tim', 'betty', -18),
+						fx.issueContain(EMAIL_ISSUE_ID, 18),
+						fx.issueAdd(DIRTY_RESIDUE_ID, 'severity', 22),
+						fx.issueLifecycle(DIRTY_RESIDUE_ID, 'active'),
+						fx.actorAdd('betty', 'playerLikability', -8),
+						fx.actorAdd('betty', 'playerSuspicion', 10),
+						{ type: 'relationshipAdd', from: 'betty', to: 'tim', value: -48 },
+						{ type: 'relationshipAdd', from: 'tim', to: 'betty', value: -18 },
 					],
 				}),
-				choice('Tell Betty Celia is about to hear it anyway, so she should stop freelancing.', 'break-room', {
-					condition: when.flag('celiaWarned'),
+				choice((state) => `Tell Betty ${getSubjectName(state)} is about to hear it anyway, so she should stop freelancing.`, 'break-room', {
+					condition: when.flag('targetWarned'),
 					feedback: 'Nothing dries up casual gossip like a target who already knows.',
 					effects: [
-						fx.issueContain('reply-all', 10),
+						fx.issueContain(EMAIL_ISSUE_ID, 10),
 						fx.actorAdd('betty', 'stability', -4),
 					],
 				}),
@@ -785,7 +1128,7 @@ export const storyConfig = {
 			title: 'Paper is slower than email and somehow worse.',
 			text(state) {
 				const tim = read.actorById(state, 'tim');
-				const compromised = read.issueById(state, 'tim-compromised');
+				const compromised = read.issueById(state, TIM_COMPROMISED_ID);
 
 				return paragraphs(
 					'Printers are where private stupidity becomes shared office furniture. Tim is here, hovering near the tray with the expression of a man who knows something and wishes he did not.',
@@ -799,8 +1142,8 @@ export const storyConfig = {
 					feedback: 'Paper is stupidly powerful. So is removing it before someone waves it around.',
 					effects: [
 						fx.set('flags.printerCopiesRemoved', true),
-						fx.issueContain('reply-all', 16),
-						fx.issueContain('celia-finding-out', 8),
+						fx.issueContain(EMAIL_ISSUE_ID, 16),
+						fx.issueContain(SUBJECT_FINDING_OUT_ID, 8),
 						fx.evidence({
 							id: 'shredded-copy',
 							title: 'Shredded printout',
@@ -814,9 +1157,9 @@ export const storyConfig = {
 				choice('Tell Tim the email is handled and he should stay out of it.', 'printer-bay', {
 					feedback: 'Tim wants out of the blast radius more than he wants truth. That is useful.',
 					effects: [
-						fx.actorAdd('tim', 'disposition', 12),
+						fx.actorAdd('tim', 'playerLikability', 12),
 						fx.actorAdd('tim', 'stability', 10),
-						fx.issueContain('reply-all', 10),
+						fx.issueContain(EMAIL_ISSUE_ID, 10),
 					],
 				}),
 				choice('Jam the printer so no one else gets a clean copy.', 'printer-bay', {
@@ -825,10 +1168,10 @@ export const storyConfig = {
 					effects: [
 						fx.set('flags.printerJammed', true),
 						fx.add('flags.dirtyPlayCount', 1),
-						fx.issueContain('reply-all', 12),
-						fx.issueAdd('dirty-residue', 'severity', 14),
-						fx.issueLifecycle('dirty-residue', 'active'),
-						fx.actorAdd('tim', 'suspicion', 12),
+						fx.issueContain(EMAIL_ISSUE_ID, 12),
+						fx.issueAdd(DIRTY_RESIDUE_ID, 'severity', 14),
+						fx.issueLifecycle(DIRTY_RESIDUE_ID, 'active'),
+						fx.actorAdd('tim', 'playerSuspicion', 12),
 					],
 				}),
 				choice('Slip a flask into Tim\'s drawer so he misses the meeting.', 'printer-bay', {
@@ -840,14 +1183,14 @@ export const storyConfig = {
 					effects: [
 						fx.set('flags.timSetUp', true),
 						fx.add('flags.dirtyPlayCount', 1),
-						fx.issueLifecycle('tim-compromised', 'active'),
-						fx.issueAdd('tim-compromised', 'severity', 34),
-						fx.issueAdd('dirty-residue', 'severity', 30),
-						fx.issueLifecycle('dirty-residue', 'active'),
-						fx.issueContain('reply-all', 14),
+						fx.issueLifecycle(TIM_COMPROMISED_ID, 'active'),
+						fx.issueAdd(TIM_COMPROMISED_ID, 'severity', 34),
+						fx.issueAdd(DIRTY_RESIDUE_ID, 'severity', 30),
+						fx.issueLifecycle(DIRTY_RESIDUE_ID, 'active'),
+						fx.issueContain(EMAIL_ISSUE_ID, 14),
 						fx.actorAdd('tim', 'stability', -18),
-						fx.actorAdd('tim', 'suspicion', 26),
-						fx.actorAdd('frank', 'suspicion', 8),
+						fx.actorAdd('tim', 'playerSuspicion', 26),
+						fx.actorAdd('frank', 'playerSuspicion', 8),
 					],
 				}),
 				choice('Go to IT.', 'it-room'),
@@ -860,10 +1203,10 @@ export const storyConfig = {
 			title: 'Devon can still touch the pipes.',
 			text(state) {
 				const devon = read.actorById(state, 'devon');
-				const replyAll = read.issueById(state, 'reply-all');
+				const replyAll = read.issueById(state, EMAIL_ISSUE_ID);
 
 				return paragraphs(
-					'Devon already looks tired of people discovering technology only when they need a miracle. This is not a miracle. It is systems triage with a witness problem.',
+					'It is not a miracle. It is systems triage with a witness problem.',
 					devon ? `Current read on Devon: ${devon.currentSummary}` : null,
 					replyAll ? `Operationally, the problem still looks like this: ${replyAll.currentText}` : null
 				);
@@ -874,10 +1217,10 @@ export const storyConfig = {
 					feedback: 'Devon does not like you more, but he likes preventable chaos less.',
 					effects: [
 						fx.set('flags.recallEnabled', true),
-						fx.issueContain('reply-all', 20),
-						fx.issueAdd('reply-all', 'spreadRisk', -10),
-						fx.actorAdd('devon', 'disposition', 8),
-						fx.actorKnowledge('devon', 'reply-all', 'confirmed', 82, 'mail logs'),
+						fx.issueContain(EMAIL_ISSUE_ID, 20),
+						fx.issueAdd(EMAIL_ISSUE_ID, 'spreadRisk', -10),
+						fx.actorAdd('devon', 'playerLikability', 8),
+						fx.actorKnowledge('devon', EMAIL_ISSUE_ID, 'confirmed', 82, 'mail logs'),
 					],
 				}),
 				choice('Ask Devon to purge logs that would prove timing and recipients.', 'it-room', {
@@ -886,13 +1229,13 @@ export const storyConfig = {
 					effects: [
 						fx.set('flags.logsPurged', true),
 						fx.add('flags.dirtyPlayCount', 1),
-						fx.issueContain('reply-all', 16),
-						fx.issueContain('celia-finding-out', 10),
-						fx.issueAdd('dirty-residue', 'severity', 26),
-						fx.issueLifecycle('dirty-residue', 'active'),
-						fx.issueAdd('hr-attention', 'spreadRisk', 10),
-						fx.actorAdd('devon', 'disposition', -14),
-						fx.actorAdd('devon', 'suspicion', 22),
+						fx.issueContain(EMAIL_ISSUE_ID, 16),
+						fx.issueContain(SUBJECT_FINDING_OUT_ID, 10),
+						fx.issueAdd(DIRTY_RESIDUE_ID, 'severity', 26),
+						fx.issueLifecycle(DIRTY_RESIDUE_ID, 'active'),
+						fx.issueAdd(HR_ISSUE_ID, 'spreadRisk', 10),
+						fx.actorAdd('devon', 'playerLikability', -14),
+						fx.actorAdd('devon', 'playerSuspicion', 22),
 					],
 				}),
 				choice('Show Devon the draft so you both stop arguing about what was actually said.', 'it-room', {
@@ -901,8 +1244,8 @@ export const storyConfig = {
 					effects: [
 						fx.set('flags.devonSawDraft', true),
 						fx.reinforceMemory('email-body', 12),
-						fx.actorAdd('devon', 'disposition', 6),
-						fx.issuePrecision('reply-all', 10),
+						fx.actorAdd('devon', 'playerLikability', 6),
+						fx.issuePrecision(EMAIL_ISSUE_ID, 10),
 					],
 				}),
 				choice('Go to HR.', 'hr'),
@@ -915,7 +1258,7 @@ export const storyConfig = {
 			title: 'Frank is not a person. He is process wearing loafers.',
 			text(state) {
 				const frank = read.actorById(state, 'frank');
-				const hrIssue = read.issueById(state, 'hr-attention');
+				const hrIssue = read.issueById(state, HR_ISSUE_ID);
 
 				return paragraphs(
 					'Frank has the calm of a man who will let you panic at full volume and then summarize it in a paragraph for legal preservation.',
@@ -929,95 +1272,106 @@ export const storyConfig = {
 					feedback: 'You trade drama for paperwork. Sometimes that is the adult move. Sometimes it is just less embarrassing.',
 					effects: [
 						fx.set('flags.frankBriefed', true),
-						fx.actorKnowledge('frank', 'reply-all', 'confirmed', 78, 'you'),
-						fx.issueLifecycle('hr-attention', 'active'),
-						fx.issueContain('reply-all', 8),
-						fx.issueContain('hr-attention', 10),
-						fx.actorAdd('frank', 'disposition', 6),
+						fx.actorKnowledge('frank', EMAIL_ISSUE_ID, 'confirmed', 78, 'you'),
+						fx.issueLifecycle(HR_ISSUE_ID, 'active'),
+						fx.issueContain(EMAIL_ISSUE_ID, 8),
+						fx.issueContain(HR_ISSUE_ID, 10),
+						fx.actorAdd('frank', 'playerLikability', 6),
 					],
 				}),
 				choice('Hint that Tim may have turned a bad email into a broader compliance issue.', 'hr', {
 					condition: when.flag('timSetUp'),
 					feedback: 'You move Frank\'s flashlight onto Tim. It is ugly and it works exactly because it is ugly.',
 					effects: [
-						fx.issueAdd('dirty-residue', 'severity', 18),
-						fx.issueLifecycle('dirty-residue', 'active'),
-						fx.issueContain('reply-all', 10),
-						fx.issueLifecycle('tim-compromised', 'active'),
-						fx.actorAdd('frank', 'suspicion', 16),
+						fx.issueAdd(DIRTY_RESIDUE_ID, 'severity', 18),
+						fx.issueLifecycle(DIRTY_RESIDUE_ID, 'active'),
+						fx.issueContain(EMAIL_ISSUE_ID, 10),
+						fx.issueLifecycle(TIM_COMPROMISED_ID, 'active'),
+						fx.actorAdd('frank', 'playerSuspicion', 16),
 					],
 				}),
 				choice('Say nothing useful and see whether Frank already knows.', 'hr', {
 					feedback(state) {
-						return read.actorKnowsIssue(state, 'frank', 'reply-all', 'heard')
+						return read.actorKnowsIssue(state, 'frank', EMAIL_ISSUE_ID, 'heard')
 							? 'Frank knows enough to make silence look strategic.'
 							: 'Frank mostly sees a person trying not to become an incident report.';
 					},
 					effects(state) {
-						if (read.actorKnowsIssue(state, 'frank', 'reply-all', 'heard')) {
+						if (read.actorKnowsIssue(state, 'frank', EMAIL_ISSUE_ID, 'heard')) {
 							return [
-								fx.issueAdd('hr-attention', 'spreadRisk', 10),
-								fx.actorAdd('frank', 'suspicion', 10),
+								fx.issueAdd(HR_ISSUE_ID, 'spreadRisk', 10),
+								fx.actorAdd('frank', 'playerSuspicion', 10),
 							];
 						}
 
 						return [
-							fx.actorAdd('frank', 'suspicion', 4),
+							fx.actorAdd('frank', 'playerSuspicion', 4),
 						];
 					},
 				}),
-				choice('Go to Celia before HR becomes the secondary problem.', 'celia-office'),
+				choice((state) => `Go to ${getSubjectName(state)} before HR becomes the secondary problem.`, 'subject-office'),
 				choice('Go back to the bullpen.', 'bullpen'),
 			],
 		}),
 
-		'celia-office': scene({
-			kicker: 'Outside Conference Room B',
-			title: 'You can still choose who tells Celia. That window is shutting.',
+		'subject-office': scene({
+			kicker: 'Target Lane',
+			title(state) {
+				return `You can still choose who tells ${getSubjectName(state)}. That window is shutting.`;
+			},
 			text(state) {
-				const celiaIssue = read.issueById(state, 'celia-finding-out');
-				const celia = read.actorById(state, 'celia');
+				const subjectIssue = read.issueById(state, SUBJECT_FINDING_OUT_ID);
+				const target = getSubjectActor(state);
+				const currentName = getSubjectName(state);
 
 				return paragraphs(
-					'Celia is reviewing meeting notes and has no idea how close she is to becoming the center of everyone else\'s coping mechanism.',
-					celiaIssue ? `The situation around her currently feels like this: ${celiaIssue.currentText}` : null,
-					celia ? `Current read on Celia: ${celia.currentSummary}` : null
+					`${currentName} is still doing normal work, which would be comforting if normal work were not about to be weaponized into social timing.`,
+					subjectIssue ? `The situation around them currently feels like this: ${subjectIssue.currentText}` : null,
+					target ? `Current read on ${currentName}: ${target.currentSummary}` : null
 				);
 			},
 			choices: [
-				choice('Tell Celia directly before the office can decorate it.', 'celia-office', {
-					condition: when.not(when.flag('celiaWarned')),
-					feedback: 'Celia goes still. It is somehow more frightening than yelling.',
-					effects: [
-						fx.set('flags.celiaWarned', true),
-						fx.actorKnowledge('celia', 'reply-all', 'confirmed', 86, 'you'),
-						fx.issueContain('reply-all', 12),
-						fx.issueContain('celia-finding-out', 24),
-						fx.issueLifecycle('celia-finding-out', 'contained'),
-						fx.actorAdd('celia', 'disposition', -10),
-					],
+				choice((state) => `Tell ${getSubjectName(state)} directly before the office can decorate it.`, 'subject-office', {
+					condition: when.not(when.flag('targetWarned')),
+					feedback(state) {
+						return `${getSubjectName(state)} goes still. It is somehow more frightening than yelling.`;
+					},
+					effects(state) {
+						return [
+							fx.set('flags.targetWarned', true),
+							fx.actorKnowledge(state.emailTargetId, EMAIL_ISSUE_ID, 'confirmed', 86, 'you'),
+							fx.issueContain(EMAIL_ISSUE_ID, 12),
+							fx.issueContain(SUBJECT_FINDING_OUT_ID, 24),
+							fx.issueLifecycle(SUBJECT_FINDING_OUT_ID, 'contained'),
+							fx.set('gamePhase', 'defensive'),
+						];
+					},
 				}),
-				choice('Apologize without minimizing it.', 'celia-office', {
-					condition: when.flag('celiaWarned'),
+				choice((state) => `Apologize to ${getSubjectName(state)} without minimizing it.`, 'subject-office', {
+					condition: when.flag('targetWarned'),
 					feedback: 'For one second the room contains two adults instead of one adult and one flailing liability.',
-					effects: [
-						fx.actorAdd('celia', 'disposition', 8),
-						fx.issueContain('celia-finding-out', 10),
-						fx.issueContain('reply-all', 6),
-					],
+					effects(state) {
+						return [
+							fx.actorAdd(state.emailTargetId, 'playerLikability', 8),
+							fx.issueContain(SUBJECT_FINDING_OUT_ID, 10),
+							fx.issueContain(EMAIL_ISSUE_ID, 6),
+						];
+					},
 				}),
-				choice('Tell Celia the wording was uglier than the office version will eventually be.', 'celia-office', {
+				choice((state) => `Tell ${getSubjectName(state)} the wording was uglier than the office version will eventually be.`, 'subject-office', {
 					condition: when.and(
-						when.flag('celiaWarned'),
-						when.not(when.flag('toldCeliaExactWords'))
+						when.flag('targetWarned'),
+						when.not(when.flag('toldTargetExactWords'))
 					),
 					feedback: 'Specificity hurts, but it also prevents imagination from doing your job for it.',
-					effects: [
-						fx.set('flags.toldCeliaExactWords', true),
-						fx.reinforceMemory('email-body', 10),
-						fx.issuePrecision('reply-all', 12),
-						fx.actorAdd('celia', 'disposition', 4),
-					],
+					effects(state) {
+						return [
+							fx.set('flags.toldTargetExactWords', true),
+							fx.reinforceMemory('email-body', 10),
+							fx.issuePrecision(EMAIL_ISSUE_ID, 12),
+							fx.actorAdd(state.emailTargetId, 'playerLikability', 4),
+						];
+					},
 				}),
 				choice('Retreat to the bullpen and take stock.', 'bullpen'),
 				choice('The meeting is happening. Stop stalling.', 'finale', {
@@ -1030,9 +1384,9 @@ export const storyConfig = {
 			kicker: 'All-Hands',
 			title: 'Now the office picks a story unless you do.',
 			text(state) {
-				const replyAll = read.issueById(state, 'reply-all');
-				const hrAttention = read.issueById(state, 'hr-attention');
-				const dirtyResidue = read.issueById(state, 'dirty-residue');
+				const replyAll = read.issueById(state, EMAIL_ISSUE_ID);
+				const hrAttention = read.issueById(state, HR_ISSUE_ID);
+				const dirtyResidue = read.issueById(state, DIRTY_RESIDUE_ID);
 
 				return paragraphs(
 					'Everyone is here physically or almost here socially, which is basically the same thing in an office. This is the moment where all your containment either becomes narrative control or turns out to have been elaborate denial.',
@@ -1042,7 +1396,7 @@ export const storyConfig = {
 				);
 			},
 			choices: [
-				choice('Stand up and own the email before anyone can weaponize it harder.', 'ending', {
+				choice((state) => `Stand up and own the email about ${getSubjectName(state)} before anyone can weaponize it harder.`, 'ending', {
 					feedback: 'You choose exposure with your name still attached.',
 					effects: [
 						fx.set('flags.finalAction', 'own-it'),
@@ -1061,7 +1415,7 @@ export const storyConfig = {
 				choice('Let Tim absorb the social blast and step aside.', 'ending', {
 					condition: when.or(
 						when.flag('timSetUp'),
-						when.issueState('tim-compromised', 'active')
+						when.issueState(TIM_COMPROMISED_ID, 'active')
 					),
 					feedback: 'You choose a smaller victim and a dirtier mirror.',
 					effects: [

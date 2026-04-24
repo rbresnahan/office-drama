@@ -1,15 +1,15 @@
 ## Celia
 
 ### Identity
-- Role: Director of Operations
+- Role: Accounting
 - Age Range: Early to mid 40s
-- Status: Married or divorced, not openly discussed
+- Status: Married possibly Separated, not openly discussed
 - Kids: 1
 - Public Persona: Composed, competent, efficient
 - Private Nature: Prideful, sharp, less warm than she pretends
 - Core Trait: Demands control and clarity
 - Weakness: Ego and disrespect
-- Trigger: Being made the subject of indirect social theater
+- Trigger: Being made the subject of indirect social theater, showing lack of character
 
 ### Player-Facing State
 - Starting PlayerLikability: 48

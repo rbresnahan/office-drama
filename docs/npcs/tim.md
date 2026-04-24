@@ -36,7 +36,7 @@
 - Sentiment Transfer Strength: 80
 - Hidden Bond Truth: Tim relies on Betty’s social confidence more than he wants to admit, and that dependence creates both loyalty and resentment
 - Break Condition: Public betrayal, visible selfishness, repeated fear, loss of trust
-- Reinforcement Condition: Reassurance, stability, private support, protection from embarrassment
+- Reinforcement Condition: Reassurance, stability, private support, protection from embarrassment, percived as couragious
 
 ### Manipulation Hooks
 - Best Way To Persuade: Reassure him and frame choices as self-protection
@@ -46,7 +46,7 @@
 - What Makes Them Talk: Fear, pressure, quiet private conversation
 - What Makes Them Shut Down: Aggressive confrontation or moral accusation
 - What Makes Them Turn On Someone: Feeling abandoned or used as cover
-- What Makes Them Defend Someone: Habit, fear of change, emotional dependency
+- What Makes Them Defend Someone: Habit, fear of change, emotional dependency, grandiose encouragment
 
 ### Chaos Profile
 - Likely Reaction Under Pressure: Freezes, leaks, or folds
