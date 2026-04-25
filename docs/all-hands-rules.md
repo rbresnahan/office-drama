@@ -90,14 +90,125 @@ This keeps late dirty wins from feeling cheap or magical.
 
 ---
 
+## Hard Lock Rule
+
+When the all-hands begins, free-roam manipulation ends.
+
+That means:
+- no more room transfers
+- no more normal coworker actions
+- no more new sabotage laps
+- no more last-second social wandering
+
+Once the meeting starts, the player is in **all-hands mode**.
+
+The deadline must be real.
+
+If the player can keep walking the office after time expires, the turn limit is fake.
+
+---
+
+## Meeting Entry Rule
+
+If the turn limit is reached outside the meeting, the only available action should be:
+
+- **Attend the meeting**
+
+The player should not be able to keep manipulating people after the deadline.
+
+This creates a clear run structure:
+
+1. containment / manipulation phase
+2. forced all-hands phase
+3. resolution
+
+---
+
+## Final Meeting Action Rule
+
+During the all-hands, the player gets **one final chance to act**.
+
+This is not full free play.
+It is one curated last move inside the public confrontation.
+
+That last move should be:
+- readable
+- earned
+- and strongly shaped by prior setup
+
+The player is not improvising a whole second game.
+They are cashing in the one they already played.
+
+---
+
+## Earned Meeting Actions
+
+Meeting actions should not all appear by default.
+
+Prototype 1 should use **earned meeting actions**.
+
+That means the player enters all-hands with:
+- a small default set of always-available meeting responses
+- plus additional meeting actions unlocked by prior choices, evidence, dirt, relationships, and room state
+
+### Always-available baseline actions
+These are always reasonable:
+- speak up and own it
+- stay quiet and absorb the fallout
+- push a procedural version through Frank / HR if that path exists
+- attempt a softer redirect if the room is already divided
+
+### Earned actions
+These are unlocked by prior setup.
+
+Examples:
+- accuse Tim of drinking at work if the player previously planted the bottle
+- push a scapegoat line if the player weakened the scapegoat socially beforehand
+- frame the email as a systems/process issue if recall/log/IT groundwork exists
+- force a side-conflict reveal if the player successfully destabilized a strong pair
+- lean on a trusted ally if that bond survived
+
+The meeting should feel like:
+**what did you build, and what does that let you say now?**
+
+---
+
+## Meeting Accusation Rule
+
+Unlocked meeting accusations should never auto-win just because the button appears.
+
+A meeting accusation should resolve against room state.
+
+Example:
+- if the player planted a bottle in Tim’s desk, this may unlock:
+  - **Accuse Tim of drinking at work**
+
+That accusation should then be evaluated against:
+- Tim’s office favorability
+- Tim’s current suspicion level
+- the player’s suspicion level
+- whether earlier seeds were planted against Tim
+- whether key NPCs already distrust Tim
+- whether fact-driven NPCs can puncture the story
+- whether the room already sees the player as dirty or desperate
+- whether the accusation fits the emotional direction of the room
+
+This keeps unlocked finale actions from feeling magical.
+
+---
+
 ## All-Hands Trigger
 
-Prototype 1 should use a simple trigger.
+Prototype 1 should use a small set of triggers.
 
 The meeting starts when **one** of these happens:
 
 ### Trigger A: Turn limit reached
 The player runs out of time.
+
+This trigger should immediately force the game into all-hands mode.
+When this happens, the only available next action is:
+- **Attend the meeting**
 
 ### Trigger B: Office focus hits dominant
 The email becomes too socially central to avoid public reckoning.
@@ -145,6 +256,41 @@ Before resolving the all-hands, the game should evaluate:
 - how many obvious manipulations were used
 - whether the player created visible social damage
 - whether the room sees the player as the destabilizing variable
+
+### Earned finale state
+- what meeting actions were unlocked
+- which accusations are plausible
+- which cover stories are still believable
+- whether the player has a viable ally-backed line
+- whether the player has evidence or setup to support a public claim
+
+---
+
+## Meeting Structure
+
+Prototype 1 should keep the meeting structurally simple.
+
+### Step 1: Forced entry
+The meeting begins.
+The sandbox is over.
+
+### Step 2: Room evaluation
+The game evaluates:
+- office focus
+- subject state
+- suspicion state
+- dirty-play visibility
+- surviving bonds
+- earned meeting actions
+
+### Step 3: One player move
+The player chooses one final public move.
+
+### Step 4: Outcome resolution
+The room resolves that move against accumulated state.
+
+This should feel different from normal play.
+The meeting is public, compressed, and less forgiving.
 
 ---
 
@@ -307,6 +453,8 @@ A good all-hands outcome should let the player say things like:
 - “Betty and Tim became the story instead.”
 - “The subject found out too early and I spent the rest of the run playing defense.”
 - “I only survived because I had already made Tim believable as the kind of person who would do it.”
+- “I earned the accusation, but the room still didn’t buy it.”
+- “The meeting was the only thing left, and what I built before it mattered.”
 
 That means the system is readable.
 
@@ -325,5 +473,6 @@ In prototype 1, the all-hands should be driven by:
 - dirty-play visibility
 - whether the room is focused on the player, the subject, or itself
 - whether the player prepared a plausible defensive end-game line
+- what final meeting actions the player actually earned
 
 That is enough for a strong first public climax.

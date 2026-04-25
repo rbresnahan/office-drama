@@ -4,6 +4,7 @@ export class Renderer {
 		this.choicesEl = elements.choicesEl;
 		this.statusEl = elements.statusEl;
 		this.signalEl = elements.signalEl;
+		this.actionFeedbackEl = elements.actionFeedbackEl;
 		this.sectionEls = elements.sectionEls || {};
 		this.sectionTitleEls = elements.sectionTitleEls || {};
 		this.titleEl = elements.titleEl;
@@ -32,21 +33,24 @@ export class Renderer {
 	}
 
 	showError(message) {
-		if (this.storyEl) {
-			this.storyEl.innerHTML = `<p class="error-text">${this.escapeHtml(message)}</p>`;
-		}
+		this.storyEl.innerHTML = `<p class="error-text">${this.escapeHtml(message)}</p>`;
+		this.choicesEl.innerHTML = '';
 
-		if (this.choicesEl) {
-			this.choicesEl.innerHTML = '';
+		if (this.actionFeedbackEl) {
+			this.actionFeedbackEl.innerHTML = '';
+			this.actionFeedbackEl.className = 'reaction-card reaction-card--hidden';
 		}
 	}
 
 	renderStatePanel({ state, displayConfig, context }) {
 		this.renderStatus(state, displayConfig.status || [], context);
 		this.renderLatestSignal(state.signals || []);
+		this.renderActionFeedback(state.lastActionResponse || null);
 
-		const sections = Array.isArray(displayConfig.sections) ? displayConfig.sections : [];
-		const slots = ['a', 'b', 'c', 'd'];
+		const sections = (Array.isArray(displayConfig.sections) ? displayConfig.sections : [])
+			.filter((config) => config.type !== 'signals');
+
+		const slots = [ 'a', 'b', 'c', 'd' ];
 
 		slots.forEach((slot, index) => {
 			const config = sections[index] || null;
@@ -55,10 +59,6 @@ export class Renderer {
 	}
 
 	renderStatus(state, statusItems, context) {
-		if (!this.statusEl) {
-			return;
-		}
-
 		this.statusEl.innerHTML = '';
 
 		if (!statusItems.length) {
@@ -103,6 +103,37 @@ export class Renderer {
 		`;
 	}
 
+	renderActionFeedback(actionResponse) {
+		if (!this.actionFeedbackEl) {
+			return;
+		}
+
+		if (!actionResponse || !actionResponse.playerText) {
+			this.actionFeedbackEl.innerHTML = '';
+			this.actionFeedbackEl.className = 'reaction-card reaction-card--hidden';
+			return;
+		}
+
+		const resultType = actionResponse.resultType || 'success';
+		const resultLabel = resultType === 'failure'
+			? 'Failure'
+			: resultType === 'mixed'
+				? 'Mixed result'
+				: 'Success';
+
+		this.actionFeedbackEl.className = `reaction-card reaction-card--${this.escapeHtml(resultType)}`;
+
+		this.actionFeedbackEl.innerHTML = `
+			<div class="reaction-card__eyebrow">${this.escapeHtml(actionResponse.title || 'Immediate reaction')}</div>
+			<div class="reaction-card__player"><strong>You:</strong> ${this.escapeHtml(actionResponse.playerText)}</div>
+			<div class="reaction-card__npc">
+				<strong class="reaction-card__inline-result reaction-card__inline-result--${this.escapeHtml(resultType)}">${this.escapeHtml(resultLabel)}:</strong>
+				${this.escapeHtml(actionResponse.npcText || '')}
+			</div>
+			${actionResponse.outcomeText ? `<div class="reaction-card__outcome">${this.escapeHtml(actionResponse.outcomeText)}</div>` : ''}
+		`;
+	}
+
 	renderSection(slot, config, state, context) {
 		const panelEl = this.sectionEls[slot];
 		const titleEl = this.sectionTitleEls[slot];
@@ -126,10 +157,6 @@ export class Renderer {
 
 			case 'actors':
 				this.renderActors(panelEl, state.actors || []);
-				break;
-
-			case 'logic':
-				this.renderLogic(panelEl, state.logic || null, context);
 				break;
 
 			case 'memories':
@@ -189,7 +216,6 @@ export class Renderer {
 						<span>contain ${this.escapeHtml(String(issue.containment))}</span>
 					</div>
 				`;
-
 				list.appendChild(wrapper);
 			});
 
@@ -234,7 +260,7 @@ export class Renderer {
 						<span class="badge ${this.escapeHtml(moodClass)}">${this.escapeHtml(actor.currentMood || 'guarded')}</span>
 					</div>
 				</div>
-				<div class="actor-compact-note">${this.escapeHtml(actor.currentSummary || '')}</div>
+				<div class="actor-card__summary">${this.escapeHtml(actor.currentSummary || '')}</div>
 				<div class="meter-row">
 					<span>like ${this.escapeHtml(String(actor.playerLikability ?? '0'))}</span>
 					<span>suspicion ${this.escapeHtml(String(actor.playerSuspicion ?? actor.suspicion ?? '0'))}</span>
@@ -247,92 +273,6 @@ export class Renderer {
 		});
 
 		targetEl.appendChild(list);
-	}
-
-	renderLogic(targetEl, logic, context) {
-		targetEl.innerHTML = '';
-
-		if (!logic || !Array.isArray(logic.categories) || !logic.categories.length) {
-			targetEl.innerHTML = '<div class="status-empty">No logic board configured.</div>';
-			return;
-		}
-
-		const board = document.createElement('div');
-		board.className = 'logic-board';
-
-		if (logic.helpText) {
-			const help = document.createElement('div');
-			help.className = 'logic-help';
-			help.textContent = logic.helpText;
-			board.appendChild(help);
-		}
-
-		logic.categories.forEach((category) => {
-			const categoryWrap = document.createElement('div');
-			categoryWrap.className = 'logic-category';
-
-			const title = document.createElement('div');
-			title.className = 'logic-category__title';
-			title.textContent = category.label;
-			categoryWrap.appendChild(title);
-
-			const grid = document.createElement('div');
-			grid.className = 'logic-grid';
-
-			const corner = document.createElement('div');
-			corner.className = 'logic-grid__corner';
-			grid.appendChild(corner);
-
-			category.values.forEach((value) => {
-				const head = document.createElement('div');
-				head.className = 'logic-grid__head';
-				head.textContent = value.label;
-				grid.appendChild(head);
-			});
-
-			logic.actors.forEach((actor) => {
-				const rowLabel = document.createElement('div');
-				rowLabel.className = 'logic-grid__row-label';
-				rowLabel.textContent = actor.label;
-				grid.appendChild(rowLabel);
-
-				category.values.forEach((value) => {
-					const mark = logic.notebook?.[actor.id]?.[category.id]?.[value.id] || 'unknown';
-					const button = document.createElement('button');
-					button.type = 'button';
-					button.className = `logic-cell logic-cell--${mark}`;
-					button.textContent = mark === 'match' ? '●' : mark === 'exclude' ? '×' : '';
-					button.setAttribute(
-						'aria-label',
-						`${actor.label}, ${category.label}, ${value.label}, ${mark}`
-					);
-
-					button.addEventListener('click', () => {
-						if (context && typeof context.onLogicCell === 'function') {
-							context.onLogicCell(actor.id, category.id, value.id);
-						}
-					});
-
-					grid.appendChild(button);
-				});
-			});
-
-			categoryWrap.appendChild(grid);
-			board.appendChild(categoryWrap);
-		});
-
-		if (logic.progress) {
-			const footer = document.createElement('div');
-			footer.className = 'logic-footer';
-			footer.innerHTML = `
-				<span class="badge badge--tracked">correct ${this.escapeHtml(String(logic.progress.correctMatches))} / ${this.escapeHtml(String(logic.progress.totalMatches))}</span>
-				<span class="badge badge--critical">wrong ${this.escapeHtml(String(logic.progress.incorrectMatches))}</span>
-				${logic.progress.solved ? '<span class="badge badge--fresh">solved</span>' : ''}
-			`;
-			board.appendChild(footer);
-		}
-
-		targetEl.appendChild(board);
 	}
 
 	renderEvidence(targetEl, evidence) {
@@ -393,7 +333,7 @@ export class Renderer {
 			return;
 		}
 
-		const sortedMemories = [...memories].sort((a, b) => b.stability - a.stability);
+		const sortedMemories = [ ...memories ].sort((a, b) => b.stability - a.stability);
 		const list = document.createElement('div');
 		list.className = 'memory-list';
 
@@ -403,12 +343,11 @@ export class Renderer {
 			wrapper.innerHTML = `
 				<div class="memory-card__line">
 					<span class="memory-card__name">${this.escapeHtml(memory.label)}</span>
-					<span class="badge badge--${this.escapeHtml(memory.stage)}">${this.escapeHtml(memory.stage)}</span>
+					<span class="badge badge--${memory.stage}">${this.escapeHtml(memory.stage)}</span>
 					${memory.preserved === true ? '<span class="badge badge--anchor">anchored</span>' : ''}
 				</div>
 				<div>${this.escapeHtml(memory.currentText)}</div>
 			`;
-
 			list.appendChild(wrapper);
 		});
 
@@ -416,60 +355,75 @@ export class Renderer {
 	}
 
 	renderNode({ nodeView, choices, onChoice }) {
-		if (this.storyEl) {
-			const kickerHtml = nodeView.kicker
-				? `<div class="story-kicker">${this.escapeHtml(nodeView.kicker)}</div>`
-				: '';
+		const kickerMarkup = nodeView.kicker
+			? `<div class="story-kicker">${this.escapeHtml(nodeView.kicker)}</div>`
+			: '';
 
-			const paragraphs = String(nodeView.text || '')
-				.split(/\n{2,}/)
-				.filter(Boolean)
-				.map((paragraph) => `<p>${this.escapeHtml(paragraph)}</p>`)
-				.join('');
+		const paragraphs = String(nodeView.text || '')
+			.split(/\n{2,}/)
+			.filter(Boolean)
+			.map((paragraph) => `<p>${this.escapeHtml(paragraph)}</p>`)
+			.join('');
 
-			this.storyEl.innerHTML = `
-				${kickerHtml}
-				<h2 class="story-title">${this.escapeHtml(nodeView.title || '')}</h2>
-				<div class="story-body">${paragraphs}</div>
-			`;
-		}
+		this.storyEl.innerHTML = `
+			${kickerMarkup}
+			<h2 class="story-title">${this.escapeHtml(nodeView.title || '')}</h2>
+			<div class="story-body">${paragraphs}</div>
+		`;
 
-		if (this.choicesEl) {
-			this.choicesEl.innerHTML = '';
+		this.choicesEl.innerHTML = '';
 
-			choices.forEach((choice) => {
-				const button = document.createElement('button');
-				button.type = 'button';
-				button.className = 'choice-button';
-				button.disabled = choice.disabled === true;
+		const visibleChoices = choices.filter((choice) => choice.available !== false);
 
-				const note = choice.available === false && choice.unavailableText
-					? choice.unavailableText
-					: choice.note || '';
+		visibleChoices.forEach((choice) => {
+			const button = document.createElement('button');
+			button.type = 'button';
+			button.className = 'choice-button';
+			button.disabled = choice.disabled === true;
 
-				button.innerHTML = `
-					<span class="choice-text">${this.escapeHtml(choice.text || 'Continue')}</span>
-					${note ? `<span class="choice-note">${this.escapeHtml(note)}</span>` : ''}
-				`;
+			const choiceText = document.createElement('span');
+			choiceText.className = 'choice-text';
+			choiceText.textContent = choice.text || 'Continue';
+			button.appendChild(choiceText);
 
-				button.addEventListener('click', () => onChoice(choice));
-				this.choicesEl.appendChild(button);
+			if (choice.disabled === true && choice.unavailableText) {
+				const choiceNote = document.createElement('span');
+				choiceNote.className = 'choice-note';
+				choiceNote.textContent = choice.unavailableText;
+				button.appendChild(choiceNote);
+			}
+
+			button.addEventListener('click', () => {
+				if (choice.disabled === true) {
+					return;
+				}
+
+				onChoice(choice);
 			});
-		}
+
+			this.choicesEl.appendChild(button);
+		});
 	}
 
 	getMoodBadgeClass(mood) {
-		switch (mood) {
-			case 'open':
-				return 'badge--mood-open';
+		const normalizedMood = String(mood || 'guarded').toLowerCase();
+
+		switch (normalizedMood) {
 			case 'settled':
 				return 'badge--mood-settled';
+
+			case 'open':
+				return 'badge--mood-open';
+
 			case 'watchful':
 				return 'badge--mood-watchful';
+
 			case 'hostile':
 				return 'badge--mood-hostile';
+
 			case 'shaken':
 				return 'badge--mood-shaken';
+
 			case 'guarded':
 			default:
 				return 'badge--mood-guarded';
@@ -477,11 +431,11 @@ export class Renderer {
 	}
 
 	escapeHtml(value) {
-		return String(value ?? '')
-			.replace(/&/g, '&amp;')
-			.replace(/</g, '&lt;')
-			.replace(/>/g, '&gt;')
-			.replace(/"/g, '&quot;')
-			.replace(/'/g, '&#39;');
+		return String(value)
+			.replaceAll('&', '&amp;')
+			.replaceAll('<', '&lt;')
+			.replaceAll('>', '&gt;')
+			.replaceAll('"', '&quot;')
+			.replaceAll("'", '&#039;');
 	}
 }

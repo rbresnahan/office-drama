@@ -18,6 +18,7 @@ const HR_ISSUE_ID = 'hr-attention';
 const DIRTY_RESIDUE_ID = 'dirty-residue';
 const TIM_COMPROMISED_ID = 'tim-compromised';
 const BETTY_TIM_FRICTION_ID = 'betty-tim-friction';
+const MEETING_TURN_LIMIT = 6;
 
 const LOCATION_BY_ID = {
 	betty: 'Break room',
@@ -316,6 +317,52 @@ function getSubjectName(state) {
 	return actor ? actor.name : subjectName;
 }
 
+function getAveragePlayerSuspicion(state) {
+	const actors = Array.isArray(state.actors) ? state.actors : [];
+
+	if (!actors.length) {
+		return 0;
+	}
+
+	const total = actors.reduce((sum, actor) => {
+		return sum + (Number(actor.playerSuspicion ?? actor.suspicion) || 0);
+	}, 0);
+
+	return Math.round(total / actors.length);
+}
+
+function getEarnedMeetingActions(state) {
+	return Array.isArray(state.earnedMeetingActions) ? state.earnedMeetingActions : [];
+}
+
+function hasEarnedMeetingAction(state, actionId) {
+	return getEarnedMeetingActions(state).includes(actionId);
+}
+
+function syncEarnedMeetingActions(state) {
+	const actions = [];
+	const flags = state.flags || {};
+
+	if (flags.timSetUp === true) {
+		actions.push('accuse_tim_drunk');
+	}
+
+	if (
+		flags.frankBriefed === true
+		|| flags.recallEnabled === true
+		|| flags.printerCopiesRemoved === true
+	) {
+		actions.push('procedural_containment');
+	}
+
+	if (flags.targetWarned === true) {
+		actions.push('controlled_confession');
+	}
+
+	state.earnedMeetingActions = actions;
+	return actions;
+}
+
 function getKnowledgeWeight(actor, issueId) {
 	const knowledge = actor && actor.knowledge ? actor.knowledge[issueId] : null;
 
@@ -484,6 +531,10 @@ function getEnding(state) {
 	const hrAttention = read.issueById(state, HR_ISSUE_ID);
 	const subjectIssue = read.issueById(state, SUBJECT_FINDING_OUT_ID);
 	const residue = read.issueById(state, DIRTY_RESIDUE_ID);
+	const timCompromised = read.issueById(state, TIM_COMPROMISED_ID);
+	const bettyTimFriction = read.issueById(state, BETTY_TIM_FRICTION_ID);
+	const tim = read.actorById(state, 'tim');
+	const frank = read.actorById(state, 'frank');
 	const dirtyPlay = Number(read.path(state, 'flags.dirtyPlayCount')) || 0;
 	const subjectWarned = read.flag(state, 'targetWarned');
 	const frankBriefed = read.flag(state, 'frankBriefed');
@@ -493,6 +544,7 @@ function getEnding(state) {
 	const hrContainment = hrAttention ? hrAttention.containment : 0;
 	const residueSeverity = residue ? residue.severity : 0;
 	const subjectState = subjectIssue ? subjectIssue.lifecycleState : 'warming';
+	const averageSuspicion = getAveragePlayerSuspicion(state);
 	const endingTarget = getSubjectName(state);
 
 	if (finalAction === 'own-it') {
@@ -525,12 +577,12 @@ function getEnding(state) {
 		};
 	}
 
-	if (finalAction === 'bury-it') {
+	if (finalAction === 'procedural-containment' || finalAction === 'bury-it') {
 		if (replyContainment >= 70 && residueSeverity < 50 && hrContainment >= 55) {
 			return {
 				title: 'Ending: Temporary Containment',
 				text: paragraphs(
-					`The recall works well enough, the physical copies disappear, and the room decides to act like the whole thing was a systems hiccup plus one idiot minute about ${endingTarget}.`,
+					`Frank accepts the procedural version, the room follows the safer story, and the whole thing starts looking like a containment failure instead of a public bloodletting about ${endingTarget}.`,
 					'You survive the day. The email does not. Your relationships do not come out clean, but the building is not on fire by five.'
 				),
 			};
@@ -539,28 +591,77 @@ function getEnding(state) {
 		return {
 			title: 'Ending: Leaky Lid',
 			text: paragraphs(
-				`You get the crisis under a lid, but not into a coffin. Too many people heard enough about ${endingTarget}, and the office keeps one eye on you even while pretending to move on.`,
+				`You try to force the meeting into process and procedure, but the room still wants blood. Enough of the office accepts the smaller story that you survive, but too many people heard enough about ${endingTarget} for this to feel clean.`,
 				'Containment works. Erasure does not. That distinction matters more than you wanted it to.'
 			),
 		};
 	}
 
-	if (finalAction === 'blame-tim') {
-		if (dirtyPlay >= 1 && residueSeverity >= 50) {
+	if (finalAction === 'accuse-tim-drunk' || finalAction === 'blame-tim') {
+		let support = 0;
+		let resistance = 0;
+
+		if (read.flag(state, 'timSetUp')) {
+			support += 2;
+		}
+
+		if (timCompromised && timCompromised.lifecycleState === 'active') {
+			support += 1;
+		}
+
+		if (bettyTimFriction && bettyTimFriction.lifecycleState === 'active') {
+			support += 1;
+		}
+
+		if (read.flag(state, 'bettyDistracted')) {
+			support += 1;
+		}
+
+		if (frankBriefed && averageSuspicion < 40) {
+			support += 1;
+		}
+
+		if (averageSuspicion >= 45) {
+			resistance += 2;
+		}
+
+		if (dirtyPlay >= 3) {
+			resistance += 1;
+		}
+
+		if (tim && tim.stability >= 60) {
+			resistance += 1;
+		}
+
+		if (frank && (Number(frank.playerSuspicion ?? frank.suspicion) || 0) >= 40) {
+			resistance += 1;
+		}
+
+		if (support >= resistance + 2) {
 			return {
-				title: 'Ending: Poisoned Escape',
+				title: 'Ending: Tim Takes the Fall',
 				text: paragraphs(
-					`You give the office a smaller villain and let it enjoy the convenience. Tim takes the hit because he is nervous, isolated, and easy to fold into the story about ${endingTarget}.`,
-					'It works well enough to save you today. It also leaves behind exactly the kind of stain that keeps coming back in management conversations you are not in.'
+					`You point at Tim, and the room decides it wants that story badly enough to carry it. The bottle, the nerves, and the seeds you planted earlier line up just enough that the meeting pivots away from ${endingTarget} and onto him.`,
+					'It works. It is also rotten, and everyone involved will be living with that long after the chairs are folded back up.'
+				),
+			};
+		}
+
+		if (support >= resistance) {
+			return {
+				title: 'Ending: The Room Wants to Believe It',
+				text: paragraphs(
+					`You accuse Tim of drinking at work, and the room hesitates just long enough for doubt to become its own shelter. Some people buy it. Some do not. What matters is that the meeting stops being cleanly about you or ${endingTarget}.`,
+					'You survive by making the room settle for a story that is useful before it is true.'
 				),
 			};
 		}
 
 		return {
-			title: 'Ending: Thin Scapegoat',
+			title: 'Ending: Transparent Smear',
 			text: paragraphs(
-				'You try to pin the momentum on Tim, but the office can smell when a story is only useful and not quite true. Some people buy it anyway, which is its own kind of indictment.',
-				'You are not cleared. You are merely not the only suspect-shaped object in the room.'
+				`You try to hang the meeting on Tim, but the room can feel the desperation in it. The accusation lands with a thud, and now the office gets to keep both stories at once: the email about ${endingTarget}, and the fact that you reached for a human shield when the lights got bright.`,
+				'Not only does Tim fail to save you, the move itself becomes part of the case against you.'
 			),
 		};
 	}
@@ -571,26 +672,6 @@ function getEnding(state) {
 			text: paragraphs(
 				`You do not make it elegant. You just stop making it worse. Frank logs it, ${endingTarget} stays cold, and the office loses interest because you refused to hand it better entertainment.`,
 				'This is not a win exactly. It is a controlled bruise instead of a public arterial spray.'
-			),
-		};
-	}
-
-	if (finalAction === 'walk') {
-		if (subjectState === 'reactivated' || replyContainment < 45) {
-			return {
-				title: 'Ending: Vacuum of Meaning',
-				text: paragraphs(
-					`You leave the floor before the meeting, which means the office gets to write the rest without your interference. People are rarely kind when improvising someone else's motive around ${endingTarget}.`,
-					'The crisis keeps moving after you. Walking spared your nerves, not your reputation.'
-				),
-			};
-		}
-
-		return {
-			title: 'Ending: Cowardice with Good Timing',
-			text: paragraphs(
-				'You disappear after doing just enough to keep the whole thing from exploding on impact. The office still talks, but now it talks in a lower register and without you there to make it worse.',
-				'It is not admirable. It is not even satisfying. It is, however, effective in a small cowardly way.'
 			),
 		};
 	}
@@ -613,6 +694,24 @@ function officeWorldStep(state, helpers) {
 	const currentTargetId = state.emailTargetId || read.path(state, 'flags.emailTargetId') || subjectId;
 	const target = helpers.findActorById(currentTargetId);
 	const targetName = target ? target.name : subjectName;
+
+	syncEarnedMeetingActions(state);
+
+	if (
+		state.turn >= MEETING_TURN_LIMIT
+		&& state.flags.meetingStarted !== true
+		&& state.gamePhase !== 'resolved'
+	) {
+		state.flags.meetingStarted = true;
+		state.flags.finaleUnlocked = true;
+		state.gamePhase = 'all_hands';
+		helpers.addEvent('Time is up. There is no more room to work. The only move left is to attend the meeting.');
+	}
+
+	if (state.flags.meetingStarted === true && state.gamePhase !== 'resolved') {
+		state.flags.finaleUnlocked = true;
+		state.gamePhase = 'all_hands';
+	}
 
 	if (
 		state.fairIntervention
@@ -712,7 +811,7 @@ function officeWorldStep(state, helpers) {
 		helpers.adjustActor('betty', 'stability', -4, 'add');
 	}
 
-	if (state.turn >= 5 || state.officeFocusState === 'dominant' || state.gamePhase === 'defensive') {
+	if (state.turn >= (MEETING_TURN_LIMIT - 1) || state.officeFocusState === 'dominant' || state.gamePhase === 'defensive') {
 		state.flags.finaleUnlocked = true;
 	}
 }
@@ -731,6 +830,7 @@ function buildInitialState() {
 		officeFocusState: runSetup.officeFocusState,
 		gamePhase: runSetup.gamePhase,
 		fairIntervention: runSetup.fairIntervention,
+		earnedMeetingActions: [],
 		stats: {
 			stress: 2,
 			maxStress: 6,
@@ -744,6 +844,8 @@ function buildInitialState() {
 			finalAction: null,
 			emailTargetId: runSetup.emailTargetId,
 			deliveryPatternId: runSetup.deliveryPatternId,
+			meetingStarted: false,
+			finalMeetingActionTaken: false,
 		},
 		logic: {
 			title: 'Office Logic Board',
@@ -887,7 +989,7 @@ export const storyConfig = {
 	},
 	startNode: 'bullpen',
 	turnRules: {
-		maxTurns: 6,
+		maxTurns: MEETING_TURN_LIMIT,
 		signalLimit: DEFAULT_MEMORY_TUNING.signalLimit,
 		memoryDecay: DEFAULT_MEMORY_TUNING,
 		issueDecay: DEFAULT_ISSUE_TUNING,
@@ -1094,6 +1196,11 @@ export const storyConfig = {
 				choice('Feed Betty a side rumor about Tim being shaky on the layoffs list.', 'break-room', {
 					condition: when.not(when.flag('bettyDistracted')),
 					feedback: 'Betty immediately pivots to a shinier cruelty vector. Efficient. Gross. Effective.',
+					reaction: {
+						resultType: 'mixed',
+						npcText: 'Betty immediately pivots to a shinier cruelty vector. Efficient. Gross. Effective.',
+						outcomeText: 'Betty stops feeding the main fire for now, but you create dirty residue and damage the Betty-Tim relationship.',
+					},
 					effects: [
 						fx.set('flags.bettyDistracted', true),
 						fx.add('stats.stress', 1),
@@ -1156,6 +1263,11 @@ export const storyConfig = {
 				}),
 				choice('Tell Tim the email is handled and he should stay out of it.', 'printer-bay', {
 					feedback: 'Tim wants out of the blast radius more than he wants truth. That is useful.',
+					reaction: {
+						resultType: 'success',
+						npcText: 'Tim wants out of the blast radius more than he wants truth. That is useful.',
+						outcomeText: 'Tim settles down, likes you a bit more, and becomes less likely to make the situation worse right now.',
+					},
 					effects: [
 						fx.actorAdd('tim', 'playerLikability', 12),
 						fx.actorAdd('tim', 'stability', 10),
@@ -1165,6 +1277,11 @@ export const storyConfig = {
 				choice('Jam the printer so no one else gets a clean copy.', 'printer-bay', {
 					condition: when.not(when.flag('printerJammed')),
 					feedback: 'You buy time the dumb mechanical way.',
+					reaction: {
+						resultType: 'mixed',
+						npcText: 'You buy time the dumb mechanical way.',
+						outcomeText: 'The email becomes harder to spread physically, but you leave behind dirty residue and make Tim more suspicious.',
+					},
 					effects: [
 						fx.set('flags.printerJammed', true),
 						fx.add('flags.dirtyPlayCount', 1),
@@ -1180,6 +1297,11 @@ export const storyConfig = {
 						when.turnAtLeast(2)
 					),
 					feedback: 'There it is: the quick ugly option. Effective on paper. Rotten in the bloodstream.',
+					reaction: {
+						resultType: 'mixed',
+						npcText: 'There it is: the quick ugly option. Effective on paper. Rotten in the bloodstream.',
+						outcomeText: 'Tim becomes easier to throw under the bus later, but the move is dirty, raises residue, and increases suspicion around the room.',
+					},
 					effects: [
 						fx.set('flags.timSetUp', true),
 						fx.add('flags.dirtyPlayCount', 1),
@@ -1215,6 +1337,11 @@ export const storyConfig = {
 				choice('Ask Devon for a legitimate recall and kill-switch on forwarding.', 'it-room', {
 					condition: when.not(when.flag('recallEnabled')),
 					feedback: 'Devon does not like you more, but he likes preventable chaos less.',
+					reaction: {
+						resultType: 'success',
+						npcText: 'Devon does not like you more, but he likes preventable chaos less.',
+						outcomeText: 'Recall is now enabled. Spread risk drops, containment improves, and Devon now understands the situation more clearly.',
+					},
 					effects: [
 						fx.set('flags.recallEnabled', true),
 						fx.issueContain(EMAIL_ISSUE_ID, 20),
@@ -1226,6 +1353,11 @@ export const storyConfig = {
 				choice('Ask Devon to purge logs that would prove timing and recipients.', 'it-room', {
 					condition: when.not(when.flag('logsPurged')),
 					feedback: 'Devon hates this, which means he is correctly identifying it as a bad idea.',
+					reaction: {
+						resultType: 'mixed',
+						npcText: 'Devon hates this, which means he is correctly identifying it as a bad idea.',
+						outcomeText: 'You reduce some immediate exposure, but Devon trusts you less, your suspicion rises with him, and dirty residue gets worse.',
+					},
 					effects: [
 						fx.set('flags.logsPurged', true),
 						fx.add('flags.dirtyPlayCount', 1),
@@ -1270,6 +1402,11 @@ export const storyConfig = {
 				choice('Preemptively tell Frank you sent the email and you are containing it.', 'hr', {
 					condition: when.not(when.flag('frankBriefed')),
 					feedback: 'You trade drama for paperwork. Sometimes that is the adult move. Sometimes it is just less embarrassing.',
+					reaction: {
+						resultType: 'success',
+						npcText: 'You trade drama for paperwork. Sometimes that is the adult move. Sometimes it is just less embarrassing.',
+						outcomeText: 'Frank is now briefed, HR pressure becomes more structured, and you gain some credibility with him instead of letting him hear it from the hallway.',
+					},
 					effects: [
 						fx.set('flags.frankBriefed', true),
 						fx.actorKnowledge('frank', EMAIL_ISSUE_ID, 'confirmed', 78, 'you'),
@@ -1336,6 +1473,13 @@ export const storyConfig = {
 					feedback(state) {
 						return `${getSubjectName(state)} goes still. It is somehow more frightening than yelling.`;
 					},
+					reaction(state) {
+						return {
+							resultType: 'mixed',
+							npcText: `${getSubjectName(state)} goes still. It is somehow more frightening than yelling.`,
+							outcomeText: 'You control how the target finds out, which helps containment, but the run now shifts into defensive mode because clean prevention is over.',
+						};
+					},
 					effects(state) {
 						return [
 							fx.set('flags.targetWarned', true),
@@ -1387,51 +1531,45 @@ export const storyConfig = {
 				const replyAll = read.issueById(state, EMAIL_ISSUE_ID);
 				const hrAttention = read.issueById(state, HR_ISSUE_ID);
 				const dirtyResidue = read.issueById(state, DIRTY_RESIDUE_ID);
+				const earnedActions = getEarnedMeetingActions(state);
 
 				return paragraphs(
 					'Everyone is here physically or almost here socially, which is basically the same thing in an office. This is the moment where all your containment either becomes narrative control or turns out to have been elaborate denial.',
 					replyAll ? `Main issue: ${replyAll.currentText}` : null,
 					hrAttention ? `HR pressure: ${hrAttention.currentText}` : null,
-					dirtyResidue ? `What your tactics are doing to you: ${dirtyResidue.currentText}` : null
+					dirtyResidue ? `What your tactics are doing to you: ${dirtyResidue.currentText}` : null,
+					earnedActions.length ? `Leverage you earned before walking in: ${earnedActions.join(', ')}.` : 'You are entering the meeting mostly with baseline options.'
 				);
 			},
 			choices: [
 				choice((state) => `Stand up and own the email about ${getSubjectName(state)} before anyone can weaponize it harder.`, 'ending', {
 					feedback: 'You choose exposure with your name still attached.',
 					effects: [
+						fx.set('flags.finalMeetingActionTaken', true),
 						fx.set('flags.finalAction', 'own-it'),
 					],
 				}),
-				choice('Lean on recall, missing copies, and procedural fog to bury it.', 'ending', {
-					condition: when.or(
-						when.flag('recallEnabled'),
-						when.flag('printerCopiesRemoved')
-					),
-					feedback: 'You choose containment over confession and hope the room is tired enough to accept it.',
+				choice('Ask Frank to frame this as containment and policy, not public theater.', 'ending', {
+					condition: (state) => hasEarnedMeetingAction(state, 'procedural_containment'),
+					feedback: 'You push the room toward process, hoping procedure can beat appetite.',
 					effects: [
-						fx.set('flags.finalAction', 'bury-it'),
+						fx.set('flags.finalMeetingActionTaken', true),
+						fx.set('flags.finalAction', 'procedural-containment'),
 					],
 				}),
-				choice('Let Tim absorb the social blast and step aside.', 'ending', {
-					condition: when.or(
-						when.flag('timSetUp'),
-						when.issueState(TIM_COMPROMISED_ID, 'active')
-					),
-					feedback: 'You choose a smaller victim and a dirtier mirror.',
+				choice('Accuse Tim of drinking at work and force the room to look at him instead.', 'ending', {
+					condition: (state) => hasEarnedMeetingAction(state, 'accuse_tim_drunk'),
+					feedback: 'You point at Tim and try to make the bottle the story.',
 					effects: [
-						fx.set('flags.finalAction', 'blame-tim'),
+						fx.set('flags.finalMeetingActionTaken', true),
+						fx.set('flags.finalAction', 'accuse-tim-drunk'),
 					],
 				}),
-				choice('Take the HR hit quietly and refuse to make new damage.', 'ending', {
-					feedback: 'You choose paperwork, shame, and the smallest possible radius.',
+				choice('Say as little as possible and take the HR hit quietly.', 'ending', {
+					feedback: 'You decide not to hand the room anything bigger than the incident itself.',
 					effects: [
+						fx.set('flags.finalMeetingActionTaken', true),
 						fx.set('flags.finalAction', 'take-the-hit-quietly'),
-					],
-				}),
-				choice('Leave the floor before the room closes over you.', 'ending', {
-					feedback: 'You choose absence and let everyone else finish the architecture.',
-					effects: [
-						fx.set('flags.finalAction', 'walk'),
 					],
 				}),
 			],

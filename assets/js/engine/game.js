@@ -13,6 +13,7 @@ import {
 	cycleLogicCell,
 	decayIssues,
 	decayMemories,
+	exposeIssue,
 	findActorById,
 	findIssueById,
 	findRelationship,
@@ -25,7 +26,6 @@ import {
 	setActorKnowledge,
 	setIssueLifecycle,
 	shiftIssuePrecision,
-	exposeIssue,
 } from './state.js';
 
 export class Game {
@@ -43,6 +43,7 @@ export class Game {
 		this.validateStoryConfig();
 
 		this.state = createInitialState(this.baseInitialState);
+		this.state.lastActionResponse = null;
 		this.currentNodeId = this.startNode;
 		this.visitedNodes = {};
 		this.triggeredRedirects = {};
@@ -57,6 +58,7 @@ export class Game {
 
 	reset() {
 		this.state = createInitialState(this.baseInitialState);
+		this.state.lastActionResponse = null;
 		this.currentNodeId = this.startNode;
 		this.visitedNodes = {};
 		this.triggeredRedirects = {};
@@ -68,6 +70,78 @@ export class Game {
 	addEvent(message) {
 		const limit = this.turnRules.signalLimit || 6;
 		addSignal(this.state, message, limit);
+	}
+
+	setActionResponse(response = null) {
+		if (!response || typeof response !== 'object') {
+			this.state.lastActionResponse = null;
+			return;
+		}
+
+		const {
+			title = 'Immediate reaction',
+			playerText = '',
+			resultType = 'success',
+			npcText = '',
+			outcomeText = '',
+		} = response;
+
+		const normalizedType = [ 'success', 'failure', 'mixed' ].includes(resultType)
+			? resultType
+			: 'success';
+
+		if (
+			(!playerText || String(playerText).trim() === '')
+			&& (!npcText || String(npcText).trim() === '')
+			&& (!outcomeText || String(outcomeText).trim() === '')
+		) {
+			this.state.lastActionResponse = null;
+			return;
+		}
+
+		this.state.lastActionResponse = {
+			title,
+			playerText: String(playerText || '').trim(),
+			resultType: normalizedType,
+			npcText: String(npcText || '').trim(),
+			outcomeText: String(outcomeText || '').trim(),
+		};
+	}
+
+	resolveReaction(reactionConfig, resolvedChoiceText, resolvedFeedback) {
+		if (!reactionConfig) {
+			return null;
+		}
+
+		const reactionObject = typeof reactionConfig === 'function'
+			? reactionConfig(this.state)
+			: reactionConfig;
+
+		if (!reactionObject || typeof reactionObject !== 'object') {
+			return null;
+		}
+
+		const title = this.resolve(reactionObject.title) || 'Immediate reaction';
+		const playerText = this.resolve(reactionObject.playerText) || resolvedChoiceText;
+		const resultType = this.resolve(reactionObject.resultType) || 'success';
+		const npcText = this.resolve(reactionObject.npcText) || resolvedFeedback || '';
+		const outcomeText = this.resolve(reactionObject.outcomeText) || '';
+
+		if (
+			(!playerText || String(playerText).trim() === '')
+			&& (!npcText || String(npcText).trim() === '')
+			&& (!outcomeText || String(outcomeText).trim() === '')
+		) {
+			return null;
+		}
+
+		return {
+			title,
+			playerText,
+			resultType,
+			npcText,
+			outcomeText,
+		};
 	}
 
 	applyEffects(effects) {
@@ -83,6 +157,25 @@ export class Game {
 
 	resolve(value) {
 		return resolveValue(value, this.state);
+	}
+
+	isMeetingLocked() {
+		return this.state.flags?.meetingStarted === true
+			&& this.currentNodeId !== 'finale'
+			&& this.currentNodeId !== 'ending';
+	}
+
+	getForcedMeetingChoices() {
+		return [
+			{
+				text: 'Attend the meeting.',
+				next: 'finale',
+				feedback: 'Time is up. There is no more room to work. Everyone is assembling.',
+				available: true,
+				disabled: false,
+				consumesTurn: false,
+			},
+		];
 	}
 
 	getWorldHelpers() {
@@ -186,6 +279,16 @@ export class Game {
 			return;
 		}
 
+		if (this.currentNodeId === 'finale') {
+			this.state.flags.meetingStarted = true;
+			this.state.flags.finaleUnlocked = true;
+			this.state.gamePhase = 'all_hands';
+		}
+
+		if (this.currentNodeId === 'ending') {
+			this.state.gamePhase = 'resolved';
+		}
+
 		const entryConfig = node.entry || {};
 		const entryOnce = node.entryOnce === true || entryConfig.once === true;
 		const entryEffects = node.entryEffects ?? entryConfig.effects;
@@ -226,6 +329,10 @@ export class Game {
 	}
 
 	getCurrentChoices() {
+		if (this.isMeetingLocked()) {
+			return this.getForcedMeetingChoices();
+		}
+
 		const node = this.getCurrentNode();
 
 		if (!node) {
@@ -240,7 +347,17 @@ export class Game {
 			return;
 		}
 
-		this.addEvent(this.resolve(choice.feedback));
+		const resolvedChoiceText = this.resolve(choice.text) || 'You act.';
+		const resolvedFeedback = this.resolve(choice.feedback);
+		const resolvedReaction = this.resolveReaction(
+			choice.reaction,
+			resolvedChoiceText,
+			resolvedFeedback
+		);
+
+		this.setActionResponse(resolvedReaction || null);
+
+		this.addEvent(resolvedFeedback);
 		this.applyEffects(this.resolve(choice.effects));
 
 		const targetNode = choice.next || choice.to;

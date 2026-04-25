@@ -8,19 +8,142 @@
 </head>
 <body>
 	<main class="app shell">
-		<header class="panel hero">
-			<p id="app-eyebrow" class="eyebrow">Delay discovery. Shape the room. Survive the reveal.</p>
-			<h1 id="app-title">Reply All</h1>
-			<p id="app-subtitle" class="hero-copy">
-				You sent a bad email about one coworker. Recall only partly worked. Keep them from finding out too early—and if they do, survive the fallout.
-			</p>
-		</header>
+		<aside
+			id="terms-panel"
+			class="help-panel help-panel--hidden"
+			aria-hidden="true"
+			role="dialog"
+			aria-labelledby="terms-title"
+		>
+			<div class="help-panel__header">
+				<h2 id="terms-title">Quick Terms</h2>
+				<button id="terms-close" class="help-close" type="button" aria-label="Close help panel">
+					×
+				</button>
+			</div>
+
+			<div class="help-panel__body">
+				<div class="help-group">
+					<h3>People</h3>
+					<dl class="help-list">
+						<div class="help-item">
+							<dt>Read on People</dt>
+							<dd>Your current visible read on each coworker. Not the full truth. Just the practical state you can act on.</dd>
+						</div>
+						<div class="help-item">
+							<dt>Target</dt>
+							<dd>The coworker the email is about.</dd>
+						</div>
+						<div class="help-item">
+							<dt>Open</dt>
+							<dd>More receptive and easier to influence.</dd>
+						</div>
+						<div class="help-item">
+							<dt>Settled</dt>
+							<dd>Stable and not especially alarmed.</dd>
+						</div>
+						<div class="help-item">
+							<dt>Guarded</dt>
+							<dd>Cautious. Not relaxed, not fully against you.</dd>
+						</div>
+						<div class="help-item">
+							<dt>Watchful</dt>
+							<dd>Actively suspicious and looking for motive.</dd>
+						</div>
+						<div class="help-item">
+							<dt>Hostile</dt>
+							<dd>Against you and willing to make things worse for you.</dd>
+						</div>
+					</dl>
+				</div>
+
+				<div class="help-group">
+					<h3>Target awareness</h3>
+					<dl class="help-list">
+						<div class="help-item">
+							<dt>Unaware</dt>
+							<dd>The target does not know.</dd>
+						</div>
+						<div class="help-item">
+							<dt>At risk</dt>
+							<dd>The target is close to finding out.</dd>
+						</div>
+						<div class="help-item">
+							<dt>Suspicious</dt>
+							<dd>The target senses something is wrong.</dd>
+						</div>
+						<div class="help-item">
+							<dt>Confirmed</dt>
+							<dd>The target knows. Clean prevention is over.</dd>
+						</div>
+					</dl>
+				</div>
+
+				<div class="help-group">
+					<h3>Run state</h3>
+					<dl class="help-list">
+						<div class="help-item">
+							<dt>Containment</dt>
+							<dd>You are still trying to stop or limit discovery.</dd>
+						</div>
+						<div class="help-item">
+							<dt>Defensive</dt>
+							<dd>The target knows or the run has shifted into fallout control.</dd>
+						</div>
+						<div class="help-item">
+							<dt>All-hands</dt>
+							<dd>The public meeting phase. Free-roam manipulation is over.</dd>
+						</div>
+						<div class="help-item">
+							<dt>Background</dt>
+							<dd>The issue exists, but is not running the room yet.</dd>
+						</div>
+						<div class="help-item">
+							<dt>Active</dt>
+							<dd>The issue is clearly shaping behavior.</dd>
+						</div>
+						<div class="help-item">
+							<dt>Dominant</dt>
+							<dd>The room is now mainly about this problem.</dd>
+						</div>
+					</dl>
+				</div>
+			</div>
+		</aside>
+
+		<div id="terms-backdrop" class="help-backdrop help-backdrop--hidden" aria-hidden="true"></div>
 
 		<section class="layout">
-			<section class="panel main-panel">
-				<div id="latest-signal" class="signal-strip"></div>
-				<div id="story" class="story-panel"></div>
-				<div id="choices" class="choices-panel"></div>
+			<section class="main-column">
+				<header class="panel hero">
+					<div class="hero__top">
+						<div>
+							<p id="app-eyebrow" class="eyebrow">Delay discovery. Shape the room. Survive the reveal.</p>
+							<h1 id="app-title">Reply All</h1>
+						</div>
+
+						<button
+							id="terms-toggle"
+							class="help-toggle"
+							type="button"
+							aria-expanded="false"
+							aria-controls="terms-panel"
+						>
+							Help / Terms
+						</button>
+					</div>
+
+					<p id="app-subtitle" class="hero-copy">
+						You sent a bad email about one coworker. Recall only partly worked. Keep them from finding out too early—and if they do, survive the fallout.
+					</p>
+				</header>
+
+				<section class="panel main-panel">
+					<div id="latest-signal" class="signal-strip"></div>
+					<div id="action-feedback" class="reaction-card reaction-card--hidden" aria-live="polite"></div>
+					<div id="story" class="story-panel"></div>
+					<div id="choices" class="choices-panel"></div>
+				</section>
 			</section>
 
 			<aside class="sidebar">
@@ -28,23 +151,78 @@
 					<div id="status-panel" class="status-strip"></div>
 				</section>
 
-				<section class="panel sidebar-panel sidebar-panel--wide">
-					<h3 id="section-a-title">Run Overview</h3>
+				<div class="sidebar-toolbar">
+					<button
+						id="sidebar-toggle-all"
+						class="sidebar-toolbar__button"
+						type="button"
+						aria-expanded="true"
+					>
+						Collapse all
+					</button>
+				</div>
+
+				<section
+					class="panel sidebar-panel sidebar-panel--wide sidebar-collapsible"
+					data-panel-key="a"
+				>
+					<button
+						class="sidebar-toggle"
+						type="button"
+						aria-expanded="true"
+						aria-controls="section-a-panel"
+					>
+						<span id="section-a-title" class="sidebar-toggle__label">Run Overview</span>
+						<span class="sidebar-toggle__icon" aria-hidden="true">▾</span>
+					</button>
 					<div id="section-a-panel" class="panel-body"></div>
 				</section>
 
-				<section class="panel sidebar-panel sidebar-panel--wide">
-					<h3 id="section-b-title">Office Floor</h3>
+				<section
+					class="panel sidebar-panel sidebar-panel--wide sidebar-collapsible"
+					data-panel-key="b"
+				>
+					<button
+						class="sidebar-toggle"
+						type="button"
+						aria-expanded="true"
+						aria-controls="section-b-panel"
+					>
+						<span id="section-b-title" class="sidebar-toggle__label">Office Floor</span>
+						<span class="sidebar-toggle__icon" aria-hidden="true">▾</span>
+					</button>
 					<div id="section-b-panel" class="panel-body"></div>
 				</section>
 
-				<section class="panel sidebar-panel sidebar-panel--wide">
-					<h3 id="section-c-title">Read on People</h3>
+				<section
+					class="panel sidebar-panel sidebar-panel--wide sidebar-collapsible"
+					data-panel-key="c"
+				>
+					<button
+						class="sidebar-toggle"
+						type="button"
+						aria-expanded="false"
+						aria-controls="section-c-panel"
+					>
+						<span id="section-c-title" class="sidebar-toggle__label">Read on People</span>
+						<span class="sidebar-toggle__icon" aria-hidden="true">▾</span>
+					</button>
 					<div id="section-c-panel" class="panel-body"></div>
 				</section>
 
-				<section class="panel sidebar-panel sidebar-panel--wide">
-					<h3 id="section-d-title">Memory & Evidence</h3>
+				<section
+					class="panel sidebar-panel sidebar-panel--wide sidebar-collapsible"
+					data-panel-key="d"
+				>
+					<button
+						class="sidebar-toggle"
+						type="button"
+						aria-expanded="false"
+						aria-controls="section-d-panel"
+					>
+						<span id="section-d-title" class="sidebar-toggle__label">Memory & Evidence</span>
+						<span class="sidebar-toggle__icon" aria-hidden="true">▾</span>
+					</button>
 					<div id="section-d-panel" class="panel-body"></div>
 				</section>
 			</aside>

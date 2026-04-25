@@ -51,6 +51,13 @@ Check inbox, sent folder, recall results, or related clues to learn who received
 - may cost time
 - may create risk if done from the wrong machine or in the wrong place
 
+### Meeting carryover
+Trace can help unlock stronger finale choices if it gives the player:
+- evidence
+- a procedural timeline
+- a better public explanation
+- proof that supports or punctures a later accusation
+
 ---
 
 ## 2. Distract
@@ -74,6 +81,12 @@ Pull someone’s attention away with inconvenience, urgency, nuisance, or workpl
 - can look suspicious if overused
 - may create collateral resentment
 
+### Meeting carryover
+Distract is mainly a time-buying action, but repeated successful distraction can shape:
+- who walks into all-hands already irritated
+- who missed part of the spread
+- who enters the meeting less informed than others
+
 ---
 
 ## 3. Access
@@ -94,6 +107,15 @@ Get access to a person’s machine, desk area, or email environment through trus
 ### Risks
 - can fail hard if the target already distrusts the player
 - can sharply raise playerSuspicion if caught or poorly explained
+
+### Meeting carryover
+Access can unlock meeting options if it lets the player:
+- hide something
+- plant something
+- recover something
+- or build a later accusation or cover story
+
+This is where some of the nastier finale options can come from.
 
 ---
 
@@ -121,6 +143,9 @@ Remove, hide, bury, or otherwise interfere with the email after gaining access.
 The player can never fully undo the send.
 The recall is never perfect and the game does not allow a total reset of reality.
 
+### Meeting carryover
+Delete / Suppress can improve a later procedural defense, but if it is too visible it can also make the player look guilty during all-hands.
+
 ---
 
 ## 5. Reassure
@@ -142,6 +167,15 @@ Calm someone down, make them feel safer, reduce panic or defensiveness.
 
 ### Risks
 - fails if used on someone who wants force, proof, or leverage instead of comfort
+
+### Meeting carryover
+Reassure helps all-hands by preserving:
+- trust
+- favorability
+- willingness to give the player room to speak
+- willingness to believe a softer explanation
+
+This is one of the cleanest ways to earn stronger finale footing.
 
 ---
 
@@ -165,6 +199,15 @@ Give someone a more interesting target, topic, or social path.
 ### Risks
 - may create a new fire
 - may count as dirty if obviously manipulative
+
+### Meeting carryover
+Redirect is one of the strongest finale setup actions because it can create:
+- side conflicts
+- substitute villains
+- room fragmentation
+- alternate topics that are still alive at all-hands
+
+This is how the player can make the meeting about more than the email.
 
 ---
 
@@ -194,6 +237,16 @@ Explain away weird behavior, muddy what happened, deny the shape of the truth, o
 A late blame-shift should only work if the room was prepared for it.
 The player must earn that possibility through earlier setup.
 
+### Meeting carryover
+Lie / Deflect is one of the main sources of earned finale plays:
+- scapegoat lines
+- softer reframings
+- weaker alternate truths
+- public blame shifts
+
+But those meeting plays should still resolve against room state.
+Unlocked does not mean guaranteed.
+
 ---
 
 ## 8. Sabotage
@@ -217,6 +270,23 @@ Use a dirtier move to interfere with access, timing, credibility, or smooth comm
 - high dirty-play cost
 - raises playerSuspicion strongly
 - increases chance of intervention ending
+
+### Meeting carryover
+Sabotage can unlock some of the most powerful finale actions.
+
+Example:
+- planting a bottle in Tim’s desk may unlock:
+  - **Accuse Tim of drinking at work**
+
+But that accusation should still be evaluated against:
+- Tim’s favorability
+- player suspicion
+- prior seeds
+- who already distrusts whom
+- whether the room thinks the player is full of it
+
+Sabotage earns dirtier meeting options.
+It does not guarantee the room will buy them.
 
 ---
 
@@ -254,6 +324,42 @@ This means the same action can succeed or fail differently depending on the room
 - Sabotage
 
 This distinction matters because dirtier actions should raise suspicion faster.
+
+---
+
+## All-Hands Lock Rule
+
+Phase 1 actions belong to the free-roam part of the run.
+
+Once all-hands begins:
+- these actions are no longer directly selectable
+- the player does not keep walking the office
+- the player does not keep manipulating people normally
+
+Instead, phase 1 actions cash out into:
+- room state
+- suspicion state
+- surviving trust
+- earned finale options
+
+The meeting is not a second sandbox.
+It is payoff.
+
+---
+
+## Earned Finale Action Rule
+
+Prototype 1 should treat many meeting options as the result of earlier action setup.
+
+Examples:
+- Trace + proof may support a stronger procedural defense
+- Reassure may preserve a key ally for the meeting
+- Redirect may create a side conflict that steals meeting focus
+- Lie / Deflect may unlock a late blame-shift
+- Sabotage may unlock a dirtier accusation
+- Access may make a planted or recovered object believable enough to matter publicly
+
+This keeps the meeting tied to the actual run.
 
 ---
 
@@ -297,5 +403,10 @@ Once the subject reads the email, those same actions shift into defensive use:
 - redirect blame
 - fracture the room
 - and survive the fallout
+
+Once all-hands begins, those actions stop being directly playable and instead determine:
+- what the room believes
+- what the player is allowed to claim
+- and what final public moves are actually available
 
 That is enough for the first playable without bloating the system.

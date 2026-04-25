@@ -59,6 +59,17 @@ These should become live fields in the next implementation pass.
 - `all_hands` = public climax
 - `resolved` = ending state
 
+### Additional required run flags
+- `dirtyPlayCount`
+- `meetingStarted`
+- `finalMeetingActionTaken`
+- `earnedMeetingActions`
+
+### Meaning
+- `meetingStarted` = all-hands mode is active
+- `finalMeetingActionTaken` = the player already used their one public move
+- `earnedMeetingActions` = the finale options unlocked by earlier play
+
 ---
 
 ## Live Per-NPC State
@@ -211,6 +222,7 @@ It does need live behavior.
 - `officeFocusState`
 - relationship availability or strain
 - current turn pressure
+- earned finale options when relevant
 
 ### Important implementation rule
 The same action should not always succeed.
@@ -284,6 +296,68 @@ This is not instant loss.
 
 ---
 
+## Live All-Hands Lock
+
+This must be implemented.
+
+### Rule
+When all-hands begins:
+- `gamePhase` becomes `all_hands`
+- free-roam room actions stop
+- the player can no longer continue standard manipulation actions
+- the only available transition into this phase is attending the meeting
+
+### Important
+The turn deadline must be real.
+If time expires, the player should not still be able to wander the office.
+
+---
+
+## Live Final Meeting Action
+
+This must be implemented.
+
+### Rule
+During all-hands, the player gets one final public move.
+
+That move should:
+- come from a small curated option set
+- be filtered by prior state
+- resolve against the room the player built
+
+### Required fields / helpers
+- `earnedMeetingActions`
+- `finalMeetingActionTaken`
+- finale choice filtering based on flags, dirt, trust, and suspicion
+
+### Important
+The meeting is not full free play.
+It is one earned public action.
+
+---
+
+## Live Earned Meeting Actions
+
+Prototype 1 should support unlocked finale actions.
+
+### Rule
+Some all-hands actions should only appear if the player earned them earlier.
+
+### Example
+If the player planted a bottle in Tim’s desk earlier, they may unlock:
+- accuse Tim of drinking at work
+
+That unlocked action should still resolve against:
+- Tim’s favorability
+- player suspicion
+- earlier seeds
+- factual resistance
+- room credibility
+
+Unlocked does not mean guaranteed.
+
+---
+
 ## Live All-Hands Checks
 
 Prototype 1 should evaluate all-hands from live state, not handcrafted one-off story logic.
@@ -299,6 +373,8 @@ Prototype 1 should evaluate all-hands from live state, not handcrafted one-off s
 - Frank/Celia lock-on state
 - dirty-play visibility
 - whether a plausible defensive line exists
+- earned meeting actions
+- whether the player already used their final public move
 
 ### Outcome buckets to support now
 - controlled reveal
@@ -394,8 +470,10 @@ Use this order:
 4. add fair intervention window
 5. add per-turn spread phase
 6. add defensive phase shift
-7. add all-hands evaluation
-8. tune action outcomes
+7. add forced all-hands transition and lock
+8. add earned meeting-action filtering
+9. add all-hands evaluation
+10. tune action outcomes
 
 This is the cleanest path.
 
@@ -411,6 +489,8 @@ Prototype 1 live code should include:
 - player sentiment
 - a few key relationships
 - defensive phase after subject confirmation
+- forced all-hands entry when time runs out
+- one final earned public action at the meeting
 - all-hands outcome evaluation
 
 Everything else stays in docs until the prototype proves it needs more.
