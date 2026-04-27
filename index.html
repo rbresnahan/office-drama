@@ -1,234 +1,59 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-	<meta charset="UTF-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-	<title>Reply All</title>
-	<link rel="stylesheet" href="style.css" />
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Office Panic</title>
+	<link rel="stylesheet" href="./style.css">
 </head>
 <body>
-	<main class="app shell">
-		<aside
-			id="terms-panel"
-			class="help-panel help-panel--hidden"
-			aria-hidden="true"
-			role="dialog"
-			aria-labelledby="terms-title"
-		>
-			<div class="help-panel__header">
-				<h2 id="terms-title">Quick Terms</h2>
-				<button id="terms-close" class="help-close" type="button" aria-label="Close help panel">
-					×
+	<main id="app" class="app-shell">
+		<header class="game-header">
+			<div>
+				<p class="eyebrow">Office Panic Demo</p>
+				<h1>Choose Your Damage</h1>
+			</div>
+
+			<div class="header-actions">
+				<div class="turn-pill">
+					<span id="phase-label">Damage Control</span>
+					<strong id="turn-count">Turn 1 / 12</strong>
+				</div>
+
+				<button id="restart-game" class="ghost-button" type="button">
+					Restart
 				</button>
 			</div>
+		</header>
 
-			<div class="help-panel__body">
-				<div class="help-group">
-					<h3>People</h3>
-					<dl class="help-list">
-						<div class="help-item">
-							<dt>Read on People</dt>
-							<dd>Your current visible read on each coworker. Not the full truth. Just the practical state you can act on.</dd>
-						</div>
-						<div class="help-item">
-							<dt>Target</dt>
-							<dd>The coworker the email is about.</dd>
-						</div>
-						<div class="help-item">
-							<dt>Open</dt>
-							<dd>More receptive and easier to influence.</dd>
-						</div>
-						<div class="help-item">
-							<dt>Settled</dt>
-							<dd>Stable and not especially alarmed.</dd>
-						</div>
-						<div class="help-item">
-							<dt>Guarded</dt>
-							<dd>Cautious. Not relaxed, not fully against you.</dd>
-						</div>
-						<div class="help-item">
-							<dt>Watchful</dt>
-							<dd>Actively suspicious and looking for motive.</dd>
-						</div>
-						<div class="help-item">
-							<dt>Hostile</dt>
-							<dd>Against you and willing to make things worse for you.</dd>
-						</div>
-					</dl>
+		<section class="game-grid">
+			<aside class="panel status-panel" aria-label="Game status">
+				<div id="latest-signal" class="signal-strip">
+					<span class="signal-strip__label">Latest</span>
+					<span class="signal-strip__text">The bad email is loose. The all-hands is coming.</span>
 				</div>
 
-				<div class="help-group">
-					<h3>Target awareness</h3>
-					<dl class="help-list">
-						<div class="help-item">
-							<dt>Unaware</dt>
-							<dd>The target does not know.</dd>
-						</div>
-						<div class="help-item">
-							<dt>At risk</dt>
-							<dd>The target is close to finding out.</dd>
-						</div>
-						<div class="help-item">
-							<dt>Suspicious</dt>
-							<dd>The target senses something is wrong.</dd>
-						</div>
-						<div class="help-item">
-							<dt>Confirmed</dt>
-							<dd>The target knows. Clean prevention is over.</dd>
-						</div>
-					</dl>
+				<div class="bars-section">
+					<h2>Stories You Are Building</h2>
+					<div id="green-bars" class="bars-list"></div>
 				</div>
 
-				<div class="help-group">
-					<h3>Run state</h3>
-					<dl class="help-list">
-						<div class="help-item">
-							<dt>Containment</dt>
-							<dd>You are still trying to stop or limit discovery.</dd>
-						</div>
-						<div class="help-item">
-							<dt>Defensive</dt>
-							<dd>The target knows or the run has shifted into fallout control.</dd>
-						</div>
-						<div class="help-item">
-							<dt>All-hands</dt>
-							<dd>The public meeting phase. Free-roam manipulation is over.</dd>
-						</div>
-						<div class="help-item">
-							<dt>Background</dt>
-							<dd>The issue exists, but is not running the room yet.</dd>
-						</div>
-						<div class="help-item">
-							<dt>Active</dt>
-							<dd>The issue is clearly shaping behavior.</dd>
-						</div>
-						<div class="help-item">
-							<dt>Dominant</dt>
-							<dd>The room is now mainly about this problem.</dd>
-						</div>
-					</dl>
+				<div class="bars-section">
+					<h2>Threats Closing In</h2>
+					<div id="red-bars" class="bars-list"></div>
 				</div>
-			</div>
-		</aside>
-
-		<div id="terms-backdrop" class="help-backdrop help-backdrop--hidden" aria-hidden="true"></div>
-
-		<section class="layout">
-			<section class="main-column">
-				<header class="panel hero">
-					<div class="hero__top">
-						<div>
-							<p id="app-eyebrow" class="eyebrow">Delay discovery. Shape the room. Survive the reveal.</p>
-							<h1 id="app-title">Reply All</h1>
-						</div>
-
-						<button
-							id="terms-toggle"
-							class="help-toggle"
-							type="button"
-							aria-expanded="false"
-							aria-controls="terms-panel"
-						>
-							Help / Terms
-						</button>
-					</div>
-
-					<p id="app-subtitle" class="hero-copy">
-						You sent a bad email about one coworker. Recall only partly worked. Keep them from finding out too early—and if they do, survive the fallout.
-					</p>
-				</header>
-
-				<section class="panel main-panel">
-					<div id="latest-signal" class="signal-strip"></div>
-					<div id="action-feedback" class="reaction-card reaction-card--hidden" aria-live="polite"></div>
-					<div id="story" class="story-panel"></div>
-					<div id="choices" class="choices-panel"></div>
-				</section>
-			</section>
-
-			<aside class="sidebar">
-				<section class="panel sidebar-panel sidebar-panel--wide sidebar-panel--status">
-					<div id="status-panel" class="status-strip"></div>
-				</section>
-
-				<div class="sidebar-toolbar">
-					<button
-						id="sidebar-toggle-all"
-						class="sidebar-toolbar__button"
-						type="button"
-						aria-expanded="true"
-					>
-						Collapse all
-					</button>
-				</div>
-
-				<section
-					class="panel sidebar-panel sidebar-panel--wide sidebar-collapsible"
-					data-panel-key="a"
-				>
-					<button
-						class="sidebar-toggle"
-						type="button"
-						aria-expanded="true"
-						aria-controls="section-a-panel"
-					>
-						<span id="section-a-title" class="sidebar-toggle__label">Run Overview</span>
-						<span class="sidebar-toggle__icon" aria-hidden="true">▾</span>
-					</button>
-					<div id="section-a-panel" class="panel-body"></div>
-				</section>
-
-				<section
-					class="panel sidebar-panel sidebar-panel--wide sidebar-collapsible"
-					data-panel-key="b"
-				>
-					<button
-						class="sidebar-toggle"
-						type="button"
-						aria-expanded="true"
-						aria-controls="section-b-panel"
-					>
-						<span id="section-b-title" class="sidebar-toggle__label">Office Floor</span>
-						<span class="sidebar-toggle__icon" aria-hidden="true">▾</span>
-					</button>
-					<div id="section-b-panel" class="panel-body"></div>
-				</section>
-
-				<section
-					class="panel sidebar-panel sidebar-panel--wide sidebar-collapsible"
-					data-panel-key="c"
-				>
-					<button
-						class="sidebar-toggle"
-						type="button"
-						aria-expanded="false"
-						aria-controls="section-c-panel"
-					>
-						<span id="section-c-title" class="sidebar-toggle__label">Read on People</span>
-						<span class="sidebar-toggle__icon" aria-hidden="true">▾</span>
-					</button>
-					<div id="section-c-panel" class="panel-body"></div>
-				</section>
-
-				<section
-					class="panel sidebar-panel sidebar-panel--wide sidebar-collapsible"
-					data-panel-key="d"
-				>
-					<button
-						class="sidebar-toggle"
-						type="button"
-						aria-expanded="false"
-						aria-controls="section-d-panel"
-					>
-						<span id="section-d-title" class="sidebar-toggle__label">Memory & Evidence</span>
-						<span class="sidebar-toggle__icon" aria-hidden="true">▾</span>
-					</button>
-					<div id="section-d-panel" class="panel-body"></div>
-				</section>
 			</aside>
+
+			<section class="panel main-panel">
+				<article id="story" class="story-panel" aria-live="polite"></article>
+
+				<div id="action-feedback" class="reaction-card reaction-card--hidden" aria-live="polite"></div>
+
+				<div id="choices" class="choices-panel" aria-label="Choices"></div>
+			</section>
 		</section>
 	</main>
 
-	<script type="module" src="main.js"></script>
+	<script type="module" src="./main.js"></script>
 </body>
 </html>

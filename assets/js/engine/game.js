@@ -1,422 +1,126 @@
-import { applyEffects } from './effects.js';
-import { getProcessedChoices, processNodeRedirects } from './guards.js';
-import {
-	addIssue,
-	addSignal,
-	adjustActor,
-	adjustIssue,
-	adjustRelationship,
-	containIssue,
-	countActorsKnowingIssue,
-	countEvidenceByTag,
-	createInitialState,
-	cycleLogicCell,
-	decayIssues,
-	decayMemories,
-	exposeIssue,
-	findActorById,
-	findIssueById,
-	findRelationship,
-	hasEvidence,
-	isLogicSolved,
-	knowsTag,
-	propagateIssues,
-	resolveValue,
-	actorKnowsIssue,
-	setActorKnowledge,
-	setIssueLifecycle,
-	shiftIssuePrecision,
-} from './state.js';
+import { applyChoiceEffects } from './effects.js';
+import { requirementsMet } from './guards.js';
+import { createInitialState, getCurrentPhase } from './state.js';
 
-export class Game {
-	constructor({ storyConfig, renderer }) {
-		this.storyConfig = storyConfig;
-		this.renderer = renderer;
+export function createGame( story ) {
+	let state = createInitialState( story );
 
-		this.meta = storyConfig.meta || {};
-		this.nodes = storyConfig.nodes || {};
-		this.startNode = storyConfig.startNode || 'start';
-		this.baseInitialState = storyConfig.initialState || {};
-		this.displayConfig = storyConfig.display || {};
-		this.turnRules = storyConfig.turnRules || {};
-
-		this.validateStoryConfig();
-
-		this.state = createInitialState(this.baseInitialState);
-		this.state.lastActionResponse = null;
-		this.currentNodeId = this.startNode;
-		this.visitedNodes = {};
-		this.triggeredRedirects = {};
+	function getState() {
+		return state;
 	}
 
-	start() {
-		this.renderer.setDocumentTitle(this.meta.title);
-		this.renderer.renderMeta(this.meta);
-		this.enterNode(this.currentNodeId, { advanceTurn: false });
-		this.render();
+	function restart() {
+		state = createInitialState( story );
 	}
 
-	reset() {
-		this.state = createInitialState(this.baseInitialState);
-		this.state.lastActionResponse = null;
-		this.currentNodeId = this.startNode;
-		this.visitedNodes = {};
-		this.triggeredRedirects = {};
-		this.renderer.renderMeta(this.meta);
-		this.enterNode(this.currentNodeId, { advanceTurn: false });
-		this.render();
+	function getScene( sceneId ) {
+		return story.scenes[ sceneId ] || story.scenes[ story.startSceneId ];
 	}
 
-	addEvent(message) {
-		const limit = this.turnRules.signalLimit || 6;
-		addSignal(this.state, message, limit);
+	function getCurrentScene() {
+		if ( state.finaleStarted || state.turn > state.maxTurns ) {
+			return getScene( story.finaleSceneId );
+		}
+
+		return getScene( state.currentSceneId );
 	}
 
-	setActionResponse(response = null) {
-		if (!response || typeof response !== 'object') {
-			this.state.lastActionResponse = null;
+	function getAvailableChoices( scene = getCurrentScene() ) {
+		return ( scene.choices || [] ).filter( ( choice ) => {
+			if ( choice.once && state.usedChoices.includes( choice.id ) ) {
+				return false;
+			}
+
+			return requirementsMet( choice.requirements || {}, state );
+		} );
+	}
+
+	function getTriggeredBacklashSceneId() {
+		const matchingRule = ( story.backlashRules || [] ).find( ( rule ) => {
+			if ( state.backlashTriggered[ rule.id ] ) {
+				return false;
+			}
+
+			return requirementsMet( rule.requirements || {}, state );
+		} );
+
+		if ( ! matchingRule ) {
+			return '';
+		}
+
+		state.backlashTriggered[ matchingRule.id ] = true;
+
+		if ( matchingRule.effects ) {
+			if ( matchingRule.effects.flags ) {
+				Object.assign( state.flags, matchingRule.effects.flags );
+			}
+
+			if ( matchingRule.effects.npc ) {
+				Object.assign( state.npc, matchingRule.effects.npc );
+			}
+
+			if ( matchingRule.effects.signal ) {
+				state.latestSignal = matchingRule.effects.signal;
+			}
+		}
+
+		return matchingRule.sceneId;
+	}
+
+	function choose( choiceId ) {
+		const scene = getCurrentScene();
+		const availableChoices = getAvailableChoices( scene );
+		const choice = availableChoices.find( ( availableChoice ) => availableChoice.id === choiceId );
+
+		if ( ! choice ) {
 			return;
 		}
 
-		const {
-			title = 'Immediate reaction',
-			playerText = '',
-			resultType = 'success',
-			npcText = '',
-			outcomeText = '',
-		} = response;
+		applyChoiceEffects( state, choice );
 
-		const normalizedType = [ 'success', 'failure', 'mixed' ].includes(resultType)
-			? resultType
-			: 'success';
-
-		if (
-			(!playerText || String(playerText).trim() === '')
-			&& (!npcText || String(npcText).trim() === '')
-			&& (!outcomeText || String(outcomeText).trim() === '')
-		) {
-			this.state.lastActionResponse = null;
+		if ( state.turn > state.maxTurns ) {
+			state.finaleStarted = true;
+			state.currentSceneId = story.finaleSceneId;
 			return;
 		}
 
-		this.state.lastActionResponse = {
-			title,
-			playerText: String(playerText || '').trim(),
-			resultType: normalizedType,
-			npcText: String(npcText || '').trim(),
-			outcomeText: String(outcomeText || '').trim(),
-		};
+		const backlashSceneId = getTriggeredBacklashSceneId();
+
+		if ( backlashSceneId ) {
+			state.currentSceneId = backlashSceneId;
+			return;
+		}
+
+		state.currentSceneId = choice.nextScene || story.startSceneId;
 	}
 
-	resolveReaction(reactionConfig, resolvedChoiceText, resolvedFeedback) {
-		if (!reactionConfig) {
-			return null;
-		}
-
-		const reactionObject = typeof reactionConfig === 'function'
-			? reactionConfig(this.state)
-			: reactionConfig;
-
-		if (!reactionObject || typeof reactionObject !== 'object') {
-			return null;
-		}
-
-		const title = this.resolve(reactionObject.title) || 'Immediate reaction';
-		const playerText = this.resolve(reactionObject.playerText) || resolvedChoiceText;
-		const resultType = this.resolve(reactionObject.resultType) || 'success';
-		const npcText = this.resolve(reactionObject.npcText) || resolvedFeedback || '';
-		const outcomeText = this.resolve(reactionObject.outcomeText) || '';
-
-		if (
-			(!playerText || String(playerText).trim() === '')
-			&& (!npcText || String(npcText).trim() === '')
-			&& (!outcomeText || String(outcomeText).trim() === '')
-		) {
-			return null;
+	function getFinaleResult() {
+		if ( typeof story.resolveFinale === 'function' ) {
+			return story.resolveFinale( state );
 		}
 
 		return {
-			title,
-			playerText,
-			resultType,
-			npcText,
-			outcomeText,
+			kicker: 'All-Hands',
+			title: 'The room decides what story survived.',
+			body: [
+				'The meeting starts. Every choice you made arrives before you do.',
+			],
 		};
 	}
 
-	applyEffects(effects) {
-		applyEffects(this.state, effects, {
-			signalLimit: this.turnRules.signalLimit || 6,
-		});
+	function getPhase() {
+		return getCurrentPhase( state );
 	}
 
-	cycleLogicCell(actorId, categoryId, valueId) {
-		cycleLogicCell(this.state, actorId, categoryId, valueId);
-		this.render();
-	}
-
-	resolve(value) {
-		return resolveValue(value, this.state);
-	}
-
-	isMeetingLocked() {
-		return this.state.flags?.meetingStarted === true
-			&& this.currentNodeId !== 'finale'
-			&& this.currentNodeId !== 'ending';
-	}
-
-	getForcedMeetingChoices() {
-		return [
-			{
-				text: 'Attend the meeting.',
-				next: 'finale',
-				feedback: 'Time is up. There is no more room to work. Everyone is assembling.',
-				available: true,
-				disabled: false,
-				consumesTurn: false,
-			},
-		];
-	}
-
-	getWorldHelpers() {
-		return {
-			findActorById: (id) => findActorById(this.state, id),
-			findIssueById: (id) => findIssueById(this.state, id),
-			findRelationship: (from, to) => findRelationship(this.state, from, to),
-			actorKnowsIssue: (actorId, issueId, minimumLevel = 'heard') => actorKnowsIssue(this.state, actorId, issueId, minimumLevel),
-			setActorKnowledge: (actorId, issueId, level = 'heard', confidence = 55, source = 'script') => {
-				return setActorKnowledge(this.state, actorId, issueId, level, confidence, source);
-			},
-			adjustActor: (actorId, path, value, mode = 'set') => adjustActor(this.state, actorId, path, value, mode),
-			adjustRelationship: (from, to, value, mode = 'add') => adjustRelationship(this.state, from, to, value, mode),
-			adjustIssue: (issueId, path, value, mode = 'set') => adjustIssue(this.state, issueId, path, value, mode),
-			containIssue: (issueId, amount = 10) => containIssue(this.state, issueId, amount),
-			exposeIssue: (issueId, amount = 10) => exposeIssue(this.state, issueId, amount),
-			setIssueLifecycle: (issueId, lifecycleState) => setIssueLifecycle(this.state, issueId, lifecycleState),
-			shiftIssuePrecision: (issueId, amount) => shiftIssuePrecision(this.state, issueId, amount),
-			countActorsKnowingIssue: (issueId, minimumLevel = 'heard') => countActorsKnowingIssue(this.state, issueId, minimumLevel),
-			addIssue: (issue) => addIssue(this.state, issue),
-			addEvent: (message) => this.addEvent(message),
-			applyEffects: (effects) => this.applyEffects(effects),
-			isLogicSolved: () => isLogicSolved(this.state),
-		};
-	}
-
-	advanceTurn() {
-		this.state.turn += 1;
-
-		if (this.state.fairIntervention && this.state.fairIntervention.pending === true) {
-			const remaining = Number(this.state.fairIntervention.minimumTurnsRemaining) || 0;
-
-			if (remaining > 0) {
-				this.state.fairIntervention.minimumTurnsRemaining = Math.max(remaining - 1, 0);
-			}
-
-			if ((Number(this.state.fairIntervention.minimumTurnsRemaining) || 0) <= 0) {
-				this.state.fairIntervention.subjectCanAutoRead = true;
-			}
-		}
-
-		const memorySignals = decayMemories(this.state, this.turnRules.memoryDecay || {});
-		memorySignals.forEach((message) => {
-			this.addEvent(message);
-		});
-
-		const issueSignals = decayIssues(this.state, this.turnRules.issueDecay || {});
-		issueSignals.forEach((message) => {
-			this.addEvent(message);
-		});
-
-		const worldHelpers = this.getWorldHelpers();
-		const spreadSignals = typeof this.turnRules.spreadStep === 'function'
-			? this.turnRules.spreadStep(this.state, worldHelpers) || []
-			: propagateIssues(this.state, this.turnRules.issueDecay || {});
-
-		spreadSignals.forEach((message) => {
-			this.addEvent(message);
-		});
-
-		if (typeof this.turnRules.worldStep === 'function') {
-			this.turnRules.worldStep(this.state, worldHelpers);
-		}
-
-		(this.turnRules.events || []).forEach((eventData) => {
-			const key = eventData.id || String(eventData.at);
-			const alreadyFired = this.state.firedTurnEvents.includes(key);
-
-			if (alreadyFired) {
-				return;
-			}
-
-			if (this.state.turn >= eventData.at) {
-				this.state.firedTurnEvents.push(key);
-				this.addEvent(this.resolve(eventData.text));
-				this.applyEffects(this.resolve(eventData.effects));
-			}
-		});
-	}
-
-	enterNode(nodeId, options = {}) {
-		const shouldAdvanceTurn = options.advanceTurn === true;
-
-		if (shouldAdvanceTurn) {
-			this.advanceTurn();
-		}
-
-		this.currentNodeId = processNodeRedirects({
-			nodeId,
-			nodes: this.nodes,
-			state: this.state,
-			triggeredRedirects: this.triggeredRedirects,
-			resolveValue: (value) => this.resolve(value),
-			addEvent: (message) => this.addEvent(message),
-			applyEffects: (effects) => this.applyEffects(effects),
-		});
-
-		const node = this.nodes[this.currentNodeId];
-
-		if (!node) {
-			return;
-		}
-
-		if (this.currentNodeId === 'finale') {
-			this.state.flags.meetingStarted = true;
-			this.state.flags.finaleUnlocked = true;
-			this.state.gamePhase = 'all_hands';
-		}
-
-		if (this.currentNodeId === 'ending') {
-			this.state.gamePhase = 'resolved';
-		}
-
-		const entryConfig = node.entry || {};
-		const entryOnce = node.entryOnce === true || entryConfig.once === true;
-		const entryEffects = node.entryEffects ?? entryConfig.effects;
-		const entryFeedback = node.entryFeedback ?? entryConfig.feedback;
-
-		const wasVisited = this.visitedNodes[this.currentNodeId] === true;
-
-		if (entryOnce && wasVisited) {
-			this.visitedNodes[this.currentNodeId] = true;
-			return;
-		}
-
-		this.applyEffects(this.resolve(entryEffects));
-		this.addEvent(this.resolve(entryFeedback));
-		this.visitedNodes[this.currentNodeId] = true;
-	}
-
-	getCurrentNode() {
-		return this.nodes[this.currentNodeId];
-	}
-
-	getCurrentNodeView() {
-		const node = this.getCurrentNode();
-
-		if (!node) {
-			return {
-				title: '',
-				text: '',
-				kicker: '',
-			};
-		}
-
-		return {
-			title: this.resolve(node.title) || '',
-			text: this.resolve(node.text ?? node.body) || '',
-			kicker: this.resolve(node.kicker) || '',
-		};
-	}
-
-	getCurrentChoices() {
-		if (this.isMeetingLocked()) {
-			return this.getForcedMeetingChoices();
-		}
-
-		const node = this.getCurrentNode();
-
-		if (!node) {
-			return [];
-		}
-
-		return getProcessedChoices(node, this.state);
-	}
-
-	choose(choice) {
-		if (!choice || choice.available === false || choice.disabled === true) {
-			return;
-		}
-
-		const resolvedChoiceText = this.resolve(choice.text) || 'You act.';
-		const resolvedFeedback = this.resolve(choice.feedback);
-		const resolvedReaction = this.resolveReaction(
-			choice.reaction,
-			resolvedChoiceText,
-			resolvedFeedback
-		);
-
-		this.setActionResponse(resolvedReaction || null);
-
-		this.addEvent(resolvedFeedback);
-		this.applyEffects(this.resolve(choice.effects));
-
-		const targetNode = choice.next || choice.to;
-
-		if (targetNode === 'restart') {
-			this.reset();
-			return;
-		}
-
-		const nextNodeId = this.resolve(targetNode) || this.currentNodeId;
-		const consumesTurn = choice.consumesTurn !== false;
-		this.enterNode(nextNodeId, { advanceTurn: consumesTurn });
-		this.render();
-	}
-
-	render() {
-		const node = this.getCurrentNode();
-
-		if (!node) {
-			this.renderer.showError(`Error: Story node "${this.currentNodeId}" not found.`);
-			return;
-		}
-
-		this.renderer.renderStatePanel({
-			state: this.state,
-			displayConfig: this.displayConfig,
-			context: {
-				maxTurns: this.turnRules.maxTurns || 0,
-				turnsUntilFinale: Math.max((this.turnRules.maxTurns || 0) - this.state.turn, 0),
-				hasEvidence: (id) => hasEvidence(this.state, id),
-				knowsTag: (tag) => knowsTag(this.state, tag),
-				countEvidenceByTag: (tag) => countEvidenceByTag(this.state, tag),
-				countActorsKnowingIssue: (issueId, minimumLevel = 'heard') => countActorsKnowingIssue(this.state, issueId, minimumLevel),
-				onLogicCell: (actorId, categoryId, valueId) => this.cycleLogicCell(actorId, categoryId, valueId),
-			},
-		});
-
-		this.renderer.renderNode({
-			nodeView: this.getCurrentNodeView(),
-			choices: this.getCurrentChoices(),
-			onChoice: (selectedChoice) => this.choose(selectedChoice),
-		});
-	}
-
-	validateStoryConfig() {
-		if (!this.storyConfig || typeof this.storyConfig !== 'object') {
-			throw new Error('storyConfig is missing or invalid.');
-		}
-
-		if (!this.startNode) {
-			throw new Error('startNode is missing.');
-		}
-
-		if (!this.nodes || typeof this.nodes !== 'object') {
-			throw new Error('nodes are missing or invalid.');
-		}
-
-		if (!this.nodes[this.startNode]) {
-			throw new Error(`startNode "${this.startNode}" does not exist in nodes.`);
-		}
-	}
+	return {
+		getState,
+		getScene,
+		getCurrentScene,
+		getAvailableChoices,
+		getFinaleResult,
+		getPhase,
+		choose,
+		restart,
+		story,
+	};
 }

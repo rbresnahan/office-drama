@@ -1,133 +1,103 @@
-import { resolveValue } from './state.js';
+import { getCurrentPhase } from './state.js';
+import { getPhaseIndex } from './story-helpers.js';
 
-function getChoiceCondition(choice) {
-	return choice.condition || choice.availableIf;
+function hasAll( source, values = [] ) {
+	return values.every( ( value ) => Boolean( source[ value ] ) );
 }
 
-function getChoiceDisabledCondition(choice) {
-	return choice.disabledCondition || choice.disabledIf;
+function hasNone( source, values = [] ) {
+	return values.every( ( value ) => ! source[ value ] );
 }
 
-export function isChoiceAvailable(choice, state) {
-	const condition = getChoiceCondition(choice);
-
-	if (!condition) {
-		return true;
-	}
-
-	return resolveValue(condition, state) !== false;
+function hasAny( source, values = [] ) {
+	return values.some( ( value ) => Boolean( source[ value ] ) );
 }
 
-export function isChoiceDisabled(choice, state) {
-	const disabledCondition = getChoiceDisabledCondition(choice);
+function listHasAll( source, values = [] ) {
+	return values.every( ( value ) => source.includes( value ) );
+}
 
-	if (!disabledCondition) {
+function listHasNone( source, values = [] ) {
+	return values.every( ( value ) => ! source.includes( value ) );
+}
+
+function barsMeetMinimums( state, barsMin = {} ) {
+	return Object.entries( barsMin ).every( ( [ barId, minimum ] ) => {
+		return ( state.bars[ barId ] || 0 ) >= minimum;
+	} );
+}
+
+function barsMeetMaximums( state, barsMax = {} ) {
+	return Object.entries( barsMax ).every( ( [ barId, maximum ] ) => {
+		return ( state.bars[ barId ] || 0 ) <= maximum;
+	} );
+}
+
+function npcStateMatches( state, npc = {} ) {
+	return Object.entries( npc ).every( ( [ key, expected ] ) => {
+		return state.npc[ key ] === expected;
+	} );
+}
+
+export function requirementsMet( requirements = {}, state ) {
+	const currentPhase = getCurrentPhase( state );
+	const currentPhaseIndex = getPhaseIndex( currentPhase.id );
+
+	if ( requirements.phaseMin && currentPhaseIndex < getPhaseIndex( requirements.phaseMin ) ) {
 		return false;
 	}
 
-	return resolveValue(disabledCondition, state) === true;
-}
-
-export function getProcessedChoices(node, state) {
-	if (!node.choices || !Array.isArray(node.choices)) {
-		return [];
+	if ( requirements.phaseMax && currentPhaseIndex > getPhaseIndex( requirements.phaseMax ) ) {
+		return false;
 	}
 
-	return node.choices
-		.map((choice) => {
-			const available = isChoiceAvailable(choice, state);
-			const hidden = !available && choice.hideWhenUnavailable === true;
-
-			if (hidden) {
-				return null;
-			}
-
-			const disabled = available ? isChoiceDisabled(choice, state) : true;
-
-			return {
-				...choice,
-				available,
-				disabled,
-				text: resolveValue(choice.text, state) || 'Continue',
-				unavailableText: resolveValue(choice.unavailableText, state) || '',
-			};
-		})
-		.filter(Boolean);
-}
-
-function getRedirectRules(node) {
-	if (!node.redirect) {
-		return [];
+	if ( Array.isArray( requirements.phases ) && ! requirements.phases.includes( currentPhase.id ) ) {
+		return false;
 	}
 
-	if (Array.isArray(node.redirect)) {
-		return node.redirect;
+	if ( requirements.flagsAll && ! hasAll( state.flags, requirements.flagsAll ) ) {
+		return false;
 	}
 
-	return [node.redirect];
-}
-
-function buildRedirectKey(nodeId, index) {
-	return `${nodeId}:${index}`;
-}
-
-export function processNodeRedirects({
-	nodeId,
-	nodes,
-	state,
-	triggeredRedirects,
-	resolveValue: resolveStateValue,
-	addEvent,
-	applyEffects,
-	maxDepth = 25,
-}) {
-	let currentNodeId = nodeId;
-	let depth = 0;
-
-	while (depth < maxDepth) {
-		const node = nodes[currentNodeId];
-
-		if (!node) {
-			return currentNodeId;
-		}
-
-		const redirectRules = getRedirectRules(node);
-		let redirected = false;
-
-		for (let index = 0; index < redirectRules.length; index += 1) {
-			const rule = redirectRules[index];
-			const redirectKey = buildRedirectKey(currentNodeId, index);
-			const alreadyTriggered = triggeredRedirects[redirectKey] === true;
-			const redirectOnce = rule.redirectOnce === true || rule.once === true;
-
-			if (redirectOnce && alreadyTriggered) {
-				continue;
-			}
-
-			if (!rule.condition || resolveStateValue(rule.condition)) {
-				addEvent(resolveStateValue(rule.feedback));
-				applyEffects(resolveStateValue(rule.effects));
-
-				if (redirectOnce) {
-					triggeredRedirects[redirectKey] = true;
-				}
-
-				const targetNode = rule.next || rule.to;
-
-				if (targetNode && targetNode !== currentNodeId) {
-					currentNodeId = resolveStateValue(targetNode);
-					redirected = true;
-					break;
-				}
-			}
-		}
-
-		if (!redirected) {
-			return currentNodeId;
-		}
-
-		depth += 1;
+	if ( requirements.flagsAny && ! hasAny( state.flags, requirements.flagsAny ) ) {
+		return false;
 	}
 
-	throw new Error('Redirect loop detected. Check your node redirect rules.');
+	if ( requirements.flagsNone && ! hasNone( state.flags, requirements.flagsNone ) ) {
+		return false;
+	}
+
+	if ( requirements.npc && ! npcStateMatches( state, requirements.npc ) ) {
+		return false;
+	}
+
+	if ( requirements.barsMin && ! barsMeetMinimums( state, requirements.barsMin ) ) {
+		return false;
+	}
+
+	if ( requirements.barsMax && ! barsMeetMaximums( state, requirements.barsMax ) ) {
+		return false;
+	}
+
+	if ( requirements.unlockedAll && ! listHasAll( state.unlocked, requirements.unlockedAll ) ) {
+		return false;
+	}
+
+	if ( requirements.unlockedNone && ! listHasNone( state.unlocked, requirements.unlockedNone ) ) {
+		return false;
+	}
+
+	if ( requirements.lockedNone && ! listHasNone( state.locked, requirements.lockedNone ) ) {
+		return false;
+	}
+
+	if ( requirements.usedChoicesAll && ! listHasAll( state.usedChoices, requirements.usedChoicesAll ) ) {
+		return false;
+	}
+
+	if ( requirements.usedChoicesNone && ! listHasNone( state.usedChoices, requirements.usedChoicesNone ) ) {
+		return false;
+	}
+
+	return true;
 }

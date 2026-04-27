@@ -1,441 +1,173 @@
-export class Renderer {
-	constructor(elements) {
-		this.storyEl = elements.storyEl;
-		this.choicesEl = elements.choicesEl;
-		this.statusEl = elements.statusEl;
-		this.signalEl = elements.signalEl;
-		this.actionFeedbackEl = elements.actionFeedbackEl;
-		this.sectionEls = elements.sectionEls || {};
-		this.sectionTitleEls = elements.sectionTitleEls || {};
-		this.titleEl = elements.titleEl;
-		this.subtitleEl = elements.subtitleEl;
-		this.eyebrowEl = elements.eyebrowEl;
+import { categoryLabel } from './story-helpers.js';
+
+function escapeHtml( value ) {
+	return String( value )
+		.replaceAll( '&', '&amp;' )
+		.replaceAll( '<', '&lt;' )
+		.replaceAll( '>', '&gt;' )
+		.replaceAll( '"', '&quot;' )
+		.replaceAll( "'", '&#039;' );
+}
+
+function normalizeParagraphs( value, state ) {
+	const resolved = typeof value === 'function' ? value( state ) : value;
+
+	if ( Array.isArray( resolved ) ) {
+		return resolved;
 	}
 
-	setDocumentTitle(title) {
-		if (title) {
-			document.title = title;
-		}
+	if ( typeof resolved === 'string' && resolved.trim() ) {
+		return [ resolved ];
 	}
 
-	renderMeta(meta = {}) {
-		if (this.titleEl && meta.title) {
-			this.titleEl.textContent = meta.title;
-		}
+	return [];
+}
 
-		if (this.subtitleEl && meta.subtitle) {
-			this.subtitleEl.textContent = meta.subtitle;
-		}
+function renderParagraphs( paragraphs ) {
+	return paragraphs.map( ( paragraph ) => `<p>${ escapeHtml( paragraph ) }</p>` ).join( '' );
+}
 
-		if (this.eyebrowEl && meta.eyebrow) {
-			this.eyebrowEl.textContent = meta.eyebrow;
-		}
+function renderBars( container, bars, state, type ) {
+	if ( ! container ) {
+		return;
 	}
 
-	showError(message) {
-		this.storyEl.innerHTML = `<p class="error-text">${this.escapeHtml(message)}</p>`;
-		this.choicesEl.innerHTML = '';
+	const html = bars
+		.filter( ( bar ) => {
+			const value = state.bars[ bar.id ] || 0;
 
-		if (this.actionFeedbackEl) {
-			this.actionFeedbackEl.innerHTML = '';
-			this.actionFeedbackEl.className = 'reaction-card reaction-card--hidden';
-		}
-	}
+			return value >= 25;
+		} )
+		.map( ( bar ) => {
+			const value = state.bars[ bar.id ] || 0;
 
-	renderStatePanel({ state, displayConfig, context }) {
-		this.renderStatus(state, displayConfig.status || [], context);
-		this.renderLatestSignal(state.signals || []);
-		this.renderActionFeedback(state.lastActionResponse || null);
-
-		const sections = (Array.isArray(displayConfig.sections) ? displayConfig.sections : [])
-			.filter((config) => config.type !== 'signals');
-
-		const slots = [ 'a', 'b', 'c', 'd' ];
-
-		slots.forEach((slot, index) => {
-			const config = sections[index] || null;
-			this.renderSection(slot, config, state, context);
-		});
-	}
-
-	renderStatus(state, statusItems, context) {
-		this.statusEl.innerHTML = '';
-
-		if (!statusItems.length) {
-			this.statusEl.innerHTML = '<div class="status-empty">No status configured.</div>';
-			return;
-		}
-
-		const wrapper = document.createElement('div');
-		wrapper.className = 'status-strip';
-
-		const label = document.createElement('span');
-		label.className = 'status-inline__label';
-		label.textContent = 'Status:';
-		wrapper.appendChild(label);
-
-		const list = document.createElement('div');
-		list.className = 'status-list';
-
-		statusItems.forEach((item) => {
-			const pill = document.createElement('span');
-			pill.className = 'status-pill';
-			pill.textContent = `${item.label}: ${item.getValue(state, context)}`;
-			list.appendChild(pill);
-		});
-
-		wrapper.appendChild(list);
-		this.statusEl.appendChild(wrapper);
-	}
-
-	renderLatestSignal(signals) {
-		if (!this.signalEl) {
-			return;
-		}
-
-		const latest = Array.isArray(signals) && signals.length
-			? signals[0]
-			: 'Nothing has shifted recently.';
-
-		this.signalEl.innerHTML = `
-			<span class="signal-strip__label">Latest</span>
-			<span class="signal-strip__text">${this.escapeHtml(latest)}</span>
-		`;
-	}
-
-	renderActionFeedback(actionResponse) {
-		if (!this.actionFeedbackEl) {
-			return;
-		}
-
-		if (!actionResponse || !actionResponse.playerText) {
-			this.actionFeedbackEl.innerHTML = '';
-			this.actionFeedbackEl.className = 'reaction-card reaction-card--hidden';
-			return;
-		}
-
-		const resultType = actionResponse.resultType || 'success';
-		const resultLabel = resultType === 'failure'
-			? 'Failure'
-			: resultType === 'mixed'
-				? 'Mixed result'
-				: 'Success';
-
-		this.actionFeedbackEl.className = `reaction-card reaction-card--${this.escapeHtml(resultType)}`;
-
-		this.actionFeedbackEl.innerHTML = `
-			<div class="reaction-card__eyebrow">${this.escapeHtml(actionResponse.title || 'Immediate reaction')}</div>
-			<div class="reaction-card__player"><strong>You:</strong> ${this.escapeHtml(actionResponse.playerText)}</div>
-			<div class="reaction-card__npc">
-				<strong class="reaction-card__inline-result reaction-card__inline-result--${this.escapeHtml(resultType)}">${this.escapeHtml(resultLabel)}:</strong>
-				${this.escapeHtml(actionResponse.npcText || '')}
-			</div>
-			${actionResponse.outcomeText ? `<div class="reaction-card__outcome">${this.escapeHtml(actionResponse.outcomeText)}</div>` : ''}
-		`;
-	}
-
-	renderSection(slot, config, state, context) {
-		const panelEl = this.sectionEls[slot];
-		const titleEl = this.sectionTitleEls[slot];
-
-		if (!panelEl || !titleEl) {
-			return;
-		}
-
-		if (!config) {
-			titleEl.textContent = 'Panel';
-			panelEl.innerHTML = '<div class="status-empty">Nothing configured.</div>';
-			return;
-		}
-
-		titleEl.textContent = config.title || 'Panel';
-
-		switch (config.type) {
-			case 'issues':
-				this.renderIssues(panelEl, state.issues || []);
-				break;
-
-			case 'actors':
-				this.renderActors(panelEl, state.actors || []);
-				break;
-
-			case 'memories':
-				this.renderMemories(panelEl, state.memories || []);
-				break;
-
-			case 'evidence':
-				this.renderEvidence(panelEl, state.evidence || []);
-				break;
-
-			case 'beliefs':
-				this.renderBeliefs(panelEl, state.beliefs || {});
-				break;
-
-			case 'custom': {
-				const markup = typeof config.render === 'function' ? config.render(state, context) : '';
-				panelEl.innerHTML = markup || '<div class="status-empty">Nothing to show.</div>';
-				break;
-			}
-
-			default:
-				panelEl.innerHTML = '<div class="status-empty">Unknown panel type.</div>';
-		}
-	}
-
-	renderIssues(targetEl, issues) {
-		targetEl.innerHTML = '';
-		const visibleIssues = issues.filter((issue) => issue.visible !== false);
-
-		if (!visibleIssues.length) {
-			targetEl.innerHTML = '<div class="issue-empty">Nothing unstable right now.</div>';
-			return;
-		}
-
-		const list = document.createElement('div');
-		list.className = 'issue-list';
-
-		visibleIssues
-			.sort((left, right) => right.severity - left.severity)
-			.forEach((issue) => {
-				const wrapper = document.createElement('div');
-				wrapper.className = `issue-item issue-item--${issue.lifecycleState}`;
-
-				const severityLabel = issue.severity >= 75 ? 'critical' : 'tracked';
-				const severityClass = issue.severity >= 75 ? 'badge--critical' : 'badge--tracked';
-
-				wrapper.innerHTML = `
-					<div class="issue-card__line">
-						<span class="issue-card__name">${this.escapeHtml(issue.title)}</span>
-						<span class="badge badge--${this.escapeHtml(issue.lifecycleState)}">${this.escapeHtml(issue.lifecycleState)}</span>
-						<span class="badge ${severityClass}">${severityLabel}</span>
+			return `
+				<div class="progress-card progress-card--${ type }">
+					<div class="progress-card__header">
+						<span>${ escapeHtml( bar.label ) }</span>
+						<span class="progress-card__value">${ value }%</span>
 					</div>
-					<div>${this.escapeHtml(issue.currentText)}</div>
-					<div class="meter-row">
-						<span>severity ${this.escapeHtml(String(issue.severity))}</span>
-						<span>spread ${this.escapeHtml(String(issue.spreadRisk))}</span>
-						<span>contain ${this.escapeHtml(String(issue.containment))}</span>
+					<div class="progress-track" aria-hidden="true">
+						<div class="progress-fill" style="width: ${ value }%;"></div>
 					</div>
-				`;
-				list.appendChild(wrapper);
-			});
-
-		targetEl.appendChild(list);
-	}
-
-	renderActors(targetEl, actors) {
-		targetEl.innerHTML = '';
-
-		if (!actors.length) {
-			targetEl.innerHTML = '<div class="actor-empty">No actors configured.</div>';
-			return;
-		}
-
-		const list = document.createElement('div');
-		list.className = 'actor-list';
-
-		actors.forEach((actor) => {
-			const wrapper = document.createElement('div');
-			wrapper.className = `actor-item actor-item--${actor.isSubject === true ? 'subject' : 'standard'}`;
-
-			const moodClass = this.getMoodBadgeClass(actor.currentMood);
-			const deliveryLabel = actor.deliveryState || 'not_received';
-			const knowledgeLabel = actor.knowledgeState || 'none';
-			const subjectBadge = actor.isSubject === true
-				? '<span class="badge badge--critical">target</span>'
-				: '';
-
-			const subjectState = actor.isSubject === true
-				? `<span class="badge badge--watch">${this.escapeHtml(actor.subjectAwarenessState || 'unaware')}</span>`
-				: '';
-
-			wrapper.innerHTML = `
-				<div class="actor-card__line">
-					<div class="actor-card__headline">
-						<strong>${this.escapeHtml(actor.name)}</strong>
-						<span class="actor-card__role">${this.escapeHtml(actor.role || 'Staff')}</span>
-					</div>
-					<div class="actor-card__badges">
-						${subjectBadge}
-						${subjectState}
-						<span class="badge ${this.escapeHtml(moodClass)}">${this.escapeHtml(actor.currentMood || 'guarded')}</span>
-					</div>
-				</div>
-				<div class="actor-card__summary">${this.escapeHtml(actor.currentSummary || '')}</div>
-				<div class="meter-row">
-					<span>like ${this.escapeHtml(String(actor.playerLikability ?? '0'))}</span>
-					<span>suspicion ${this.escapeHtml(String(actor.playerSuspicion ?? actor.suspicion ?? '0'))}</span>
-					<span>${this.escapeHtml(deliveryLabel)}</span>
-					<span>${this.escapeHtml(knowledgeLabel)}</span>
 				</div>
 			`;
+		} )
+		.join( '' );
 
-			list.appendChild(wrapper);
-		});
+	container.innerHTML = html || '<p class="empty-state">Nothing active yet.</p>';
+}
 
-		targetEl.appendChild(list);
+function renderStory( game, scene, state ) {
+	const storyContainer = document.querySelector( '#story' );
+
+	if ( ! storyContainer ) {
+		return;
 	}
 
-	renderEvidence(targetEl, evidence) {
-		targetEl.innerHTML = '';
+	let kicker = scene.kicker || scene.location || '';
+	let title = scene.title || '';
+	let body = normalizeParagraphs( scene.body, state );
+	let internalThought = normalizeParagraphs( scene.internalThought, state );
 
-		if (!evidence.length) {
-			targetEl.innerHTML = '<div class="evidence-empty">Nothing secured yet.</div>';
-			return;
-		}
+	if ( scene.id === game.story.finaleSceneId ) {
+		const finale = game.getFinaleResult();
 
-		const list = document.createElement('div');
-		list.className = 'evidence-list';
+		kicker = finale.kicker;
+		title = finale.title;
+		body = finale.body;
+		internalThought = finale.internalThought || [];
+	}
 
-		evidence.forEach((item) => {
-			const wrapper = document.createElement('div');
-			wrapper.className = 'evidence-item';
-			wrapper.innerHTML = `
-				<div class="item-row">
-					<span class="badge badge--meta">${this.escapeHtml(item.source)}</span>
-					${item.verified === true ? '<span class="badge badge--verified">verified</span>' : ''}
-				</div>
-				<div><strong>${this.escapeHtml(item.title)}</strong></div>
-				<div>${this.escapeHtml(item.text)}</div>
+	storyContainer.innerHTML = `
+		${ kicker ? `<div class="story-kicker">${ escapeHtml( kicker ) }</div>` : '' }
+		<h2 class="story-title">${ escapeHtml( title ) }</h2>
+		<div class="story-body">
+			${ renderParagraphs( body ) }
+			${ internalThought.length ? `<div class="internal-thought">${ renderParagraphs( internalThought ) }</div>` : '' }
+		</div>
+	`;
+}
+
+function renderChoices( game, scene ) {
+	const choicesContainer = document.querySelector( '#choices' );
+
+	if ( ! choicesContainer ) {
+		return;
+	}
+
+	if ( scene.id === game.story.finaleSceneId ) {
+		choicesContainer.innerHTML = '';
+		return;
+	}
+
+	const choices = game.getAvailableChoices( scene );
+
+	if ( ! choices.length ) {
+		choicesContainer.innerHTML = '<p class="empty-state">No useful moves are available here. That is rarely comforting.</p>';
+		return;
+	}
+
+	choicesContainer.innerHTML = choices
+		.map( ( choice ) => {
+			const category = Array.isArray( choice.category ) ? choice.category[ 0 ] : choice.category;
+			const label = categoryLabel( category );
+
+			return `
+				<button class="choice-button choice-button--${ escapeHtml( category || 'neutral' ) }" type="button" data-choice-id="${ escapeHtml( choice.id ) }">
+					<span class="choice-button__category">${ escapeHtml( label ) }</span>
+					<span>${ escapeHtml( choice.text ) }</span>
+				</button>
 			`;
-			list.appendChild(wrapper);
-		});
+		} )
+		.join( '' );
+}
 
-		targetEl.appendChild(list);
+function renderFeedback( state ) {
+	const feedback = document.querySelector( '#action-feedback' );
+
+	if ( ! feedback ) {
+		return;
 	}
 
-	renderBeliefs(targetEl, beliefs) {
-		targetEl.innerHTML = '';
-		const entries = Object.values(beliefs || {});
-
-		if (!entries.length) {
-			targetEl.innerHTML = '<div class="belief-empty">No committed interpretation yet.</div>';
-			return;
-		}
-
-		const list = document.createElement('div');
-		list.className = 'belief-list';
-
-		entries.forEach((belief) => {
-			const wrapper = document.createElement('div');
-			wrapper.className = 'belief-item';
-			wrapper.textContent = belief.label;
-			list.appendChild(wrapper);
-		});
-
-		targetEl.appendChild(list);
+	if ( ! state.feedback ) {
+		feedback.classList.add( 'reaction-card--hidden' );
+		feedback.textContent = '';
+		return;
 	}
 
-	renderMemories(targetEl, memories) {
-		targetEl.innerHTML = '';
+	feedback.classList.remove( 'reaction-card--hidden' );
+	feedback.textContent = state.feedback;
+}
 
-		if (!memories.length) {
-			targetEl.innerHTML = '<div class="memory-empty">Nothing solid is left in your head yet.</div>';
-			return;
-		}
+function renderHeader( game, state ) {
+	const phaseLabel = document.querySelector( '#phase-label' );
+	const turnCount = document.querySelector( '#turn-count' );
+	const latestSignal = document.querySelector( '#latest-signal .signal-strip__text' );
+	const phase = game.getPhase();
 
-		const sortedMemories = [ ...memories ].sort((a, b) => b.stability - a.stability);
-		const list = document.createElement('div');
-		list.className = 'memory-list';
-
-		sortedMemories.forEach((memory) => {
-			const wrapper = document.createElement('div');
-			wrapper.className = `memory-item memory-item--${memory.stage}`;
-			wrapper.innerHTML = `
-				<div class="memory-card__line">
-					<span class="memory-card__name">${this.escapeHtml(memory.label)}</span>
-					<span class="badge badge--${memory.stage}">${this.escapeHtml(memory.stage)}</span>
-					${memory.preserved === true ? '<span class="badge badge--anchor">anchored</span>' : ''}
-				</div>
-				<div>${this.escapeHtml(memory.currentText)}</div>
-			`;
-			list.appendChild(wrapper);
-		});
-
-		targetEl.appendChild(list);
+	if ( phaseLabel ) {
+		phaseLabel.textContent = phase.label;
 	}
 
-	renderNode({ nodeView, choices, onChoice }) {
-		const kickerMarkup = nodeView.kicker
-			? `<div class="story-kicker">${this.escapeHtml(nodeView.kicker)}</div>`
-			: '';
-
-		const paragraphs = String(nodeView.text || '')
-			.split(/\n{2,}/)
-			.filter(Boolean)
-			.map((paragraph) => `<p>${this.escapeHtml(paragraph)}</p>`)
-			.join('');
-
-		this.storyEl.innerHTML = `
-			${kickerMarkup}
-			<h2 class="story-title">${this.escapeHtml(nodeView.title || '')}</h2>
-			<div class="story-body">${paragraphs}</div>
-		`;
-
-		this.choicesEl.innerHTML = '';
-
-		const visibleChoices = choices.filter((choice) => choice.available !== false);
-
-		visibleChoices.forEach((choice) => {
-			const button = document.createElement('button');
-			button.type = 'button';
-			button.className = 'choice-button';
-			button.disabled = choice.disabled === true;
-
-			const choiceText = document.createElement('span');
-			choiceText.className = 'choice-text';
-			choiceText.textContent = choice.text || 'Continue';
-			button.appendChild(choiceText);
-
-			if (choice.disabled === true && choice.unavailableText) {
-				const choiceNote = document.createElement('span');
-				choiceNote.className = 'choice-note';
-				choiceNote.textContent = choice.unavailableText;
-				button.appendChild(choiceNote);
-			}
-
-			button.addEventListener('click', () => {
-				if (choice.disabled === true) {
-					return;
-				}
-
-				onChoice(choice);
-			});
-
-			this.choicesEl.appendChild(button);
-		});
+	if ( turnCount ) {
+		const currentTurn = Math.min( state.turn, state.maxTurns );
+		turnCount.textContent = state.finaleStarted ? 'All-Hands' : `Turn ${ currentTurn } / ${ state.maxTurns }`;
 	}
 
-	getMoodBadgeClass(mood) {
-		const normalizedMood = String(mood || 'guarded').toLowerCase();
-
-		switch (normalizedMood) {
-			case 'settled':
-				return 'badge--mood-settled';
-
-			case 'open':
-				return 'badge--mood-open';
-
-			case 'watchful':
-				return 'badge--mood-watchful';
-
-			case 'hostile':
-				return 'badge--mood-hostile';
-
-			case 'shaken':
-				return 'badge--mood-shaken';
-
-			case 'guarded':
-			default:
-				return 'badge--mood-guarded';
-		}
+	if ( latestSignal ) {
+		latestSignal.textContent = state.latestSignal || 'The bad email is loose. The all-hands is coming.';
 	}
+}
 
-	escapeHtml(value) {
-		return String(value)
-			.replaceAll('&', '&amp;')
-			.replaceAll('<', '&lt;')
-			.replaceAll('>', '&gt;')
-			.replaceAll('"', '&quot;')
-			.replaceAll("'", '&#039;');
-	}
+export function render( game ) {
+	const state = game.getState();
+	const scene = game.getCurrentScene();
+
+	renderHeader( game, state );
+	renderBars( document.querySelector( '#green-bars' ), game.story.bars.green, state, 'green' );
+	renderBars( document.querySelector( '#red-bars' ), game.story.bars.red, state, 'red' );
+	renderStory( game, scene, state );
+	renderFeedback( state );
+	renderChoices( game, scene );
 }
