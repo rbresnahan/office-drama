@@ -619,11 +619,12 @@ export const OFFICE_PANIC_STORY = {
 				},
 				{
 					id: 'tim_nudge_lunch',
-					text: 'Nudge Tim toward eating before the all-hands.',
+					text: 'Nudge Tim toward eating before the all-hands window closes.',
 					category: 'commitment',
 					once: true,
 					requirements: {
-						phaseMin: 'final_setup',
+						phaseMin: 'pressure_rising',
+						phaseMax: 'pressure_rising',
 						flagsAll: [
 							'knowsTimFoodVulnerability',
 							'timLunchCompromised',
@@ -633,17 +634,54 @@ export const OFFICE_PANIC_STORY = {
 							sidelineTim: 75,
 						},
 					},
-					resultText: 'Tim checks the clock, checks his lunch, and makes a decision his digestive system will file an appeal against.',
+					resultText: 'Tim checks the clock, checks his lunch, and makes a decision his digestive system will file an appeal against. There is still enough time for the problem to mature. Horrible sentence. Accurate sentence.',
 					effects: {
 						bars: {
 							sidelineTim: 25,
 							timSuspectsYou: 25,
 							managementEscalates: 25,
 						},
+						flags: {
+							timAteCompromisedLunch: true,
+							timDigestiveClockStarted: true,
+						},
 						npc: {
 							timMissesMeeting: true,
 						},
-						signal: 'Tim may miss the meeting. The ethics committee would like a word, but it is currently unavailable.',
+						signal: 'Tim ate during the danger window. The all-hands may now be missing its timeline goblin.',
+					},
+					nextScene: 'hub',
+				},
+				{
+					id: 'tim_nudge_lunch_too_late',
+					text: 'Try to nudge Tim toward eating right before the all-hands.',
+					category: 'commitment',
+					once: true,
+					requirements: {
+						phaseMin: 'final_setup',
+						flagsAll: [
+							'knowsTimFoodVulnerability',
+							'timLunchCompromised',
+							'bathroomSuppliesMissing',
+						],
+						usedChoicesNone: [
+							'tim_nudge_lunch',
+						],
+						barsMin: {
+							sidelineTim: 75,
+						},
+					},
+					resultText: 'Tim looks at the clock and decides to wait. Apparently even sabotage has scheduling requirements. Rude, but fair.',
+					effects: {
+						bars: {
+							timSuspectsYou: 25,
+							managementEscalates: 25,
+							sidelineTim: -25,
+						},
+						flags: {
+							timLunchWindowMissed: true,
+						},
+						signal: 'You missed the timing window. Tim still has the lunch problem, but not soon enough to remove him from the meeting.',
 					},
 					nextScene: 'hub',
 				},
@@ -921,6 +959,7 @@ export const OFFICE_PANIC_STORY = {
 					category: 'underhanded',
 					requirements: {
 						phaseMin: 'narrative_building',
+						phaseMax: 'pressure_rising',
 						flagsAll: [
 							'knowsTimFoodVulnerability',
 						],
@@ -1306,6 +1345,7 @@ export const OFFICE_PANIC_STORY = {
 					category: 'underhanded',
 					requirements: {
 						phaseMin: 'narrative_building',
+						phaseMax: 'pressure_rising',
 						flagsAll: [
 							'knowsTimFoodVulnerability',
 							'timLunchCompromised',

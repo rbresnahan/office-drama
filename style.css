@@ -140,7 +140,7 @@ h1 {
 
 .main-panel {
 	display: grid;
-	grid-template-rows: minmax(0, 1fr) auto auto;
+	grid-template-rows: minmax(0, 1fr) auto auto auto;
 	gap: 12px;
 	padding: 14px;
 	overflow: hidden;
@@ -153,6 +153,10 @@ h1 {
 	border: 1px solid rgba(255, 209, 102, 0.26);
 	border-radius: var(--radius-small);
 	background: rgba(255, 209, 102, 0.08);
+}
+
+.main-panel .signal-strip {
+	margin: 0;
 }
 
 .signal-strip__label {
