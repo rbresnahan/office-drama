@@ -133,12 +133,24 @@ export const OFFICE_PANIC_STORY = {
 					thoughts.push( 'Betty might help you, but only if she still believes you are scared instead of strategic.' );
 				}
 
+				if ( state.flags.knowsBettyWatchesKitchen ) {
+					thoughts.push( 'Betty notices office traffic. That makes her useful as a witness and dangerous as a witness.' );
+				}
+
+				if ( state.flags.timHasNotes ) {
+					thoughts.push( 'Tim has meeting notes. That means his threat is no longer just memory; it has bullet points.' );
+				}
+
 				if ( state.bars.timSuspectsYou >= 50 ) {
 					thoughts.push( 'Tim is getting close to the timeline. Every sloppy sentence now has teeth.' );
 				}
 
 				if ( state.bars.celiaFindsOut >= 50 ) {
 					thoughts.push( 'Celia is closer to the full shape of the insult. If she gets the exact message, the room changes.' );
+				}
+
+				if ( state.flags.knowsManagementPressure ) {
+					thoughts.push( 'Lisa knows the all-hands may turn formal. That makes every social move feel a little more like evidence.' );
 				}
 
 				return thoughts;
@@ -202,9 +214,10 @@ export const OFFICE_PANIC_STORY = {
 			title: 'Betty is watching the room more than her screen.',
 			body: [
 				'Betty has the posture of someone trying not to look involved. That usually means she is involved emotionally, which is almost as useful as being involved factually.',
+				'Her desk gives her a clean view of the kitchen, the printer, and most of the people pretending not to panic.',
 			],
 			internalThought: [
-				'If you seem scared, Betty may soften. If you mention Frank, she may start watching him. If you push too hard, she may realize you are recruiting her.',
+				'If you seem scared, Betty may soften. If you mention Frank, she may start watching him. If you ask what she saw, you may learn office movement patterns. If you push too hard, she may realize you are recruiting her.',
 			],
 			choices: [
 				{
@@ -254,6 +267,77 @@ export const OFFICE_PANIC_STORY = {
 					nextScene: 'hub',
 				},
 				{
+					id: 'betty_ask_advice',
+					text: 'Ask Betty what the right thing to do is, without asking her to fix it.',
+					category: 'positive',
+					once: true,
+					requirements: {
+						usedChoicesAll: [
+							'betty_feel_awful',
+						],
+						barsMax: {
+							bettyLosesTrust: 50,
+						},
+					},
+					resultText: 'Betty gives advice instead of an escape route. Annoying. Also useful. Also probably healthier, which feels off-brand for today.',
+					effects: {
+						bars: {
+							warmBetty: 25,
+							containCelia: 25,
+						},
+						flags: {
+							bettyGaveAdvice: true,
+						},
+						signal: 'Betty thinks you may still choose the decent route. Dangerous misunderstanding, potentially useful.',
+					},
+					nextScene: 'hub',
+				},
+				{
+					id: 'betty_discover_kitchen_watch',
+					text: 'Ask whether she saw anyone go into the kitchen or break room.',
+					category: 'info',
+					once: true,
+					resultText: 'Betty says Tim was near the fridge earlier, but Devon was hovering too. Betty notices more traffic than she admits.',
+					effects: {
+						flags: {
+							knowsBettyWatchesKitchen: true,
+							bettyNoticesOfficeMovement: true,
+						},
+						unlocks: [
+							'betty_ask_who_moved_where',
+							'create_tim_lunch_confusion',
+						],
+						signal: 'Betty watches office traffic. That makes her a witness, which is useful until it is not.',
+					},
+					nextScene: 'hub',
+				},
+				{
+					id: 'betty_ask_who_moved_where',
+					text: 'Ask Betty who moved around after the email recall failed.',
+					category: 'info',
+					once: true,
+					requirements: {
+						flagsAll: [
+							'knowsBettyWatchesKitchen',
+						],
+					},
+					resultText: 'Betty remembers Frank leaving his desk and Devon drifting toward the break room. She says it casually, which is how useful facts sneak in.',
+					effects: {
+						flags: {
+							bettySawFrankAway: true,
+							sawFrankDeskEmpty: true,
+						},
+						bars: {
+							frameFrank: 25,
+						},
+						unlocks: [
+							'tim_mention_frank_away',
+						],
+						signal: 'Betty saw Frank away from his desk. The Frank story has a location now.',
+					},
+					nextScene: 'hub',
+				},
+				{
 					id: 'betty_ask_frank_strange',
 					text: 'Ask Betty if Frank has seemed strange today.',
 					category: 'underhanded',
@@ -269,7 +353,7 @@ export const OFFICE_PANIC_STORY = {
 							knowsFrankUnderPressure: true,
 						},
 						unlocks: [
-							'ask_tim_frank_location',
+							'tim_mention_frank_away',
 							'devon_frank_pressure',
 						],
 						signal: 'Frank has entered Betty’s mental suspect board. Tiny corkboard. Big problem.',
@@ -302,7 +386,6 @@ export const OFFICE_PANIC_STORY = {
 					category: 'info',
 					once: true,
 					requirements: {
-						phaseMin: 'damage_control',
 						flagsNone: [
 							'knowsTimFoodVulnerability',
 						],
@@ -314,6 +397,7 @@ export const OFFICE_PANIC_STORY = {
 						},
 						flags: {
 							knowsTimFoodVulnerability: true,
+							knowsTimLunchRoutine: true,
 							show_sidelineTim: true,
 						},
 						unlocks: [
@@ -400,12 +484,48 @@ export const OFFICE_PANIC_STORY = {
 			title: 'Tim has the expression of a man assembling a timeline.',
 			body: [
 				'Tim does not look angry. That is worse. Angry people react. Tim collects.',
-				'His screen has three windows open. None of them look fun.',
+				'His screen has three windows open. None of them look fun. A lunch bag with his name written in aggressive block letters sits beside his monitor.',
 			],
 			internalThought: [
-				'If you send Tim toward the wrong technical question, you may buy time. But every question you ask tells him what you are afraid of.',
+				'If you send Tim toward the wrong technical question, you may buy time. If you learn his routines, you may unlock worse options. But every question you ask tells him what you are afraid of.',
 			],
 			choices: [
+				{
+					id: 'tim_notice_labeled_lunch',
+					text: 'Notice the carefully labeled lunch bag beside Tim’s monitor.',
+					category: 'info',
+					once: true,
+					resultText: 'The label is too careful to be normal. Tim has built a tiny food perimeter around his day.',
+					effects: {
+						flags: {
+							sawTimLabeledFood: true,
+							knowsTimLunchRoutine: true,
+						},
+						unlocks: [
+							'betty_ask_tim_lunch',
+						],
+						signal: 'Tim’s lunch routine looks weirdly important. Weirdly important things are doors with snacks on them.',
+					},
+					nextScene: 'hub',
+				},
+				{
+					id: 'tim_small_talk_meeting_prep',
+					text: 'Make boring small talk about Tim’s meeting prep.',
+					category: 'info',
+					once: true,
+					resultText: 'Tim says he barely had time to prep, then taps a notebook with one finger. The notebook looks organized enough to hurt you.',
+					effects: {
+						flags: {
+							timHasNotes: true,
+							timChecksRecallLogs: true,
+						},
+						unlocks: [
+							'tim_distract_from_notes',
+						],
+						signal: 'Tim has notes and is checking recall details. Paper is now an enemy faction.',
+					},
+					nextScene: 'hub',
+				},
 				{
 					id: 'ask_tim_recall_logs',
 					text: 'Ask Tim whether email recall logs are reliable.',
@@ -420,6 +540,7 @@ export const OFFICE_PANIC_STORY = {
 						},
 						flags: {
 							knowsRecallLogsMatter: true,
+							timChecksRecallLogs: true,
 						},
 						signal: 'The system-blame route is alive, but Tim noticed where you pointed.',
 					},
@@ -442,10 +563,36 @@ export const OFFICE_PANIC_STORY = {
 							distractTim: 25,
 							timSuspectsYou: 25,
 						},
+						flags: {
+							timCheckingFrank: true,
+						},
 						unlocks: [
 							'plant_bottle_frank',
 						],
 						signal: 'Tim is checking Frank now. He is also checking you. Multitasking: the enemy.',
+					},
+					nextScene: 'hub',
+				},
+				{
+					id: 'tim_distract_from_notes',
+					text: 'Ask a technical question that pulls Tim away from his meeting notes.',
+					category: 'underhanded',
+					once: true,
+					requirements: {
+						flagsAll: [
+							'timHasNotes',
+						],
+					},
+					resultText: 'Tim opens another window. The notes stay on his desk, but his attention splits. Split attention is not safety. It is a coupon for time.',
+					effects: {
+						bars: {
+							distractTim: 25,
+							timSuspectsYou: 25,
+						},
+						flags: {
+							timNotesDistracted: true,
+						},
+						signal: 'Tim’s notes lost some momentum. Tim did not.',
 					},
 					nextScene: 'hub',
 				},
@@ -463,9 +610,10 @@ export const OFFICE_PANIC_STORY = {
 					effects: {
 						bars: {
 							timSuspectsYou: -25,
+							distractTim: -25,
 							blameSystem: 25,
 						},
-						signal: 'You gave Tim something true enough to slow him down.',
+						signal: 'You gave Tim something true enough to slow him down, but the false trail lost some fog.',
 					},
 					nextScene: 'hub',
 				},
@@ -477,6 +625,7 @@ export const OFFICE_PANIC_STORY = {
 					requirements: {
 						phaseMin: 'final_setup',
 						flagsAll: [
+							'knowsTimFoodVulnerability',
 							'timLunchCompromised',
 							'bathroomSuppliesMissing',
 						],
@@ -507,6 +656,7 @@ export const OFFICE_PANIC_STORY = {
 			title: 'Frank’s desk is empty.',
 			body: [
 				'The chair is pushed in. His mug is still here. His desk has the private dullness of someone who never expected to become a plot device.',
+				'The empty desk matters only if someone later has a reason to care that it was empty.',
 			],
 			internalThought: [
 				'If the bottle appears after people are already suspicious, it becomes evidence. If it appears before that, it becomes a mystery. Mysteries invite Tim. Tim is bad.',
@@ -523,9 +673,37 @@ export const OFFICE_PANIC_STORY = {
 							frankAwayFromDesk: true,
 						},
 						flags: {
+							frankAwayFromDesk: true,
 							confirmedFrankAway: true,
+							sawFrankDeskEmpty: true,
 						},
+						unlocks: [
+							'plant_bottle_frank',
+						],
 						signal: 'Frank is away from his desk. That opens doors you probably should not walk through.',
+					},
+					nextScene: 'hub',
+				},
+				{
+					id: 'frank_notice_bag',
+					text: 'Notice Frank left his bag half-open beside the desk.',
+					category: 'info',
+					once: true,
+					requirements: {
+						flagsAll: [
+							'sawFrankDeskEmpty',
+						],
+					},
+					resultText: 'The bag is not evidence. It is an invitation to become the kind of person who calls opportunity evidence.',
+					effects: {
+						flags: {
+							frankLeftBagOut: true,
+						},
+						bars: {
+							frameFrank: 25,
+							frankRetaliates: 25,
+						},
+						signal: 'Frank left something unattended. The Frank route gained texture and risk.',
 					},
 					nextScene: 'hub',
 				},
@@ -538,6 +716,10 @@ export const OFFICE_PANIC_STORY = {
 						barsMin: {
 							frameFrank: 50,
 						},
+						flagsAll: [
+							'confirmedFrankAway',
+							'sawFrankDeskEmpty',
+						],
 						npc: {
 							frankAwayFromDesk: true,
 						},
@@ -625,6 +807,7 @@ export const OFFICE_PANIC_STORY = {
 					id: 'frank_walk_away',
 					text: 'Walk away and seed suspicion elsewhere first.',
 					category: 'neutral',
+					once: true,
 					resultText: 'You leave the desk untouched. For once, restraint does not make a dramatic sound.',
 					effects: {
 						signal: 'You backed away from Frank’s desk. The opportunity remains, for better or worse.',
@@ -662,6 +845,52 @@ export const OFFICE_PANIC_STORY = {
 							show_devonLeak: true,
 						},
 						signal: 'Devon has part of the email. Parts become stories. Stories become fires.',
+					},
+					nextScene: 'hub',
+				},
+				{
+					id: 'devon_saw_or_heard',
+					text: 'Ask whether Devon actually saw the email or only heard about it.',
+					category: 'info',
+					once: true,
+					resultText: 'Devon saw a fragment and heard the rest from someone else. That is not truth. That is rumor starter dough.',
+					effects: {
+						bars: {
+							devonLeak: 25,
+						},
+						flags: {
+							devonHasPartialVersion: true,
+							devonCanCarryFalseDetail: true,
+							devonCanSupportSystemConfusion: true,
+							show_devonLeak: true,
+						},
+						unlocks: [
+							'devon_false_detail',
+							'celia_people_exaggerating',
+						],
+						signal: 'Devon has a partial version. Partial versions are where lies rent office space.',
+					},
+					nextScene: 'hub',
+				},
+				{
+					id: 'devon_watch_after_leaving',
+					text: 'Watch who Devon talks to after leaving the break room.',
+					category: 'info',
+					once: true,
+					requirements: {
+						barsMin: {
+							devonLeak: 25,
+						},
+					},
+					resultText: 'Devon drifts toward Celia’s side of the office. He moves like a man carrying a lit match and calling it news.',
+					effects: {
+						bars: {
+							celiaFindsOut: 25,
+						},
+						flags: {
+							devonMayReachCelia: true,
+						},
+						signal: 'Devon may reach Celia. Rumor now has legs and terrible shoes.',
 					},
 					nextScene: 'hub',
 				},
@@ -721,6 +950,11 @@ export const OFFICE_PANIC_STORY = {
 					text: 'Feed Devon one controlled false detail and see where it appears.',
 					category: 'underhanded',
 					once: true,
+					requirements: {
+						flagsAll: [
+							'devonCanCarryFalseDetail',
+						],
+					},
 					resultText: 'Devon accepts the detail with the solemnity of a man receiving a cursed heirloom.',
 					effects: {
 						bars: {
@@ -733,6 +967,27 @@ export const OFFICE_PANIC_STORY = {
 							show_devonLeak: true,
 						},
 						signal: 'Devon is now a rumor test. Unfortunately, the test is also airborne.',
+					},
+					nextScene: 'hub',
+				},
+				{
+					id: 'devon_contain_rumor',
+					text: 'Give Devon a boring version to slow the rumor down.',
+					category: 'cleanup',
+					once: true,
+					requirements: {
+						barsMin: {
+							devonLeak: 25,
+						},
+					},
+					resultText: 'Devon hates the boring version, which is how you know it might work. The rumor loses flavor, not velocity.',
+					effects: {
+						bars: {
+							devonLeak: -25,
+							celiaFindsOut: -25,
+							blameSystem: 25,
+						},
+						signal: 'You bored Devon on purpose. A dark art, but a useful one.',
 					},
 					nextScene: 'hub',
 				},
@@ -772,9 +1027,31 @@ export const OFFICE_PANIC_STORY = {
 				'Her monitor glows. Her hands are still. The silence around her feels like a meeting invite you cannot decline.',
 			],
 			internalThought: [
-				'If you talk now, you may control the first version she hears. If you wait, someone else gets there first.',
+				'Celia is the subject of the email. If you talk now, you may control the first version she hears. If you wait, someone else gets there first.',
 			],
 			choices: [
+				{
+					id: 'celia_watch_email',
+					text: 'Watch whether Celia has opened the thread yet.',
+					category: 'info',
+					once: true,
+					resultText: 'Celia keeps looking at her inbox but has not opened the thread. She has fragments, not the full blade.',
+					effects: {
+						flags: {
+							knowsCeliaHasNotSeenFullEmail: true,
+							celiaHeardFragments: true,
+						},
+						bars: {
+							containCelia: 25,
+						},
+						unlocks: [
+							'celia_people_exaggerating',
+							'celia_direct_apology',
+						],
+						signal: 'Celia has fragments, not the full message. The window is small and already closing.',
+					},
+					nextScene: 'hub',
+				},
 				{
 					id: 'celia_apologize_vague',
 					text: 'Apologize before she asks, but keep it vague.',
@@ -802,6 +1079,7 @@ export const OFFICE_PANIC_STORY = {
 					effects: {
 						flags: {
 							knowsCeliaHasHeardRumor: true,
+							celiaHeardFragments: true,
 						},
 						bars: {
 							containCelia: 25,
@@ -819,6 +1097,11 @@ export const OFFICE_PANIC_STORY = {
 						barsMin: {
 							blameSystem: 25,
 						},
+						flagsAny: [
+							'knowsCeliaHasNotSeenFullEmail',
+							'celiaHeardFragments',
+							'devonHasPartialVersion',
+						],
 					},
 					resultText: 'Celia’s face closes a little. You gave her a reason to doubt the rumor. You also gave her a reason to find the original.',
 					effects: {
@@ -849,6 +1132,31 @@ export const OFFICE_PANIC_STORY = {
 					},
 					nextScene: 'hub',
 				},
+				{
+					id: 'celia_direct_apology',
+					text: 'Apologize directly enough that she knows you are not hiding behind fragments.',
+					category: 'commitment',
+					once: true,
+					requirements: {
+						phaseMin: 'pressure_rising',
+						barsMin: {
+							containCelia: 50,
+						},
+					},
+					resultText: 'Celia does not forgive you. But she stops watching you like you are still trying to sell her a smaller wound.',
+					effects: {
+						bars: {
+							containCelia: 25,
+							celiaFindsOut: 25,
+							bettyLosesTrust: -25,
+						},
+						flags: {
+							celiaHeardDirectApology: true,
+						},
+						signal: 'Direct apology stabilized Celia slightly. It also put more truth in the room.',
+					},
+					nextScene: 'hub',
+				},
 			],
 		},
 
@@ -858,6 +1166,7 @@ export const OFFICE_PANIC_STORY = {
 			title: 'Lisa is already using the word “process.”',
 			body: [
 				'Lisa has a notebook open. Not a cute notebook. A notebook that will survive discovery.',
+				'Her calendar is open to the all-hands invite. The title has not changed, but the room around it has.',
 			],
 			internalThought: [
 				'Lisa can make this official. You can cooperate, redirect her, or turn her into the reason this became bigger than it needed to be.',
@@ -865,7 +1174,7 @@ export const OFFICE_PANIC_STORY = {
 			choices: [
 				{
 					id: 'lisa_ask_agenda',
-					text: 'Ask whether the all-hands agenda changed.',
+					text: 'Ask why the all-hands invite changed.',
 					category: 'info',
 					once: true,
 					resultText: 'Lisa says leadership wants to address communication norms. Congratulations, you have become a norm.',
@@ -875,7 +1184,13 @@ export const OFFICE_PANIC_STORY = {
 						},
 						flags: {
 							knowsLisaTalkedToManagement: true,
+							knowsAllHandsAgendaShifted: true,
+							knowsManagementPressure: true,
 						},
+						unlocks: [
+							'lisa_overreacting_seed',
+							'lisa_push_system_failure',
+						],
 						signal: 'Management is aware enough to be dangerous.',
 					},
 					nextScene: 'hub',
@@ -885,13 +1200,21 @@ export const OFFICE_PANIC_STORY = {
 					text: 'Give Lisa a boring process-focused explanation.',
 					category: 'cleanup',
 					once: true,
+					requirements: {
+						barsMin: {
+							managementEscalates: 25,
+						},
+					},
 					resultText: 'Lisa writes less than you feared. Less is not nothing, but it is less.',
 					effects: {
 						bars: {
 							managementEscalates: -25,
-							blameSystem: 25,
+							blameSystem: -25,
 						},
-						signal: 'You lowered formal risk slightly by becoming boring. Weaponized dullness works.',
+						flags: {
+							lisaCanDelayEscalation: true,
+						},
+						signal: 'You lowered formal risk by becoming boring, but the system-blame route lost leverage.',
 					},
 					nextScene: 'hub',
 				},
@@ -902,6 +1225,10 @@ export const OFFICE_PANIC_STORY = {
 					once: true,
 					requirements: {
 						phaseMin: 'narrative_building',
+						flagsAny: [
+							'knowsAllHandsAgendaShifted',
+							'knowsManagementPressure',
+						],
 					},
 					resultText: 'The idea lands nearby, not directly. That is usually how cowardly useful ideas land.',
 					effects: {
@@ -924,6 +1251,10 @@ export const OFFICE_PANIC_STORY = {
 					once: true,
 					requirements: {
 						phaseMin: 'pressure_rising',
+						flagsAll: [
+							'knowsAllHandsAgendaShifted',
+							'knowsManagementPressure',
+						],
 						barsMin: {
 							blameSystem: 50,
 						},
@@ -1060,9 +1391,10 @@ export const OFFICE_PANIC_STORY = {
 					effects: {
 						bars: {
 							timSuspectsYou: -25,
+							distractTim: -25,
 							blameSystem: 25,
 						},
-						signal: 'Tim slowed down, but he is not gone.',
+						signal: 'Tim slowed down, but the false trail weakened too.',
 					},
 					nextScene: 'hub',
 				},
@@ -1157,8 +1489,9 @@ export const OFFICE_PANIC_STORY = {
 						bars: {
 							bettyLosesTrust: -25,
 							warmBetty: 25,
+							bettyKlepto: -25,
 						},
-						signal: 'Betty is hurt, not gone. That distinction matters.',
+						signal: 'Betty is hurt, not gone. The route that used her as cover weakened.',
 					},
 					nextScene: 'hub',
 				},
@@ -1254,9 +1587,9 @@ export const OFFICE_PANIC_STORY = {
 					effects: {
 						bars: {
 							managementEscalates: -25,
-							blameSystem: 25,
+							blameSystem: -25,
 						},
-						signal: 'You reduced formal risk slightly. The notebook remains undefeated.',
+						signal: 'You reduced formal risk slightly, but the system cover lost leverage.',
 					},
 					nextScene: 'hub',
 				},
@@ -1322,6 +1655,10 @@ export const OFFICE_PANIC_STORY = {
 			body.push( 'Tim watches you during the meeting instead of the speaker. That is not great. That is the opposite of great wearing business casual.' );
 		}
 
+		if ( state.flags.timHasNotes && b.distractTim < 75 && ! state.npc.timMissesMeeting ) {
+			body.push( 'Tim brought notes. That is the problem with procedural people: eventually they become furniture with receipts.' );
+		}
+
 		if ( b.frameFrank >= 75 ) {
 			body.push( 'Frank takes heat. Maybe not all of it, but enough that your name is not the only name in the room.' );
 		}
@@ -1338,12 +1675,20 @@ export const OFFICE_PANIC_STORY = {
 			body.push( 'Betty does not defend you. Worse, she looks like someone who almost did.' );
 		}
 
+		if ( state.flags.knowsBettyWatchesKitchen && b.bettyLosesTrust >= 50 ) {
+			body.push( 'Betty noticed more movement than you hoped. The office traffic you used as cover may become the map she uses against you.' );
+		}
+
 		if ( b.celiaFindsOut >= 100 && b.containCelia < 75 ) {
 			body.push( 'Celia has the full message and the room knows she has it. Every soft explanation you built now sounds like packaging around something rotten.' );
 		} else if ( b.containCelia >= 75 ) {
 			body.push( 'Celia is hurt, but she does not become the center of the room. That is not forgiveness. That is containment.' );
 		} else if ( b.celiaFindsOut >= 50 ) {
 			body.push( 'Celia knows enough to be dangerous later. The meeting ends, but the consequence does not.' );
+		}
+
+		if ( state.flags.devonMayReachCelia && b.devonLeak >= 50 ) {
+			body.push( 'Devon carried the story toward Celia before anyone could fully control it. The rumor now has fingerprints from more than one person, which is useful until someone dusts for yours.' );
 		}
 
 		if ( b.blameSystem >= 75 ) {
