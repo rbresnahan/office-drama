@@ -40,15 +40,26 @@ button {
 	width: min(1440px, calc(100vw - 24px));
 	height: calc(100vh - 24px);
 	margin: 12px auto;
+	display: grid;
+	grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+	gap: 12px;
+}
+
+.app-column {
+	min-height: 0;
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
 }
 
+.app-column--right {
+	min-width: 0;
+}
+
 .game-header {
 	display: flex;
-	align-items: center;
-	justify-content: space-between;
+	align-items: flex-start;
+	justify-content: center;
 	gap: 16px;
 	padding: 14px 18px;
 	border: 1px solid var(--line);
@@ -74,34 +85,43 @@ h1 {
 
 .header-actions {
 	display: flex;
+	align-items: stretch;
+	gap: 8px;
+}
+
+.clock-pill {
+	min-height: 38px;
+	flex: 1;
+	display: flex;
 	align-items: center;
+	justify-content: space-between;
 	gap: 10px;
+	padding: 7px 10px;
+	border: 1px solid rgba(255, 209, 102, 0.26);
+	border-radius: 12px;
+	background: rgba(255, 209, 102, 0.08);
 }
 
-.turn-pill {
-	display: grid;
-	gap: 3px;
-	padding: 10px 14px;
-	border: 1px solid var(--line);
-	border-radius: 999px;
-	background: rgba(0, 0, 0, 0.18);
-	text-align: right;
+.clock-pill__label {
+	color: var(--gold);
+	font-size: 0.66rem;
+	font-weight: 900;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
 }
 
-.turn-pill span {
-	color: var(--muted);
-	font-size: 0.78rem;
-}
-
-.turn-pill strong {
-	font-size: 0.92rem;
+.clock-pill strong {
+	font-size: 0.9rem;
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
 }
 
 .ghost-button {
-	padding: 10px 14px;
+	min-height: 38px;
+	padding: 7px 11px;
 	color: var(--text);
 	border: 1px solid var(--line);
-	border-radius: 999px;
+	border-radius: 12px;
 	background: rgba(255, 255, 255, 0.08);
 	cursor: pointer;
 	transition: transform 140ms ease, background 140ms ease;
@@ -111,14 +131,6 @@ h1 {
 .choice-button:hover {
 	transform: translateY(-1px);
 	background: rgba(255, 255, 255, 0.14);
-}
-
-.game-grid {
-	min-height: 0;
-	flex: 1;
-	display: grid;
-	grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
-	gap: 12px;
 }
 
 .panel {
@@ -131,6 +143,7 @@ h1 {
 }
 
 .status-panel {
+	flex: 1;
 	display: flex;
 	flex-direction: column;
 	gap: 14px;
@@ -139,6 +152,7 @@ h1 {
 }
 
 .main-panel {
+	flex: 1;
 	display: grid;
 	grid-template-rows: minmax(0, 1fr) auto auto auto;
 	gap: 12px;
@@ -264,6 +278,14 @@ h1 {
 	display: none;
 }
 
+.reaction-card p {
+	margin: 0;
+}
+
+.reaction-card p + p {
+	margin-top: 0.6rem;
+}
+
 .story-panel {
 	min-height: 0;
 	overflow: auto;
@@ -286,7 +308,7 @@ h1 {
 
 .story-title {
 	margin: 0 0 16px;
-	font-size: clamp(1.6rem, 3vw, 3rem);
+	font-size: clamp(1.45rem, 2vw, 2.2rem);
 	line-height: 1.02;
 }
 
@@ -303,13 +325,37 @@ h1 {
 	margin: 0;
 }
 
-.internal-thought {
-	margin-top: 18px;
-	padding: 14px;
+.internal-thought-card {
+	display: grid;
+	gap: 8px;
+	padding: 12px 14px;
+	border: 1px solid rgba(255, 209, 102, 0.3);
 	border-left: 4px solid var(--gold);
-	border-radius: 12px;
+	border-radius: var(--radius-small);
 	background: rgba(255, 209, 102, 0.08);
 	color: rgba(246, 241, 255, 0.9);
+	line-height: 1.45;
+}
+
+.internal-thought-card--hidden {
+	display: none;
+}
+
+.internal-thought-card__label {
+	color: var(--gold);
+	font-size: 0.68rem;
+	font-weight: 900;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+}
+
+.internal-thought-card__body {
+	display: grid;
+	gap: 8px;
+}
+
+.internal-thought-card p {
+	margin: 0;
 }
 
 .choices-panel {
@@ -319,8 +365,7 @@ h1 {
 }
 
 .choice-button {
-	min-height: 62px;
-	padding: 13px 14px;
+	padding: 7px 14px;
 	color: var(--text);
 	border: 1px solid var(--line);
 	border-radius: var(--radius-small);
@@ -367,25 +412,20 @@ h1 {
 	.app-shell {
 		height: auto;
 		min-height: calc(100vh - 20px);
-	}
-
-	.game-header {
-		align-items: flex-start;
-		flex-direction: column;
-	}
-
-	.header-actions {
-		width: 100%;
-		justify-content: space-between;
-	}
-
-	.game-grid {
 		grid-template-columns: 1fr;
+	}
+
+	.app-column {
+		min-height: auto;
 	}
 
 	.status-panel,
 	.story-panel {
 		max-height: none;
+	}
+
+	.main-panel {
+		overflow: visible;
 	}
 
 	.choices-panel {
@@ -405,12 +445,7 @@ h1 {
 		border-radius: 16px;
 	}
 
-	.turn-pill {
-		text-align: left;
-	}
-
 	.header-actions {
-		align-items: stretch;
 		flex-direction: column;
 	}
 

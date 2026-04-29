@@ -8,44 +8,48 @@
 </head>
 <body>
 	<main id="app" class="app-shell">
-		<header class="game-header">
-			<div>
-				<p class="eyebrow">Office Panic Demo</p>
-				<h1>Choose Your Damage</h1>
-			</div>
+		<section class="app-column app-column--left">
+			<header class="game-header">
+				<div>
+					<p class="eyebrow">Office Panic Demo</p>
+					<h1>Damage Control</h1>
+				</div>
+			</header>
 
-			<div class="header-actions">
-				<div class="turn-pill">
-					<span id="phase-label">Damage Control</span>
-					<strong id="turn-count">Turn 1 / 12</strong>
+			<aside class="panel status-panel" aria-label="Game status">
+				<div class="header-actions">
+					<div class="clock-pill" aria-label="Current office time">
+						<span id="clock-label" class="clock-pill__label">Start</span>
+						<strong id="turn-count">9:00 AM</strong>
+					</div>
+
+					<button id="restart-game" class="ghost-button" type="button">
+						Restart
+					</button>
 				</div>
 
-				<button id="restart-game" class="ghost-button" type="button">
-					Restart
-				</button>
-			</div>
-		</header>
+				<div id="latest-signal" class="signal-strip">
+					<span class="signal-strip__label">Chatter</span>
+					<span class="signal-strip__text">It's too Late, cause a disruption.</span>
+				</div>
 
-		<section class="game-grid">
-			<aside class="panel status-panel" aria-label="Game status">
 				<div class="bars-section">
-					<h2>Stories You Are Building</h2>
+					<h2>Plans and Alliances</h2>
 					<div id="green-bars" class="bars-list"></div>
 				</div>
 
 				<div class="bars-section">
-					<h2>Threats Closing In</h2>
+					<h2>Watching You</h2>
 					<div id="red-bars" class="bars-list"></div>
 				</div>
 			</aside>
+		</section>
 
+		<section class="app-column app-column--right">
 			<section class="panel main-panel">
 				<article id="story" class="story-panel" aria-live="polite"></article>
 
-				<div id="latest-signal" class="signal-strip">
-					<span class="signal-strip__label">Latest</span>
-					<span class="signal-strip__text">The bad email is loose. The all-hands is coming.</span>
-				</div>
+				<div id="internal-thought" class="internal-thought-card internal-thought-card--hidden" aria-live="polite"></div>
 
 				<div id="action-feedback" class="reaction-card reaction-card--hidden" aria-live="polite"></div>
 

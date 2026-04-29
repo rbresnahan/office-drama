@@ -211,13 +211,18 @@ export const OFFICE_PANIC_STORY = {
 		betty_desk: {
 			id: 'betty_desk',
 			location: 'Betty’s Desk',
-			title: 'Betty is watching the room more than her screen.',
+			title: 'Betty’s desk is cheerful in a way that feels operational.',
 			body: [
-				'Betty has the posture of someone trying not to look involved. That usually means she is involved emotionally, which is almost as useful as being involved factually.',
-				'Her desk gives her a clean view of the kitchen, the printer, and most of the people pretending not to panic.',
+				'Betty’s desk has color-coded folders, seasonal decorations, three kinds of sticky notes, and one tiny ceramic pumpkin that has absolutely survived more office drama than HR.',
+				'Nothing looks messy. That is the first warning. The candy dish is full, the pens are aligned, and the framed vacation photo is angled just enough to look casual. Betty has built a friendly little command center and disguised it as personality.',
+				'From here, she can see the kitchen, the printer, the hallway bend near Lisa’s office, and most of the desks where people pretend they are not watching each other. It is not a desk. It is a lighthouse for gossip with ergonomic support.',
+				'Betty herself is half-facing her monitor, half-facing the room, performing the ancient office ritual of looking busy while receiving emotional weather reports from six directions.',
 			],
 			internalThought: [
-				'If you seem scared, Betty may soften. If you mention Frank, she may start watching him. If you ask what she saw, you may learn office movement patterns. If you push too hard, she may realize you are recruiting her.',
+				'Betty wants to be included. Not asked. Included. There is a difference, and getting it wrong is how people become lunch conversation.',
+				'She is friendly enough to help, bored enough to enjoy a mess, and socially sharp enough to notice when someone is handing her a mess with instructions.',
+				'If you seem scared, she may soften. If you make her feel like an insider, she may talk. If you make her feel used, replaced, or stupid, she may become a problem with earrings.',
+				'The desk matters. She can see movement. She can confirm who went where. She can also turn one worried glance into a rumor with legs, teeth, and a calendar invite.',
 			],
 			choices: [
 				{
@@ -362,27 +367,37 @@ export const OFFICE_PANIC_STORY = {
 				},
 				{
 					id: 'betty_ask_tim_knows',
-					text: 'Ask Betty whether Tim has been asking questions.',
+					text: 'Ask Betty why Tim is always so engaged with everyone’s business.',
 					category: 'info',
 					once: true,
-					resultText: 'Betty lowers her voice. Tim asked who saw the email before the recall finished.',
+					resultText: [
+						'Betty’s desk looked aggressively tidy, like clutter had once disappointed her personally.',
+						'“Betty, you seem like someone who returns a shopping cart even when no one’s watching.”',
+						'“Correct,” she said. “There are two kinds of people: cart returners and people who make retail workers wonder why civilization bothered.”',
+						'“Respect.” You kept your voice casual. “Relatedly, why is Tim always so… engaged? He asked why I was near the storage closet like I’d breached a perimeter.”',
+						'Betty gave a loyal little smile. “He notices things. Too many things. He cares a lot and means well, which can be exhausting.”',
+						'You nodded like this was research. “Frank called it weaponized helpfulness. I’m trying to keep it from becoming a committee.”',
+						'Betty glanced toward the hallway. “He gets distracted when he’s buried. When he starts doing hallway surveillance, I ask Lisa to forward sales calls to him.”',
+						'She smiled brightly. “Keeps him busy. Helpful, really. For everyone’s wellness.”',
+					],
 					effects: {
 						bars: {
 							distractTim: 25,
 						},
 						flags: {
 							knowsTimInvestigating: true,
+							knowsTimCanBeBuried: true,
 						},
 						unlocks: [
 							'ask_tim_recall_logs',
 						],
-						signal: 'Tim is building the timeline. That is his whole terrible little hobby now.',
+						signal: 'Tim can be redirected when he is buried in other people’s work. Weaponized helpfulness has an off switch.',
 					},
 					nextScene: 'hub',
 				},
 				{
 					id: 'betty_ask_tim_lunch',
-					text: 'Ask why Tim labels his lunch like it contains state secrets.',
+					text: 'Ask why Tim labels everything in the fridge like it contains state secrets.',
 					category: 'info',
 					once: true,
 					requirements: {
@@ -390,7 +405,18 @@ export const OFFICE_PANIC_STORY = {
 							'knowsTimFoodVulnerability',
 						],
 					},
-					resultText: 'Betty says Tim is careful about food because one wrong lunch turns him into a workplace evacuation drill.',
+					resultText: [
+						'Betty’s desk had the kind of seasonal cheer corporate approved in bulk.',
+						'“Hey Betty, getting into anything crazy this weekend? Maybe a glass of wine, an episode of something British, lights out by 8:15?”',
+						'“Excuse you,” she said. “8:40. I’m not in hospice.”',
+						'You leaned against the cubicle like you were only passing through. “Fair. Speaking of controlled substances, why does Tim label everything in the fridge? His oat milk has more documentation than our onboarding.”',
+						'Betty’s smile held, but only because it had training.',
+						'“He’s careful. Also dramatic. But medically dramatic, so we call it compliance.”',
+						'You nodded, professionally concerned. “Celia called it a hostile cooling environment.”',
+						'Betty sighed. “Fine, but don’t say I told you. He’s extremely lactose intolerant. One dairy-adjacent mistake and the afternoon becomes a facilities issue.”',
+						'You nodded again.',
+						'Not paranoia. Containment.',
+					],
 					effects: {
 						bars: {
 							sidelineTim: 25,
@@ -403,7 +429,7 @@ export const OFFICE_PANIC_STORY = {
 						unlocks: [
 							'create_tim_lunch_confusion',
 						],
-						signal: 'You learned Tim has a lunch vulnerability. The goblin door has opened.',
+						signal: 'Tim’s fridge paranoia is medical, not theatrical. That makes the lunch route worse and more useful.',
 					},
 					nextScene: 'hub',
 				},

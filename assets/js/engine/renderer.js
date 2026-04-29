@@ -1,5 +1,3 @@
-import { categoryLabel } from './story-helpers.js';
-
 function escapeHtml( value ) {
 	return String( value )
 		.replaceAll( '&', '&amp;' )
@@ -8,6 +6,21 @@ function escapeHtml( value ) {
 		.replaceAll( '"', '&quot;' )
 		.replaceAll( "'", '&#039;' );
 }
+
+const OFFICE_CLOCK_TIMES = [
+	'9:00 AM',
+	'9:37 AM',
+	'10:13 AM',
+	'10:52 AM',
+	'11:27 AM',
+	'12:00 PM',
+	'12:46 PM',
+	'1:45 PM',
+	'2:31 PM',
+	'3:18 PM',
+	'4:07 PM',
+	'5:00 PM',
+];
 
 function normalizeParagraphs( value, state ) {
 	const resolved = typeof value === 'function' ? value( state ) : value;
@@ -25,6 +38,57 @@ function normalizeParagraphs( value, state ) {
 
 function renderParagraphs( paragraphs ) {
 	return paragraphs.map( ( paragraph ) => `<p>${ escapeHtml( paragraph ) }</p>` ).join( '' );
+}
+
+function getClockTime( state ) {
+	if ( state.finaleStarted ) {
+		return OFFICE_CLOCK_TIMES[ OFFICE_CLOCK_TIMES.length - 1 ];
+	}
+
+	const maxTurns = state.maxTurns || OFFICE_CLOCK_TIMES.length;
+	const currentTurn = Math.min( Math.max( state.turn || 1, 1 ), maxTurns );
+	const clockIndex = Math.min( currentTurn - 1, OFFICE_CLOCK_TIMES.length - 1 );
+
+	return OFFICE_CLOCK_TIMES[ clockIndex ];
+}
+
+function getClockLabel( state, clockTime ) {
+	if ( state.finaleStarted || clockTime === '5:00 PM' ) {
+		return 'All-Hands';
+	}
+
+	if ( clockTime === '12:00 PM' ) {
+		return 'Lunch';
+	}
+
+	if ( clockTime === '9:00 AM' ) {
+		return 'Start';
+	}
+
+	return 'Office Time';
+}
+
+function getResolvedSceneContent( game, scene, state ) {
+	let kicker = scene.kicker || scene.location || '';
+	let title = scene.title || '';
+	let body = normalizeParagraphs( scene.body, state );
+	let internalThought = normalizeParagraphs( scene.internalThought, state );
+
+	if ( scene.id === game.story.finaleSceneId ) {
+		const finale = game.getFinaleResult();
+
+		kicker = finale.kicker;
+		title = finale.title;
+		body = finale.body;
+		internalThought = finale.internalThought || [];
+	}
+
+	return {
+		kicker,
+		title,
+		body,
+		internalThought,
+	};
 }
 
 function renderBars( container, bars, state, type ) {
@@ -58,33 +122,40 @@ function renderBars( container, bars, state, type ) {
 	container.innerHTML = html || '<p class="empty-state">Nothing active yet.</p>';
 }
 
-function renderStory( game, scene, state ) {
+function renderStory( content ) {
 	const storyContainer = document.querySelector( '#story' );
 
 	if ( ! storyContainer ) {
 		return;
 	}
 
-	let kicker = scene.kicker || scene.location || '';
-	let title = scene.title || '';
-	let body = normalizeParagraphs( scene.body, state );
-	let internalThought = normalizeParagraphs( scene.internalThought, state );
+	storyContainer.innerHTML = `
+		${ content.kicker ? `<div class="story-kicker">${ escapeHtml( content.kicker ) }</div>` : '' }
+		<h2 class="story-title">${ escapeHtml( content.title ) }</h2>
+		<div class="story-body">
+			${ renderParagraphs( content.body ) }
+		</div>
+	`;
+}
 
-	if ( scene.id === game.story.finaleSceneId ) {
-		const finale = game.getFinaleResult();
+function renderInternalThought( internalThought ) {
+	const internalThoughtContainer = document.querySelector( '#internal-thought' );
 
-		kicker = finale.kicker;
-		title = finale.title;
-		body = finale.body;
-		internalThought = finale.internalThought || [];
+	if ( ! internalThoughtContainer ) {
+		return;
 	}
 
-	storyContainer.innerHTML = `
-		${ kicker ? `<div class="story-kicker">${ escapeHtml( kicker ) }</div>` : '' }
-		<h2 class="story-title">${ escapeHtml( title ) }</h2>
-		<div class="story-body">
-			${ renderParagraphs( body ) }
-			${ internalThought.length ? `<div class="internal-thought">${ renderParagraphs( internalThought ) }</div>` : '' }
+	if ( ! internalThought.length ) {
+		internalThoughtContainer.classList.add( 'internal-thought-card--hidden' );
+		internalThoughtContainer.innerHTML = '';
+		return;
+	}
+
+	internalThoughtContainer.classList.remove( 'internal-thought-card--hidden' );
+	internalThoughtContainer.innerHTML = `
+		<div class="internal-thought-card__label">Internal Thought</div>
+		<div class="internal-thought-card__body">
+			${ renderParagraphs( internalThought ) }
 		</div>
 	`;
 }
@@ -111,11 +182,9 @@ function renderChoices( game, scene ) {
 	choicesContainer.innerHTML = choices
 		.map( ( choice ) => {
 			const category = Array.isArray( choice.category ) ? choice.category[ 0 ] : choice.category;
-			const label = categoryLabel( category );
 
 			return `
 				<button class="choice-button choice-button--${ escapeHtml( category || 'neutral' ) }" type="button" data-choice-id="${ escapeHtml( choice.id ) }">
-					<span class="choice-button__category">${ escapeHtml( label ) }</span>
 					<span>${ escapeHtml( choice.text ) }</span>
 				</button>
 			`;
@@ -130,29 +199,36 @@ function renderFeedback( state ) {
 		return;
 	}
 
-	if ( ! state.feedback ) {
+	const feedbackParagraphs = normalizeParagraphs( state.feedback, state );
+
+	if ( ! feedbackParagraphs.length ) {
 		feedback.classList.add( 'reaction-card--hidden' );
 		feedback.textContent = '';
 		return;
 	}
 
 	feedback.classList.remove( 'reaction-card--hidden' );
-	feedback.textContent = state.feedback;
+	feedback.innerHTML = renderParagraphs( feedbackParagraphs );
 }
 
 function renderHeader( game, state ) {
 	const phaseLabel = document.querySelector( '#phase-label' );
 	const turnCount = document.querySelector( '#turn-count' );
+	const clockLabel = document.querySelector( '#clock-label' );
 	const latestSignal = document.querySelector( '#latest-signal .signal-strip__text' );
 	const phase = game.getPhase();
+	const clockTime = getClockTime( state );
 
 	if ( phaseLabel ) {
 		phaseLabel.textContent = phase.label;
 	}
 
 	if ( turnCount ) {
-		const currentTurn = Math.min( state.turn, state.maxTurns );
-		turnCount.textContent = state.finaleStarted ? 'All-Hands' : `Turn ${ currentTurn } / ${ state.maxTurns }`;
+		turnCount.textContent = clockTime;
+	}
+
+	if ( clockLabel ) {
+		clockLabel.textContent = getClockLabel( state, clockTime );
 	}
 
 	if ( latestSignal ) {
@@ -163,11 +239,13 @@ function renderHeader( game, state ) {
 export function render( game ) {
 	const state = game.getState();
 	const scene = game.getCurrentScene();
+	const content = getResolvedSceneContent( game, scene, state );
 
 	renderHeader( game, state );
 	renderBars( document.querySelector( '#green-bars' ), game.story.bars.green, state, 'green' );
 	renderBars( document.querySelector( '#red-bars' ), game.story.bars.red, state, 'red' );
-	renderStory( game, scene, state );
+	renderStory( content );
+	renderInternalThought( content.internalThought );
 	renderFeedback( state );
 	renderChoices( game, scene );
 }
