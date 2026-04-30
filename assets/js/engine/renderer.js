@@ -159,12 +159,20 @@ function renderInternalThought( internalThought ) {
 		return;
 	}
 
+	const existingInternalThoughtPanel = internalThoughtContainer.querySelector( '.internal-thought-collapse' );
+	const isOpen = existingInternalThoughtPanel ? existingInternalThoughtPanel.open : true;
+
 	internalThoughtContainer.classList.remove( 'internal-thought-card--hidden' );
 	internalThoughtContainer.innerHTML = `
-		<div class="internal-thought-card__label">Internal Thought</div>
-		<div class="internal-thought-card__body">
-			${ renderParagraphs( internalThought ) }
-		</div>
+		<details class="internal-thought-collapse"${ isOpen ? ' open' : '' }>
+			<summary class="internal-thought-summary">
+				<span class="internal-thought-card__label">Internal Thought</span>
+			</summary>
+
+			<div class="internal-thought-card__body">
+				${ renderParagraphs( internalThought ) }
+			</div>
+		</details>
 	`;
 }
 
