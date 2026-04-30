@@ -305,12 +305,21 @@ h1 {
 }
 
 .reaction-card {
+	max-height: 33vh;
+	overflow: auto;
 	padding: 12px 14px;
 	border: 1px solid rgba(142, 202, 230, 0.28);
 	border-radius: var(--radius-small);
 	background: rgba(142, 202, 230, 0.1);
 	color: var(--text);
 	line-height: 1.45;
+	overscroll-behavior: contain;
+}
+
+@media (max-width: 560px) {
+	.reaction-card {
+		max-height: 28vh;
+	}
 }
 
 .reaction-card--hidden {
