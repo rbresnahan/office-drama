@@ -129,12 +129,20 @@ function renderStory( content ) {
 		return;
 	}
 
+	const existingStoryPanel = storyContainer.querySelector( '.story-collapse' );
+	const isOpen = existingStoryPanel ? existingStoryPanel.open : true;
+
 	storyContainer.innerHTML = `
-		${ content.kicker ? `<div class="story-kicker">${ escapeHtml( content.kicker ) }</div>` : '' }
-		<h2 class="story-title">${ escapeHtml( content.title ) }</h2>
-		<div class="story-body">
-			${ renderParagraphs( content.body ) }
-		</div>
+		<details class="story-collapse"${ isOpen ? ' open' : '' }>
+			<summary class="story-summary">
+				${ content.kicker ? `<div class="story-kicker">${ escapeHtml( content.kicker ) }</div>` : '' }
+				<h2 class="story-title">${ escapeHtml( content.title ) }</h2>
+			</summary>
+
+			<div class="story-body">
+				${ renderParagraphs( content.body ) }
+			</div>
+		</details>
 	`;
 }
 
