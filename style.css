@@ -42,21 +42,15 @@ button {
 	margin: 12px auto;
 	display: grid;
 	grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+	grid-template-rows: auto minmax(0, 1fr);
+	grid-template-areas:
+		"header main"
+		"status main";
 	gap: 12px;
-}
-
-.app-column {
-	min-height: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-}
-
-.app-column--right {
-	min-width: 0;
 }
 
 .game-header {
+	grid-area: header;
 	display: flex;
 	align-items: flex-start;
 	justify-content: center;
@@ -83,15 +77,26 @@ h1 {
 	line-height: 1;
 }
 
-.header-actions {
+.panel {
+	min-height: 0;
+	border: 1px solid var(--line);
+	border-radius: var(--radius);
+	background: var(--panel);
+	box-shadow: var(--shadow);
+	backdrop-filter: blur(12px);
+}
+
+.status-panel {
+	grid-area: status;
 	display: flex;
-	align-items: stretch;
-	gap: 8px;
+	flex-direction: column;
+	gap: 12px;
+	padding: 14px;
+	overflow: hidden;
 }
 
 .clock-pill {
 	min-height: 38px;
-	flex: 1;
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -118,6 +123,7 @@ h1 {
 
 .ghost-button {
 	min-height: 38px;
+	margin-top: auto;
 	padding: 7px 11px;
 	color: var(--text);
 	border: 1px solid var(--line);
@@ -133,28 +139,10 @@ h1 {
 	background: rgba(255, 255, 255, 0.14);
 }
 
-.panel {
-	min-height: 0;
-	border: 1px solid var(--line);
-	border-radius: var(--radius);
-	background: var(--panel);
-	box-shadow: var(--shadow);
-	backdrop-filter: blur(12px);
-}
-
-.status-panel {
-	flex: 1;
-	display: flex;
-	flex-direction: column;
-	gap: 14px;
-	padding: 14px;
-	overflow: auto;
-}
-
 .main-panel {
-	flex: 1;
+	grid-area: main;
 	display: grid;
-	grid-template-rows: minmax(0, 1fr) auto auto auto;
+	grid-template-rows: minmax(0, 1fr) auto auto auto auto auto;
 	gap: 12px;
 	padding: 14px;
 	overflow: hidden;
@@ -167,10 +155,6 @@ h1 {
 	border: 1px solid rgba(255, 209, 102, 0.26);
 	border-radius: var(--radius-small);
 	background: rgba(255, 209, 102, 0.08);
-}
-
-.main-panel .signal-strip {
-	margin: 0;
 }
 
 .signal-strip__label {
@@ -199,6 +183,21 @@ h1 {
 	font-weight: 800;
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
+}
+
+.status-bars-panel {
+	max-height: 32vh;
+	overflow: auto;
+	padding: 12px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius-small);
+	background: rgba(0, 0, 0, 0.12);
+}
+
+.bars-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 12px;
 }
 
 .bars-list {
@@ -413,21 +412,46 @@ h1 {
 		height: auto;
 		min-height: calc(100vh - 20px);
 		grid-template-columns: 1fr;
+		grid-template-rows: none;
+		grid-template-areas: none;
 	}
 
-	.app-column {
-		min-height: auto;
+	.game-header {
+		grid-area: auto;
+		order: 1;
 	}
 
-	.status-panel,
+	.status-panel {
+		display: contents;
+	}
+
+	.status-panel .clock-pill {
+		order: 2;
+	}
+
+	.main-panel {
+		grid-area: auto;
+		order: 3;
+		grid-template-rows: none;
+		overflow: visible;
+	}
+
+	.status-panel .ghost-button {
+		order: 4;
+		width: 100%;
+		margin-top: 0;
+	}
+
+	.status-bars-panel,
 	.story-panel {
 		max-height: none;
 	}
 
-	.main-panel {
+	.status-bars-panel {
 		overflow: visible;
 	}
 
+	.bars-grid,
 	.choices-panel {
 		grid-template-columns: 1fr;
 	}
@@ -445,8 +469,9 @@ h1 {
 		border-radius: 16px;
 	}
 
-	.header-actions {
-		flex-direction: column;
+	.clock-pill,
+	.ghost-button {
+		min-height: 40px;
 	}
 
 	.ghost-button {
