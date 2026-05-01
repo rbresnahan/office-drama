@@ -396,11 +396,20 @@ h1 {
 
 .intel-card__copy {
 	min-width: 0;
+	min-height: 0;
 	display: flex;
 	flex-direction: column;
 	gap: 10px;
 	max-width: none;
 	padding-inline: clamp(10px, 2.5vw, 28px);
+}
+
+.intel-card__header {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: start;
+	gap: 12px;
+	flex: 0 0 auto;
 }
 
 .section-label {
@@ -425,14 +434,36 @@ h1 {
 	font-weight: 700;
 }
 
+.intel-card__scroll {
+	position: relative;
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow: auto;
+	padding-right: 6px;
+	padding-bottom: 28px;
+	overscroll-behavior: contain;
+	scrollbar-width: thin;
+}
+
+.intel-card__scroll::after {
+	content: "";
+	position: sticky;
+	left: 0;
+	right: 0;
+	bottom: -1px;
+	display: block;
+	height: 22px;
+	margin-top: -22px;
+	background: linear-gradient(to bottom, transparent, rgba(9, 11, 23, 0.92));
+	pointer-events: none;
+}
+
 .intel-card__body {
-	display: -webkit-box;
-	overflow: hidden;
+	display: block;
+	overflow: visible;
 	color: rgba(246, 241, 255, 0.92);
 	font-size: clamp(0.95rem, 2vw, 1.32rem);
 	line-height: 1.48;
-	-webkit-box-orient: vertical;
-	-webkit-line-clamp: 8;
 }
 
 .intel-card__body p {
@@ -443,10 +474,38 @@ h1 {
 	margin-bottom: 0;
 }
 
+.intel-expand-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	min-height: 32px;
+	padding: 6px 10px;
+	color: var(--blue);
+	border: 1px solid rgba(142, 202, 230, 0.42);
+	border-radius: 999px;
+	background: rgba(142, 202, 230, 0.09);
+	font-size: 0.72rem;
+	font-weight: 900;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+.intel-expand-button:hover {
+	background: rgba(142, 202, 230, 0.17);
+}
+
+.intel-expand-button__icon {
+	font-size: 0.9rem;
+	line-height: 1;
+}
+
 .intel-notices {
 	display: grid;
 	gap: 8px;
-	margin-top: auto;
+	margin-top: 1rem;
 }
 
 .intel-notices__label {
@@ -476,31 +535,6 @@ h1 {
 	border-radius: 10px;
 	background: rgba(255, 255, 255, 0.06);
 	color: var(--blue);
-}
-
-.intel-card__actions {
-	margin-top: 2px;
-}
-
-.intel-more-button {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	min-height: 36px;
-	padding: 7px 16px;
-	color: var(--blue);
-	border: 1px solid rgba(142, 202, 230, 0.42);
-	border-radius: 999px;
-	background: rgba(142, 202, 230, 0.1);
-	font-size: 0.82rem;
-	font-weight: 900;
-	letter-spacing: 0.12em;
-	text-transform: uppercase;
-	cursor: pointer;
-}
-
-.intel-more-button:hover {
-	background: rgba(142, 202, 230, 0.17);
 }
 
 .intel-dots {
@@ -968,7 +1002,6 @@ h1 {
 	.intel-card__body {
 		font-size: clamp(0.9rem, 3.6vw, 1.05rem);
 		line-height: 1.42;
-		-webkit-line-clamp: 6;
 	}
 
 	.intel-notices {
@@ -1142,6 +1175,10 @@ h1 {
 		padding-inline: 12px;
 	}
 
+	.intel-card__header {
+		gap: 8px;
+	}
+
 	.section-label {
 		font-size: 0.66rem;
 		letter-spacing: 0.16em;
@@ -1152,20 +1189,32 @@ h1 {
 	}
 
 	.intel-card__body {
-		font-size: clamp(0.8rem, 3.4vw, 0.96rem);
-		-webkit-line-clamp: 5;
+		font-size: clamp(0.82rem, 3.4vw, 0.96rem);
+		line-height: 1.45;
 	}
 
 	.intel-card--chatter .intel-card__body,
 	.intel-card--thought .intel-card__body {
 		font-size: clamp(0.9rem, 4vw, 1.08rem);
-		-webkit-line-clamp: 8;
 	}
 
-	.intel-more-button {
-		min-height: 32px;
-		padding-inline: 14px;
-		font-size: 0.72rem;
+	.intel-expand-button {
+		min-height: 28px;
+		padding: 5px 8px;
+		font-size: 0.62rem;
+	}
+
+	.intel-expand-button__label {
+		display: none;
+	}
+
+	.intel-expand-button__icon {
+		font-size: 1rem;
+	}
+
+	.intel-card__scroll {
+		padding-right: 4px;
+		padding-bottom: 26px;
 	}
 
 	.intel-notice:nth-of-type(n+3) {
@@ -1287,10 +1336,6 @@ h1 {
 
 	.intel-card__content {
 		padding: 12px 14px 18px;
-	}
-
-	.intel-card__body {
-		-webkit-line-clamp: 4;
 	}
 
 	.intel-notices {

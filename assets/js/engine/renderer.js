@@ -440,17 +440,17 @@ function renderPanelDots( panels ) {
 	`;
 }
 
-function renderMoreButton( panel ) {
-	if ( ! shouldShowMoreButton( panel ) ) {
-		return '';
-	}
-
+function renderExpandButton( panel ) {
 	return `
-		<div class="intel-card__actions">
-			<button class="intel-more-button" type="button" data-intel-more>
-				More
-			</button>
-		</div>
+		<button
+			class="intel-expand-button"
+			type="button"
+			data-intel-more
+			aria-label="Read full ${ escapeHtml( panel.title ) }"
+		>
+			<span class="intel-expand-button__label">Read full</span>
+			<span class="intel-expand-button__icon" aria-hidden="true">↗</span>
+		</button>
 	`;
 }
 
@@ -469,16 +469,23 @@ function renderIntelPanel( panels ) {
 		<div class="intel-card intel-card--${ escapeHtml( activePanel.variant ) }">
 			<div class="intel-card__content">
 				<div class="intel-card__copy">
-					<div class="section-label">${ escapeHtml( activePanel.eyebrow ) }</div>
-					<h2 class="intel-card__title">${ escapeHtml( activePanel.title ) }</h2>
-					${ activePanel.subtitle ? `<p class="intel-card__subtitle">${ escapeHtml( activePanel.subtitle ) }</p>` : '' }
+					<div class="intel-card__header">
+						<div>
+							<div class="section-label">${ escapeHtml( activePanel.eyebrow ) }</div>
+							<h2 class="intel-card__title">${ escapeHtml( activePanel.title ) }</h2>
+							${ activePanel.subtitle ? `<p class="intel-card__subtitle">${ escapeHtml( activePanel.subtitle ) }</p>` : '' }
+						</div>
 
-					<div class="intel-card__body">
-						${ renderParagraphs( activePanel.body ) }
+						${ renderExpandButton( activePanel ) }
 					</div>
 
-					${ renderNotices( activePanel.notices ) }
-					${ renderMoreButton( activePanel ) }
+					<div class="intel-card__scroll" tabindex="0">
+						<div class="intel-card__body">
+							${ renderParagraphs( activePanel.body ) }
+						</div>
+
+						${ renderNotices( activePanel.notices ) }
+					</div>
 				</div>
 			</div>
 
