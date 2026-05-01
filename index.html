@@ -9,54 +9,57 @@
 <body>
 	<main id="app" class="app-shell">
 		<header class="game-header">
-			<div>
+			<button class="icon-button" type="button" aria-label="Open menu">
+				<span class="icon-button__lines" aria-hidden="true"></span>
+			</button>
+
+			<div class="game-header__title">
 				<p class="eyebrow">Office Panic Demo</p>
 				<h1>Damage Control</h1>
 			</div>
+
+			<button class="icon-button" type="button" aria-label="Game information">
+				<span class="icon-button__info" aria-hidden="true">i</span>
+			</button>
 		</header>
 
-		<aside class="panel status-panel" aria-label="Game controls">
-			<div class="clock-pill" aria-label="Current office time">
-				<span id="clock-label" class="clock-pill__label">Start</span>
-				<strong id="turn-count">9:00 AM</strong>
+		<section class="office-time-bar" aria-label="Current office time">
+			<span id="clock-label" class="clock-pill__label">Start</span>
+
+			<div id="office-time-track" class="time-track" aria-hidden="true">
+				<span class="time-track__dot"></span>
+				<span class="time-track__dot"></span>
+				<span class="time-track__dot"></span>
+				<span class="time-track__dot"></span>
+				<span class="time-track__dot"></span>
+				<span class="time-track__dot"></span>
+				<span class="time-track__dot"></span>
+				<span class="time-track__marker"></span>
 			</div>
 
-			<button id="restart-game" class="ghost-button" type="button">
-				Restart
-			</button>
-		</aside>
+			<strong id="turn-count" class="clock-pill__time">9:00 AM</strong>
+		</section>
 
-		<section class="panel main-panel">
-			<article id="story" class="story-panel" aria-live="polite"></article>
+		<section class="game-board" aria-label="Game board">
+			<nav id="intel-tabs" class="intel-tabs" aria-label="Intel panel tabs" role="tablist"></nav>
 
-			<div id="action-feedback" class="reaction-card reaction-card--hidden" aria-live="polite"></div>
+			<article id="intel-panel" class="intel-panel" aria-live="polite"></article>
 
-			<details id="latest-signal" class="signal-strip" open>
-				<summary class="signal-strip__summary">
-					<span class="signal-strip__label">Chatter</span>
-				</summary>
-
-				<span class="signal-strip__text">It's too Late, cause a disruption.</span>
-			</details>
-
-			<div id="internal-thought" class="internal-thought-card internal-thought-card--hidden" aria-live="polite"></div>
-
-			<div id="choices" class="choices-panel" aria-label="Choices"></div>
-
-			<section class="status-bars-panel" aria-label="Game status">
-				<div class="bars-grid">
-					<div class="bars-section">
-						<h2>Plans and Alliances</h2>
-						<div id="green-bars" class="bars-list"></div>
-					</div>
-
-					<div class="bars-section">
-						<h2>Watching You</h2>
-						<div id="red-bars" class="bars-list"></div>
-					</div>
-				</div>
+			<section class="choices-section" aria-label="Choices">
+				<h2 class="choices-section__heading">Choose Your Next Move</h2>
+				<div id="choices" class="choices-panel"></div>
 			</section>
 		</section>
+
+		<section class="status-summary" aria-label="Game status">
+			<div id="plans-summary" class="status-summary__cell"></div>
+			<div id="watching-summary" class="status-summary__cell"></div>
+			<div id="heat-summary" class="status-summary__cell"></div>
+		</section>
+
+		<button id="restart-game" class="restart-button" type="button">
+			↻ Restart Demo
+		</button>
 	</main>
 
 	<script type="module" src="./main.js"></script>
