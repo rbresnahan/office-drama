@@ -22,13 +22,10 @@ const OFFICE_CLOCK_TIMES = [
 	'5:00 PM',
 ];
 
-const CHARACTER_ASSET_PATH = './assets/characters/';
-
 const CHARACTER_PROFILES = {
 	betty: {
 		name: 'Betty',
 		role: 'Executive Assistant',
-		image: 'betty.png',
 		icon: '♙',
 		summary: [
 			'Betty keeps the office running smoothly and everyone in their place.',
@@ -42,7 +39,6 @@ const CHARACTER_PROFILES = {
 	celia: {
 		name: 'Celia',
 		role: 'Email Subject / Current Problem',
-		image: 'celia.png',
 		icon: '◇',
 		summary: [
 			'Celia has fragments, not necessarily the full message.',
@@ -56,7 +52,6 @@ const CHARACTER_PROFILES = {
 	frank: {
 		name: 'Frank',
 		role: 'Potential Scapegoat',
-		image: 'frank.png',
 		icon: '▣',
 		summary: [
 			'Frank is irritated, busy, and currently useful because his absence can become a story.',
@@ -70,7 +65,6 @@ const CHARACTER_PROFILES = {
 	tim: {
 		name: 'Tim',
 		role: 'Timeline Goblin',
-		image: 'tim.png',
 		icon: '⌁',
 		summary: [
 			'Tim notices patterns and turns vibes into timelines.',
@@ -84,7 +78,6 @@ const CHARACTER_PROFILES = {
 	lisa: {
 		name: 'Lisa',
 		role: 'Office Manager',
-		image: 'lisa.png',
 		icon: '✦',
 		summary: [
 			'Lisa handles access, calls, scheduling, and the slow conversion of drama into process.',
@@ -98,7 +91,6 @@ const CHARACTER_PROFILES = {
 	devin: {
 		name: 'Devin',
 		role: 'Rumor Distribution Network',
-		image: 'devin.png',
 		icon: '◈',
 		summary: [
 			'Devin has the energy of a person who calls gossip “context.”',
@@ -123,6 +115,7 @@ const SCENE_CHARACTER_IDS = {
 let activeIntelPanelId = 'story';
 let lastRenderedSceneId = null;
 let latestGame = null;
+let latestPanels = [];
 
 function normalizeParagraphs( value, state ) {
 	const resolved = typeof value === 'function' ? value( state ) : value;
@@ -285,7 +278,23 @@ function getChoiceIcon( choice ) {
 	return '›';
 }
 
-function buildStoryPanel( content, characterId ) {
+function getChoiceCategory( choice ) {
+	const category = Array.isArray( choice.category ) ? choice.category[ 0 ] : choice.category;
+
+	return category || 'neutral';
+}
+
+function isMainNavigationChoiceSet( choices ) {
+	return choices.length > 0 && choices.every( ( choice ) => getChoiceCategory( choice ) === 'move' );
+}
+
+function shouldShowMoreButton( panel ) {
+	const textLength = panel.body.join( ' ' ).length + panel.notices.join( ' ' ).length;
+
+	return panel.body.length > 1 || panel.notices.length > 0 || textLength > 260;
+}
+
+function buildStoryPanel( content ) {
 	return {
 		id: 'story',
 		label: 'Story',
@@ -293,7 +302,6 @@ function buildStoryPanel( content, characterId ) {
 		eyebrow: content.kicker || 'Current Story',
 		title: content.title,
 		body: content.body,
-		characterId,
 		variant: 'story',
 		notices: [],
 	};
@@ -305,7 +313,7 @@ function buildPeoplePanel( scene, content, characterId ) {
 	}
 
 	const profile = CHARACTER_PROFILES[ characterId ];
-	const body = content.body.length ? content.body.slice( 0, 2 ) : profile.summary;
+	const body = content.body.length ? content.body : profile.summary;
 
 	return {
 		id: 'people',
@@ -315,7 +323,6 @@ function buildPeoplePanel( scene, content, characterId ) {
 		title: scene.location || profile.name,
 		subtitle: profile.role,
 		body,
-		characterId,
 		variant: 'people',
 		notices: profile.notices,
 	};
@@ -333,7 +340,6 @@ function buildChatterPanel( state ) {
 		eyebrow: hasFeedback ? 'Latest Result' : 'Office Chatter',
 		title: hasFeedback ? 'The room reacts.' : 'Chatter',
 		body: hasFeedback ? feedbackParagraphs : [ signal ],
-		characterId: null,
 		variant: 'chatter',
 		notices: hasFeedback ? [ signal ] : [],
 	};
@@ -347,7 +353,6 @@ function buildThoughtPanel( content ) {
 		eyebrow: 'Internal Thought',
 		title: 'What you are thinking',
 		body: content.internalThought.length ? content.internalThought : [ 'No useful thought has formed yet. This is not ideal, but it is honest.' ],
-		characterId: null,
 		variant: 'thought',
 		notices: [],
 	};
@@ -355,7 +360,7 @@ function buildThoughtPanel( content ) {
 
 function buildIntelPanels( game, scene, state, content ) {
 	const characterId = getSceneCharacterId( scene );
-	const panels = [ buildStoryPanel( content, characterId ) ];
+	const panels = [ buildStoryPanel( content ) ];
 	const peoplePanel = buildPeoplePanel( scene, content, characterId );
 
 	if ( peoplePanel ) {
@@ -435,6 +440,20 @@ function renderPanelDots( panels ) {
 	`;
 }
 
+function renderMoreButton( panel ) {
+	if ( ! shouldShowMoreButton( panel ) ) {
+		return '';
+	}
+
+	return `
+		<div class="intel-card__actions">
+			<button class="intel-more-button" type="button" data-intel-more>
+				More
+			</button>
+		</div>
+	`;
+}
+
 function renderIntelPanel( panels ) {
 	const panelContainer = document.querySelector( '#intel-panel' );
 
@@ -443,32 +462,29 @@ function renderIntelPanel( panels ) {
 	}
 
 	const activePanel = panels.find( ( panel ) => panel.id === activeIntelPanelId ) || panels[ 0 ];
-	const character = activePanel.characterId ? CHARACTER_PROFILES[ activePanel.characterId ] : null;
-	const characterMarkup = character
-		? `
-			<figure class="intel-character-wrap" aria-label="${ escapeHtml( character.name ) }">
-				<img class="intel-character" src="${ CHARACTER_ASSET_PATH }${ escapeHtml( character.image ) }" alt="${ escapeHtml( character.name ) }">
-			</figure>
-		`
-		: '';
 
 	panelContainer.innerHTML = `
 		<button class="intel-arrow intel-arrow--previous" type="button" data-intel-direction="previous" aria-label="Previous intel panel">‹</button>
+
 		<div class="intel-card intel-card--${ escapeHtml( activePanel.variant ) }">
 			<div class="intel-card__content">
 				<div class="intel-card__copy">
 					<div class="section-label">${ escapeHtml( activePanel.eyebrow ) }</div>
 					<h2 class="intel-card__title">${ escapeHtml( activePanel.title ) }</h2>
 					${ activePanel.subtitle ? `<p class="intel-card__subtitle">${ escapeHtml( activePanel.subtitle ) }</p>` : '' }
+
 					<div class="intel-card__body">
 						${ renderParagraphs( activePanel.body ) }
 					</div>
+
 					${ renderNotices( activePanel.notices ) }
+					${ renderMoreButton( activePanel ) }
 				</div>
-				${ characterMarkup }
 			</div>
+
 			${ renderPanelDots( panels ) }
 		</div>
+
 		<button class="intel-arrow intel-arrow--next" type="button" data-intel-direction="next" aria-label="Next intel panel">›</button>
 	`;
 }
@@ -481,11 +497,15 @@ function renderChoices( game, scene ) {
 	}
 
 	if ( scene.id === game.story.finaleSceneId ) {
+		choicesContainer.className = 'choices-panel';
 		choicesContainer.innerHTML = '';
 		return;
 	}
 
 	const choices = game.getAvailableChoices( scene );
+	const isMainNavigation = isMainNavigationChoiceSet( choices );
+
+	choicesContainer.className = `choices-panel ${ isMainNavigation ? 'choices-panel--grid' : 'choices-panel--stacked' }`;
 
 	if ( ! choices.length ) {
 		choicesContainer.innerHTML = '<p class="empty-state">No useful moves are available here. That is rarely comforting.</p>';
@@ -494,10 +514,10 @@ function renderChoices( game, scene ) {
 
 	choicesContainer.innerHTML = choices
 		.map( ( choice ) => {
-			const category = Array.isArray( choice.category ) ? choice.category[ 0 ] : choice.category;
+			const category = getChoiceCategory( choice );
 
 			return `
-				<button class="choice-button choice-button--${ escapeHtml( category || 'neutral' ) }" type="button" data-choice-id="${ escapeHtml( choice.id ) }">
+				<button class="choice-button choice-button--${ escapeHtml( category ) }" type="button" data-choice-id="${ escapeHtml( choice.id ) }">
 					<span class="choice-button__icon" aria-hidden="true">${ escapeHtml( getChoiceIcon( choice ) ) }</span>
 					<span class="choice-button__text">${ escapeHtml( choice.text ) }</span>
 					<span class="choice-button__chevron" aria-hidden="true">›</span>
@@ -531,7 +551,7 @@ function renderStatusSummary( game, state ) {
 			`
 			: `
 				<div class="status-summary__heading">Plans</div>
-				<p class="empty-state">Nothing active yet.</p>
+				<p class="empty-state empty-state--compact">Nothing active yet.</p>
 			`;
 	}
 
@@ -549,7 +569,7 @@ function renderStatusSummary( game, state ) {
 			`
 			: `
 				<div class="status-summary__heading">Watching You</div>
-				<p class="empty-state">Nothing active yet.</p>
+				<p class="empty-state empty-state--compact">Nothing active yet.</p>
 			`;
 	}
 
@@ -592,6 +612,58 @@ function renderHeader( game, state ) {
 	}
 }
 
+function closeIntelModal() {
+	const existingModal = document.querySelector( '#intel-modal' );
+
+	if ( existingModal ) {
+		existingModal.remove();
+	}
+
+	document.body.classList.remove( 'has-intel-modal' );
+	document.removeEventListener( 'keydown', handleIntelModalKeydown );
+}
+
+function handleIntelModalKeydown( event ) {
+	if ( event.key === 'Escape' ) {
+		closeIntelModal();
+	}
+}
+
+function openIntelModal( panel ) {
+	closeIntelModal();
+
+	const modalMarkup = `
+		<div id="intel-modal" class="intel-modal" role="dialog" aria-modal="true" aria-labelledby="intel-modal-title">
+			<div class="intel-modal__backdrop" data-intel-modal-close></div>
+
+			<div class="intel-modal__dialog">
+				<div class="intel-modal__header">
+					<div>
+						<div class="section-label">${ escapeHtml( panel.eyebrow ) }</div>
+						<h2 id="intel-modal-title" class="intel-modal__title">${ escapeHtml( panel.title ) }</h2>
+						${ panel.subtitle ? `<p class="intel-card__subtitle">${ escapeHtml( panel.subtitle ) }</p>` : '' }
+					</div>
+
+					<button class="intel-modal__close" type="button" data-intel-modal-close aria-label="Close intel panel">×</button>
+				</div>
+
+				<div class="intel-modal__body">
+					${ renderParagraphs( panel.body ) }
+					${ renderNotices( panel.notices ) }
+				</div>
+			</div>
+		</div>
+	`;
+
+	document.body.insertAdjacentHTML( 'beforeend', modalMarkup );
+	document.body.classList.add( 'has-intel-modal' );
+	document.addEventListener( 'keydown', handleIntelModalKeydown );
+
+	document.querySelectorAll( '[data-intel-modal-close]' ).forEach( ( closeButton ) => {
+		closeButton.addEventListener( 'click', closeIntelModal );
+	} );
+}
+
 function activateIntelPanel( panelId ) {
 	activeIntelPanelId = panelId;
 
@@ -628,6 +700,16 @@ function bindIntelControls() {
 			activateAdjacentIntelPanel( button.dataset.intelDirection );
 		} );
 	} );
+
+	document.querySelectorAll( '[data-intel-more]' ).forEach( ( button ) => {
+		button.addEventListener( 'click', () => {
+			const activePanel = latestPanels.find( ( panel ) => panel.id === activeIntelPanelId ) || latestPanels[ 0 ];
+
+			if ( activePanel ) {
+				openIntelModal( activePanel );
+			}
+		} );
+	} );
 }
 
 export function render( game ) {
@@ -647,6 +729,8 @@ export function render( game ) {
 	if ( ! panels.some( ( panel ) => panel.id === activeIntelPanelId ) ) {
 		activeIntelPanelId = panels[ 0 ].id;
 	}
+
+	latestPanels = panels;
 
 	renderHeader( game, state );
 	renderIntelTabs( panels );
