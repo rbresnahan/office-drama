@@ -440,22 +440,13 @@ h1 {
 	min-height: 0;
 	overflow: auto;
 	padding-right: 6px;
-	padding-bottom: 28px;
+	padding-bottom: 34px;
 	overscroll-behavior: contain;
 	scrollbar-width: thin;
 }
 
 .intel-card__scroll::after {
-	content: "";
-	position: sticky;
-	left: 0;
-	right: 0;
-	bottom: -1px;
-	display: block;
-	height: 22px;
-	margin-top: -22px;
-	background: linear-gradient(to bottom, transparent, rgba(9, 11, 23, 0.92));
-	pointer-events: none;
+	display: none;
 }
 
 .intel-card__body {
@@ -1214,7 +1205,7 @@ h1 {
 
 	.intel-card__scroll {
 		padding-right: 4px;
-		padding-bottom: 26px;
+		padding-bottom: 32px;
 	}
 
 	.intel-notice:nth-of-type(n+3) {
