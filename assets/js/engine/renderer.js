@@ -265,15 +265,59 @@ function getSceneCharacterId( scene ) {
 	return SCENE_CHARACTER_IDS[ scene.id ] || null;
 }
 
+function isBacklashScene( scene ) {
+	return Boolean(
+		scene &&
+		(
+			scene.location === 'Backlash' ||
+			String( scene.id || '' ).startsWith( 'backlash_' )
+		)
+	);
+}
+
+function isScheduledScene( scene ) {
+	return Boolean(
+		scene &&
+		scene.scheduleEvent === true
+	);
+}
+
 function isForcedScene( scene ) {
 	return Boolean(
 		scene &&
 		(
 			scene.forced === true ||
-			scene.location === 'Backlash' ||
-			String( scene.id || '' ).startsWith( 'backlash_' )
+			isBacklashScene( scene )
 		)
 	);
+}
+
+function getSceneTone( scene ) {
+	if ( isScheduledScene( scene ) ) {
+		return 'scheduled';
+	}
+
+	if ( isBacklashScene( scene ) ) {
+		return 'danger';
+	}
+
+	if ( isForcedScene( scene ) ) {
+		return 'danger';
+	}
+
+	return 'normal';
+}
+
+function getPanelToneClass( panel, blockName ) {
+	if ( panel.tone === 'scheduled' ) {
+		return ` ${ blockName }--scheduled`;
+	}
+
+	if ( panel.tone === 'danger' ) {
+		return ` ${ blockName }--danger`;
+	}
+
+	return '';
 }
 
 function getStatusBars( bars, state ) {
@@ -377,7 +421,7 @@ function buildStoryPanel( scene, content ) {
 		body: content.body,
 		variant: 'story',
 		notices: [],
-		danger: isForcedScene( scene ),
+		tone: getSceneTone( scene ),
 	};
 }
 
@@ -399,7 +443,7 @@ function buildPeoplePanel( scene, content, characterId ) {
 		body,
 		variant: 'people',
 		notices: profile.notices,
-		danger: isForcedScene( scene ),
+		tone: getSceneTone( scene ),
 	};
 }
 
@@ -417,7 +461,7 @@ function buildChatterPanel( scene, state ) {
 		body: hasFeedback ? feedbackParagraphs : [ signal ],
 		variant: 'chatter',
 		notices: hasFeedback ? [ signal ] : [],
-		danger: isForcedScene( scene ),
+		tone: getSceneTone( scene ),
 	};
 }
 
@@ -431,7 +475,7 @@ function buildThoughtPanel( scene, content ) {
 		body: content.internalThought.length ? content.internalThought : [ 'No useful thought has formed yet. This is not ideal, but it is honest.' ],
 		variant: 'thought',
 		notices: [],
-		danger: isForcedScene( scene ),
+		tone: getSceneTone( scene ),
 	};
 }
 
@@ -478,7 +522,7 @@ function renderIntelTabs( panels ) {
 	tabsContainer.innerHTML = panels
 		.map( ( panel ) => `
 			<button
-				class="intel-tab${ panel.id === activeIntelPanelId ? ' intel-tab--active' : '' }${ panel.danger ? ' intel-tab--danger' : '' }"
+				class="intel-tab${ panel.id === activeIntelPanelId ? ' intel-tab--active' : '' }${ getPanelToneClass( panel, 'intel-tab' ) }"
 				type="button"
 				role="tab"
 				aria-selected="${ panel.id === activeIntelPanelId ? 'true' : 'false' }"
@@ -524,7 +568,7 @@ function renderPanelDots( panels ) {
 function renderExpandButton( panel ) {
 	return `
 		<button
-			class="intel-expand-button${ panel.danger ? ' intel-expand-button--danger' : '' }"
+			class="intel-expand-button${ getPanelToneClass( panel, 'intel-expand-button' ) }"
 			type="button"
 			data-intel-more
 			aria-label="Read full ${ escapeHtml( panel.title ) }"
@@ -543,12 +587,12 @@ function renderIntelPanel( panels ) {
 	}
 
 	const activePanel = panels.find( ( panel ) => panel.id === activeIntelPanelId ) || panels[ 0 ];
-	const dangerClass = activePanel.danger ? ' intel-card--danger' : '';
+	const toneClass = getPanelToneClass( activePanel, 'intel-card' );
 
 	panelContainer.innerHTML = `
 		<button class="intel-arrow intel-arrow--previous" type="button" data-intel-direction="previous" aria-label="Previous intel panel">‹</button>
 
-		<div class="intel-card intel-card--${ escapeHtml( activePanel.variant ) }${ dangerClass }">
+		<div class="intel-card intel-card--${ escapeHtml( activePanel.variant ) }${ toneClass }">
 			<div class="intel-card__content">
 				<div class="intel-card__copy">
 					<div class="intel-card__header">
@@ -716,7 +760,8 @@ function renderBoardState( scene ) {
 		return;
 	}
 
-	gameBoard.classList.toggle( 'game-board--danger', isForcedScene( scene ) );
+	gameBoard.classList.toggle( 'game-board--danger', getSceneTone( scene ) === 'danger' );
+	gameBoard.classList.toggle( 'game-board--scheduled', getSceneTone( scene ) === 'scheduled' );
 }
 
 function closeIntelModal() {
@@ -743,7 +788,7 @@ function openIntelModal( panel ) {
 		<div id="intel-modal" class="intel-modal" role="dialog" aria-modal="true" aria-labelledby="intel-modal-title">
 			<div class="intel-modal__backdrop" data-intel-modal-close></div>
 
-			<div class="intel-modal__dialog${ panel.danger ? ' intel-modal__dialog--danger' : '' }">
+			<div class="intel-modal__dialog${ getPanelToneClass( panel, 'intel-modal__dialog' ) }">
 				<div class="intel-modal__header">
 					<div>
 						<div class="section-label">${ escapeHtml( panel.eyebrow ) }</div>

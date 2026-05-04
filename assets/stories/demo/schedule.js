@@ -7,11 +7,11 @@ export const schedule = [
 	},
 	{
 		id: 'morning_meeting',
-		label: 'Morning Meeting',
+		label: 'Stand Up',
 		time: '10:13 AM',
 		turn: 3,
 		sceneId: 'schedule_morning_meeting',
-		signal: 'The morning meeting interrupts the day. People are pretending the bad email is not in the room.',
+		signal: 'The stand up starts in the conference room. People are pretending this is about priorities and not the bad email.',
 	},
 	{
 		id: 'lunch',
@@ -23,11 +23,11 @@ export const schedule = [
 	},
 	{
 		id: 'afternoon_meeting',
-		label: 'Afternoon Meeting',
+		label: 'Catch Up',
 		time: '3:18 PM',
 		turn: 10,
 		sceneId: 'schedule_afternoon_meeting',
-		signal: 'The afternoon meeting window tightens the room. The day is running out of places to hide.',
+		signal: 'The catch up starts in the conference room. The day is running out of places to hide.',
 	},
 	{
 		id: 'all_hands',

@@ -1,12 +1,35 @@
+function getUpcomingScheduleNotice( state ) {
+	const turn = Number.isFinite( state.turn ) ? state.turn : 1;
+
+	if ( turn < 3 ) {
+		return 'The conference room schedule board says there is a Stand Up at 10:13 AM. That gives the room just enough time to pretend this is a normal morning.';
+	}
+
+	if ( turn < 6 ) {
+		return 'Lunch is coming at noon. The schedule board does not say “gossip migration window,” but it might as well.';
+	}
+
+	if ( turn < 10 ) {
+		return 'The next conference room item is a 3:18 PM Catch Up, which sounds harmless in the way unattended machinery sounds harmless.';
+	}
+
+	if ( turn < 12 ) {
+		return 'The 5:00 PM All-Hands is still sitting at the bottom of the schedule like a trap with a calendar invite.';
+	}
+
+	return 'The schedule has run out of polite little meetings. The all-hands is the room now.';
+}
+
 const hub = {
 	id: 'hub',
 	location: 'Open Office Floor',
 	kicker: 'Choose Your Next Move',
 	title: 'The bad email was about Celia.',
-	body: [
+	body: ( state ) => [
 		'You sent a damaging gossip email about Celia. The recall only partly worked.',
 		'Some people may have seen the whole thing. Some may have seen fragments. Some only know that something ugly happened, which is sometimes worse because imagination gets overtime pay.',
 		'Betty keeps glancing up. Tim is doing quiet math with his face. Frank is somewhere between annoyed and unaware. Celia has not looked at you yet. Devon is probably already narrating this to someone.',
+		getUpcomingScheduleNotice( state ),
 	],
 	internalThought: ( state ) => {
 		const thoughts = [];
@@ -52,6 +75,13 @@ const hub = {
 		return thoughts;
 	},
 	choices: [
+		{
+			id: 'go_conference_room',
+			text: 'Check the conference room schedule.',
+			category: 'move',
+			advanceTurn: false,
+			nextScene: 'conference_room',
+		},
 		{
 			id: 'go_betty',
 			text: 'Go to Betty’s desk.',

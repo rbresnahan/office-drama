@@ -7,6 +7,7 @@ import { forcedRules } from './forced-rules.js';
 
 import intro from './scenes/intro.js';
 import hub from './scenes/hub.js';
+import conferenceRoom from './scenes/conference-room.js';
 import {
 	scheduleAfternoonMeeting,
 	scheduleLunch,
@@ -47,6 +48,7 @@ export const OFFICE_PANIC_STORY = {
 	scenes: {
 		intro,
 		hub,
+		conference_room: conferenceRoom,
 		schedule_morning_meeting: scheduleMorningMeeting,
 		schedule_lunch: scheduleLunch,
 		schedule_afternoon_meeting: scheduleAfternoonMeeting,

@@ -20,6 +20,9 @@
 	--radius: 22px;
 	--radius-small: 14px;
 	--font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+	--office-warning-orange: #f2b36d;
+	--office-warning-orange-soft: rgba(242, 179, 109, 0.2);
+	--office-warning-orange-softer: rgba(242, 179, 109, 0.1);
 }
 
 * {
@@ -1436,4 +1439,190 @@ h1 {
 	.restart-button {
 		min-height: 38px;
 	}
+
+}
+
+/*
+ * Phase polish: scheduled events, backlash events, and tighter scene titles.
+ *
+ * The renderer now distinguishes scheduled calendar pressure from danger/backlash.
+ * Scheduled events use pastel orange.
+ * Backlash/forced-danger events keep red.
+ */
+
+/*
+ * Scene title sizing.
+ */
+
+.intel-card__title {
+	font-size: clamp(1.12rem, 2.7vw, 1.72rem);
+	line-height: 1.05;
+	letter-spacing: -0.035em;
+}
+
+@media (max-width: 900px) {
+	.intel-card__title {
+		font-size: clamp(1.06rem, 5vw, 1.42rem);
+		line-height: 1.06;
+	}
+}
+
+@media (max-width: 560px) {
+	.intel-card__title {
+		font-size: clamp(0.98rem, 5.45vw, 1.28rem);
+		line-height: 1.08;
+	}
+}
+
+/*
+ * Scheduled event shell.
+ */
+
+.game-board--scheduled {
+	border-color: rgba(242, 179, 109, 0.58);
+	box-shadow:
+		0 0 0 1px rgba(242, 179, 109, 0.18),
+		0 20px 60px rgba(242, 179, 109, 0.08);
+}
+
+.intel-card--scheduled {
+	border-color: rgba(242, 179, 109, 0.62);
+	box-shadow:
+		0 0 0 1px rgba(242, 179, 109, 0.16),
+		0 20px 60px rgba(242, 179, 109, 0.08);
+}
+
+.intel-card--scheduled::before {
+	opacity: 0.26;
+}
+
+.intel-card--scheduled::after {
+	background:
+		linear-gradient(
+			90deg,
+			rgba(26, 19, 10, 0.56) 0%,
+			rgba(15, 9, 23, 0.62) 52%,
+			rgba(15, 9, 23, 0.44) 100%
+		),
+		linear-gradient(
+			0deg,
+			rgba(8, 9, 20, 0.48),
+			transparent 42%
+		);
+}
+
+.intel-card--scheduled .section-label {
+	color: var(--office-warning-orange);
+}
+
+.intel-card--scheduled .intel-dot--active {
+	background: var(--office-warning-orange);
+	box-shadow: 0 0 14px rgba(242, 179, 109, 0.62);
+}
+
+.intel-tab--scheduled.intel-tab--active {
+	color: var(--office-warning-orange);
+	border-color: rgba(242, 179, 109, 0.68);
+	background: rgba(242, 179, 109, 0.13);
+	box-shadow: inset 0 -2px 0 rgba(242, 179, 109, 0.82);
+}
+
+.intel-expand-button--scheduled {
+	color: var(--office-warning-orange);
+	border-color: rgba(242, 179, 109, 0.54);
+	background: rgba(242, 179, 109, 0.1);
+}
+
+.intel-expand-button--scheduled:hover {
+	background: rgba(242, 179, 109, 0.17);
+}
+
+.intel-modal__dialog--scheduled {
+	border-color: rgba(242, 179, 109, 0.64);
+	box-shadow:
+		0 0 0 1px rgba(242, 179, 109, 0.16),
+		0 30px 100px rgba(0, 0, 0, 0.55);
+}
+
+/*
+ * Danger/backlash events stay red.
+ */
+
+.game-board--danger {
+	border-color: rgba(255, 93, 108, 0.72);
+	box-shadow: var(--danger-shadow);
+}
+
+.intel-card--danger {
+	border-color: rgba(255, 93, 108, 0.78);
+	box-shadow: var(--danger-shadow);
+}
+
+.intel-card--danger::before {
+	opacity: 0.22;
+}
+
+.intel-card--danger::after {
+	background:
+		linear-gradient(
+			90deg,
+			rgba(30, 5, 13, 0.76) 0%,
+			rgba(15, 9, 23, 0.7) 50%,
+			rgba(15, 9, 23, 0.48) 100%
+		),
+		linear-gradient(
+			0deg,
+			rgba(8, 9, 20, 0.48),
+			transparent 42%
+		);
+}
+
+.intel-card--danger .section-label {
+	color: #ff9ca6;
+}
+
+.intel-card--danger .intel-dot--active {
+	background: var(--red);
+	box-shadow: 0 0 14px rgba(255, 93, 108, 0.7);
+}
+
+.intel-tab--danger.intel-tab--active {
+	color: #ff9ca6;
+	border-color: rgba(255, 93, 108, 0.76);
+	background: rgba(255, 93, 108, 0.13);
+	box-shadow: inset 0 -2px 0 rgba(255, 93, 108, 0.85);
+}
+
+.intel-expand-button--danger {
+	color: #ff9ca6;
+	border-color: rgba(255, 93, 108, 0.58);
+	background: rgba(255, 93, 108, 0.1);
+}
+
+.intel-expand-button--danger:hover {
+	background: rgba(255, 93, 108, 0.17);
+}
+
+.intel-modal__dialog--danger {
+	border-color: rgba(255, 93, 108, 0.74);
+	box-shadow:
+		var(--danger-shadow),
+		0 30px 100px rgba(0, 0, 0, 0.55);
+}
+
+/*
+ * Keep actual heat/progress red.
+ */
+
+.progress-fill--red {
+	background: linear-gradient(90deg, var(--red-dim), var(--red));
+}
+
+.status-summary__heading--heat {
+	color: var(--red);
+}
+
+.restart-button {
+	color: #ff8a7f;
+	border-color: rgba(255, 93, 108, 0.48);
 }
