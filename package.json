@@ -1,0 +1,10 @@
+{
+	"name": "office-drama",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"validate:story": "node tools/validate-story.mjs",
+		"validate:story:strict": "node tools/validate-story.mjs --strict"
+	}
+}
