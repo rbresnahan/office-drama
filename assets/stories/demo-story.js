@@ -30,6 +30,57 @@ export const OFFICE_PANIC_STORY = {
 			],
 			continueText: 'Return to the open office.',
 		},
+		closet_one_roll_taken: {
+			id: 'closet_one_roll_taken',
+			location: 'Supply Closet Exit',
+			kicker: 'Aftermath',
+			title: 'The hallway has opinions.',
+			body: [
+				'You leave the supply closet with one roll tucked into your bag.',
+				'Lisa walks past the hallway bend without stopping.',
+				'Her eyes do not move to the bag.',
+				'That is either good news or professional-grade not-looking.',
+			],
+			internalThought: [
+				'One roll is probably subtle.',
+				'Probably is doing a lot of unpaid labor in that sentence.',
+			],
+			continueText: 'Return to the open office.',
+		},
+		closet_all_rolls_taken: {
+			id: 'closet_all_rolls_taken',
+			location: 'Supply Closet Exit',
+			kicker: 'Aftermath',
+			title: 'Bulk creates geometry.',
+			body: [
+				'You leave the supply closet with your bag shaped slightly less like a bag and slightly more like a bad idea with straps.',
+				'Somewhere behind Lisa’s desk, a phone rings.',
+				'You suddenly understand that stolen toilet paper has a surprisingly loud silhouette.',
+			],
+			internalThought: [
+				'All the rolls is not subtle.',
+				'All the rolls is what a raccoon would do if it had calendar anxiety.',
+			],
+			continueText: 'Return to the open office.',
+		},
+		bathroom_supplies_removed: {
+			id: 'bathroom_supplies_removed',
+			location: 'Bathroom Hallway Exit',
+			kicker: 'Aftermath',
+			title: 'The bathroom becomes a future problem.',
+			body: [
+				'As you leave the bathroom hallway, Devin turns the corner with his coffee and slows down near the door.',
+				'He does not go in yet.',
+				'He just looks at the hallway, then at you, then at the hallway again.',
+				'The office has entered the part of the day where even bathrooms have witnesses.',
+			],
+			internalThought: [
+				'This will be discovered quickly.',
+				'That is the point.',
+				'Also the problem. Beautiful. Horrible. Efficient.',
+			],
+			continueText: 'Return to the open office.',
+		},
 	},
 
 	schedule: [
@@ -294,6 +345,14 @@ export const OFFICE_PANIC_STORY = {
 					thoughts.push( 'Lisa knows the all-hands may turn formal. That makes every social move feel a little more like evidence.' );
 				}
 
+				if ( state.facts.closetToiletPaperReduced ) {
+					thoughts.push( 'There is now slightly less toilet paper in the supply closet. The fact that this matters says unkind things about the day.' );
+				}
+
+				if ( state.facts.bathroomSuppliesMissing ) {
+					thoughts.push( 'Bathroom supply problems are now loaded into the office like a delayed-action complaint grenade.' );
+				}
+
 				return thoughts;
 			},
 			choices: [
@@ -331,6 +390,13 @@ export const OFFICE_PANIC_STORY = {
 					category: 'move',
 					advanceTurn: false,
 					nextScene: 'break_room',
+				},
+				{
+					id: 'go_supply_closet',
+					text: 'Check the supply closet.',
+					category: 'move',
+					advanceTurn: false,
+					nextScene: 'supply_closet',
 				},
 				{
 					id: 'go_lisa',
@@ -1582,6 +1648,161 @@ export const OFFICE_PANIC_STORY = {
 			],
 		},
 
+		supply_closet: {
+			id: 'supply_closet',
+			location: 'Supply Closet',
+			title: 'The supply closet is where office dignity goes to be stored in bulk.',
+			body: ( state ) => {
+				const body = [
+					'The closet smells like cardboard, toner, and decisions no one wants to explain to procurement.',
+					'A metal shelf leans slightly under printer paper, cleaning wipes, and the abandoned dreams of ergonomic reform.',
+				];
+
+				if ( state.facts.closetToiletPaperMissing ) {
+					body.push( 'The toilet paper shelf is now aggressively empty. Empty shelves have a way of becoming questions with witnesses.' );
+				} else if ( state.facts.closetToiletPaperReduced ) {
+					body.push( 'The stack of toilet paper is smaller than it was. Not gone. Just reduced enough to make you aware of inventory as a moral category.' );
+				} else if ( state.facts.closetToiletPaperSeen ) {
+					body.push( 'A few rolls of toilet paper sit behind a sad box of printer toner. They are boring, useful, and somehow now part of strategy.' );
+				}
+
+				return body;
+			},
+			internalThought: ( state ) => {
+				const thoughts = [
+					'This is not a glamorous room. That is why it is dangerous. Boring rooms hold practical leverage.',
+				];
+
+				if ( state.facts.closetToiletPaperSeen && ! state.facts.closetToiletPaperMissing && ! state.facts.closetToiletPaperReduced ) {
+					thoughts.push( 'One roll is subtle. All the rolls is a cry for help with inventory consequences.' );
+				}
+
+				if ( state.facts.closetToiletPaperMissing ) {
+					thoughts.push( 'The backup supply is gone. If the bathroom becomes a problem now, the problem has nowhere soft to land.' );
+				}
+
+				return thoughts;
+			},
+			choices: [
+				{
+					id: 'inspect_closet_shelves',
+					text: 'Inspect the storage shelves.',
+					category: 'info',
+					advanceTurn: false,
+					once: true,
+					requirements: {
+						factsNone: [
+							'closetToiletPaperSeen',
+							'closetToiletPaperReduced',
+							'closetToiletPaperMissing',
+						],
+					},
+					resultText: [
+						'You check behind the printer paper and find a few rolls of toilet paper stacked behind a sad box of toner.',
+						'It is not hidden exactly.',
+						'It is just stored with the confidence that no adult would weaponize it.',
+					],
+					effects: {
+						facts: {
+							closetToiletPaperSeen: true,
+						},
+						signal: 'The supply closet has backup toilet paper. Congratulations, you found the least dignified lever in the building.',
+					},
+				},
+				{
+					id: 'take_one_closet_roll',
+					text: 'Take one roll of toilet paper.',
+					category: 'underhanded',
+					once: true,
+					requirements: {
+						factsAll: [
+							'closetToiletPaperSeen',
+						],
+						factsNone: [
+							'closetToiletPaperReduced',
+							'closetToiletPaperMissing',
+						],
+					},
+					resultText: [
+						'You take one roll and slide it into your bag.',
+						'It is small enough to be plausible and dumb enough to be suspicious if discovered.',
+						'The closet remains quiet. Coward.',
+					],
+					effects: {
+						facts: {
+							playerHasToiletPaperRoll: true,
+							closetToiletPaperReduced: true,
+						},
+						hiddenEvents: [
+							'closet_roll_taken_unseen',
+						],
+						bars: {
+							bettyKlepto: 25,
+						},
+						queueVisibleAftermath: [
+							'closet_one_roll_taken',
+						],
+						signal: 'You took one roll from the supply closet. Tiny chaos acquired.',
+					},
+				},
+				{
+					id: 'take_all_closet_rolls',
+					text: 'Take all the backup rolls.',
+					category: 'underhanded',
+					once: true,
+					requirements: {
+						factsAll: [
+							'closetToiletPaperSeen',
+						],
+						factsNone: [
+							'closetToiletPaperReduced',
+							'closetToiletPaperMissing',
+						],
+					},
+					resultText: [
+						'You take all the rolls.',
+						'There is no elegant version of this.',
+						'The shelf is empty now, and the office has moved one step closer to becoming a facilities-themed hostage situation.',
+					],
+					effects: {
+						facts: {
+							playerHasToiletPaperCache: true,
+							closetToiletPaperMissing: true,
+							bathroomSuppliesMissing: true,
+						},
+						hiddenEvents: [
+							'closet_toilet_paper_missing',
+							'lisa_may_connect_missing_supplies',
+						],
+						bars: {
+							bettyKlepto: 25,
+							managementEscalates: 25,
+						},
+						unlocks: [
+							'blame_betty_supplies',
+							'tim_nudge_lunch',
+						],
+						queueVisibleAftermath: [
+							'closet_all_rolls_taken',
+						],
+						signal: 'The backup toilet paper is gone. This is either leverage or a cry for help with plot structure.',
+					},
+				},
+				{
+					id: 'closet_leave_supplies_alone',
+					text: 'Leave the supplies alone.',
+					category: 'neutral',
+					advanceTurn: false,
+					once: true,
+					resultText: 'You leave the supplies alone. For one bright second, civilization holds.',
+					effects: {
+						signal: 'You did not steal from the supply closet. Somewhere, a facilities manager does not know they owe you nothing.',
+					},
+					nextScene: 'hub',
+				},
+			],
+		},
+
 		celia_area: {
 			id: 'celia_area',
 			location: 'Celia’s Area',
@@ -1736,10 +1957,18 @@ export const OFFICE_PANIC_STORY = {
 			id: 'lisa_area',
 			location: 'Lisa’s Area',
 			title: 'Lisa is already using the word “process.”',
-			body: [
-				'Lisa has a notebook open. Not a cute notebook. A notebook that will survive discovery.',
-				'Her calendar is open to the all-hands invite. The title has not changed, but the room around it has.',
-			],
+			body: ( state ) => {
+				const body = [
+					'Lisa has a notebook open. Not a cute notebook. A notebook that will survive discovery.',
+					'Her calendar is open to the all-hands invite. The title has not changed, but the room around it has.',
+				];
+
+				if ( Array.isArray( state.hiddenEvents ) && state.hiddenEvents.includes( 'lisa_may_connect_missing_supplies' ) ) {
+					body.push( 'A sticky note near her keyboard says “supplies?” with a question mark that feels legally active.' );
+				}
+
+				return body;
+			},
 			internalThought: [
 				'Lisa can make this official. You can cooperate, redirect her, or turn her into the reason this became bigger than it needed to be.',
 			],
@@ -1851,26 +2080,46 @@ export const OFFICE_PANIC_STORY = {
 			id: 'bathroom_hallway',
 			location: 'Bathroom Hallway',
 			title: 'The bathroom hallway is quiet in a way that feels legally inadvisable.',
-			body: [
-				'The supply cabinet is slightly open. The bathroom door swings shut with a soft institutional click.',
-			],
+			body: ( state ) => {
+				const body = [
+					'The supply cabinet is slightly open. The bathroom door swings shut with a soft institutional click.',
+				];
+
+				if ( state.facts.bathroomSuppliesMissing ) {
+					body.push( 'The cabinet is no longer reassuring. It has the hollow look of a place that knows it cannot solve the next problem.' );
+				} else if ( state.facts.bathroomSuppliesKnown ) {
+					body.push( 'You now know exactly where the backups are. Knowledge really does want to become a bad decision today.' );
+				}
+
+				return body;
+			},
 			internalThought: [
 				'This is where petty office strategy starts smelling like actual misconduct. Useful? Maybe. Gross? Absolutely.',
 			],
 			choices: [
 				{
 					id: 'bathroom_check_supplies',
-					text: 'Check whether the bathroom supplies are stocked.',
+					text: 'Inspect the stall and supply cabinet.',
 					category: 'info',
+					advanceTurn: false,
 					once: true,
-					resultText: 'Everything is stocked. For now. The phrase “for now” should probably concern you.',
+					requirements: {
+						factsNone: [
+							'bathroomSuppliesKnown',
+							'bathroomSuppliesMissing',
+						],
+					},
+					resultText: [
+						'The bathroom has one roll in active service and backup supplies in the hallway cabinet.',
+						'The situation is stable.',
+						'Stable situations hate you today.',
+					],
 					effects: {
-						flags: {
+						facts: {
 							bathroomSuppliesKnown: true,
 						},
 						signal: 'Bathroom supplies are available. This knowledge is cursed.',
 					},
-					nextScene: 'hub',
 				},
 				{
 					id: 'remove_bathroom_supplies',
@@ -1879,9 +2128,13 @@ export const OFFICE_PANIC_STORY = {
 					requirements: {
 						phaseMin: 'narrative_building',
 						phaseMax: 'pressure_rising',
-						flagsAll: [
+						factsAll: [
+							'bathroomSuppliesKnown',
 							'knowsTimFoodVulnerability',
 							'timLunchCompromised',
+						],
+						factsNone: [
+							'bathroomSuppliesMissing',
 						],
 					},
 					once: true,
@@ -1892,17 +2145,22 @@ export const OFFICE_PANIC_STORY = {
 							managementEscalates: 25,
 							bettyKlepto: 25,
 						},
-						flags: {
+						facts: {
 							bathroomSuppliesMissing: true,
-							show_bettyKlepto: true,
 						},
+						hiddenEvents: [
+							'bathroom_user_finds_missing_supplies',
+							'lisa_may_connect_missing_supplies',
+						],
 						unlocks: [
 							'blame_betty_supplies',
 							'tim_nudge_lunch',
 						],
+						queueVisibleAftermath: [
+							'bathroom_supplies_removed',
+						],
 						signal: 'Bathroom supplies are missing. Tim’s future has narrowed.',
 					},
-					nextScene: 'hub',
 				},
 				{
 					id: 'blame_betty_supplies',
@@ -1910,7 +2168,7 @@ export const OFFICE_PANIC_STORY = {
 					category: 'underhanded',
 					once: true,
 					requirements: {
-						flagsAll: [
+						factsAll: [
 							'bathroomSuppliesMissing',
 						],
 						barsMin: {
@@ -1924,6 +2182,9 @@ export const OFFICE_PANIC_STORY = {
 							bettyLosesTrust: 25,
 							managementEscalates: 25,
 						},
+						hiddenEvents: [
+							'betty_may_be_tied_to_missing_supplies',
+						],
 						signal: 'Betty can now be tied to missing supplies. This is layered awful. Structurally sound, morally condemned.',
 					},
 					nextScene: 'hub',
@@ -2230,16 +2491,85 @@ export const OFFICE_PANIC_STORY = {
 
 	resolveFinale( state ) {
 		const b = state.bars;
+		const facts = state.facts || {};
+		const hiddenEvents = Array.isArray( state.hiddenEvents ) ? state.hiddenEvents : [];
 		const body = [];
+
+		const timRouteComplete = Boolean(
+			state.npc.timMissesMeeting ||
+			facts.timAteCompromisedLunch ||
+			state.flags.timAteCompromisedLunch ||
+			b.sidelineTim >= 100
+		);
+
+		const timRoutePartial = Boolean(
+			! timRouteComplete &&
+			(
+				state.flags.knowsTimFoodVulnerability ||
+				state.flags.timLunchCompromised ||
+				facts.bathroomSuppliesMissing ||
+				b.sidelineTim >= 50
+			)
+		);
+
+		const frankRouteComplete = Boolean(
+			facts.bottlePlantedFrank ||
+			b.frameFrank >= 100
+		);
+
+		const frankRoutePartial = Boolean(
+			! frankRouteComplete &&
+			(
+				facts.playerHasBottle ||
+				facts.kitchenBottleMissing ||
+				hiddenEvents.includes( 'celia_may_have_seen_bottle_bag' ) ||
+				b.frameFrank >= 50
+			)
+		);
+
+		const chaosRouteComplete = Boolean(
+			facts.bathroomSuppliesMissing ||
+			facts.closetToiletPaperMissing ||
+			hiddenEvents.includes( 'bathroom_user_finds_missing_supplies' ) ||
+			hiddenEvents.includes( 'closet_toilet_paper_missing' )
+		);
+
+		const chaosRoutePartial = Boolean(
+			! chaosRouteComplete &&
+			(
+				facts.closetToiletPaperReduced ||
+				facts.playerHasToiletPaperRoll ||
+				hiddenEvents.includes( 'closet_roll_taken_unseen' ) ||
+				b.bettyKlepto >= 25
+			)
+		);
+
+		const completedRouteCount = [
+			timRouteComplete,
+			frankRouteComplete,
+			chaosRouteComplete,
+		].filter( Boolean ).length;
+
+		const partialRouteCount = [
+			timRoutePartial,
+			frankRoutePartial,
+			chaosRoutePartial,
+		].filter( Boolean ).length;
 
 		let title = 'The room decides what story survived.';
 
 		if ( b.managementEscalates >= 100 ) {
 			title = 'This is not just office drama anymore.';
 			body.push( 'Lisa has enough structure around the incident that leadership treats it as formal. The room still talks, but the paperwork talks louder.' );
-		} else if ( b.frameFrank >= 100 && b.frankRetaliates < 100 ) {
+		} else if ( frankRouteComplete && b.frankRetaliates < 100 ) {
 			title = 'Frank becomes the story.';
 			body.push( 'By the time the meeting starts, Frank is no longer just Frank. He is a theory people can point at.' );
+		} else if ( timRouteComplete ) {
+			title = 'Tim is missing when the room needs him.';
+			body.push( 'The meeting starts with a Tim-shaped hole in the timeline. That hole is not innocence, but it is space, and today space is the closest thing you have to mercy.' );
+		} else if ( chaosRouteComplete && b.managementEscalates < 100 ) {
+			title = 'The office is too distracted to form one clean story.';
+			body.push( 'The all-hands opens with the room already irritated by smaller disasters. Nobody wants to talk about missing supplies, which is exactly why missing supplies keep taking up oxygen.' );
 		} else if ( b.warmBetty >= 100 && b.bettyLosesTrust <= 50 ) {
 			title = 'Betty speaks before the room hardens.';
 			body.push( 'Betty does not excuse the email. She does something more useful: she makes you sound human before Tim can make you sound procedural.' );
@@ -2251,19 +2581,25 @@ export const OFFICE_PANIC_STORY = {
 			body.push( 'The meeting begins messy. That helps. Clean rooms are where clean accusations win.' );
 		}
 
-		if ( state.npc.timMissesMeeting || b.sidelineTim >= 100 ) {
+		if ( timRouteComplete ) {
 			body.push( 'Tim misses the most important stretch of the meeting. His absence creates space where facts should have been. You use that space because of course you do.' );
+		} else if ( timRoutePartial ) {
+			body.push( 'The Tim route never fully lands. He is distracted, suspicious, or uncomfortable, but not removed. A half-disrupted Tim is still Tim, and Tim comes with footnotes.' );
 		} else if ( b.distractTim >= 75 ) {
 			body.push( 'Tim has facts, but the facts point in too many directions. He suspects you, but suspicion is not the same as a clean public kill shot.' );
 		} else if ( b.timSuspectsYou >= 75 ) {
 			body.push( 'Tim watches you during the meeting instead of the speaker. That is not great. That is the opposite of great wearing business casual.' );
 		}
 
-		if ( state.flags.timHasNotes && b.distractTim < 75 && ! state.npc.timMissesMeeting ) {
+		if ( state.flags.timHasNotes && b.distractTim < 75 && ! timRouteComplete ) {
 			body.push( 'Tim brought notes. That is the problem with procedural people: eventually they become furniture with receipts.' );
 		}
 
-		if ( b.frameFrank >= 75 ) {
+		if ( frankRouteComplete ) {
+			body.push( 'The Frank story has physical evidence now. Maybe it is not airtight, but it is tangible, and tangible things make nervous rooms feel smarter than they are.' );
+		} else if ( frankRoutePartial ) {
+			body.push( 'The Frank story has smoke but not enough fire. People can imagine him as the problem, but nobody has quite enough to point without feeling exposed.' );
+		} else if ( b.frameFrank >= 75 ) {
 			body.push( 'Frank takes heat. Maybe not all of it, but enough that your name is not the only name in the room.' );
 		}
 
@@ -2271,6 +2607,28 @@ export const OFFICE_PANIC_STORY = {
 			body.push( 'Frank does not go down quietly. He asks why you were the first person to mention his desk. The silence after that has teeth.' );
 		} else if ( b.frankRetaliates >= 75 ) {
 			body.push( 'Frank knows he was aimed at something. He does not have the whole map, but he has your scent on the paper.' );
+		}
+
+		if ( facts.playerHasBottle && ! facts.bottlePlantedFrank ) {
+			body.push( 'The bottle never becomes evidence against Frank because it stays with you. That is not a prop anymore. That is a liability with a cap on it.' );
+		}
+
+		if ( hiddenEvents.includes( 'celia_may_have_seen_bottle_bag' ) && ! facts.bottlePlantedFrank ) {
+			body.push( 'Celia may have seen the bag moment. She does not have the whole story, but she has a weird piece of it, and weird pieces are how people start digging.' );
+		}
+
+		if ( chaosRouteComplete ) {
+			body.push( 'The missing supplies create a side scandal stupid enough to be useful. Nobody wants to discuss bathroom logistics in an all-hands, which is precisely why the topic keeps trying to enter the room wearing tap shoes.' );
+		} else if ( chaosRoutePartial ) {
+			body.push( 'The chaos route remains small but present. One missing roll does not derail a meeting, but it does add the kind of background weirdness that makes every other story less clean.' );
+		}
+
+		if ( hiddenEvents.includes( 'lisa_may_connect_missing_supplies' ) ) {
+			body.push( 'Lisa has started connecting the supply issue to the day’s larger weirdness. That makes the chaos useful as cover and dangerous as pattern.' );
+		}
+
+		if ( hiddenEvents.includes( 'betty_may_be_tied_to_missing_supplies' ) ) {
+			body.push( 'Betty’s name gets too close to the missing-supplies problem. If she realizes who nudged it there, any help she might have given you curdles fast.' );
 		}
 
 		if ( b.warmBetty >= 75 && b.bettyLosesTrust <= 50 ) {
@@ -2315,6 +2673,12 @@ export const OFFICE_PANIC_STORY = {
 			body.push( 'Some people think Celia may be reacting to fragments. It is ugly. It is useful. Those two facts keep shaking hands.' );
 		}
 
+		if ( completedRouteCount >= 2 ) {
+			body.push( 'You built more than one live problem before the meeting. That gives the room options, and options slow accusations down. It also means there are more strings leading back to you if anyone starts pulling.' );
+		} else if ( completedRouteCount === 0 && partialRouteCount >= 2 ) {
+			body.push( 'You started several fires and fully controlled none of them. The room is smoky, but smoke without direction can reveal as much as it hides.' );
+		}
+
 		const highestRed = Math.max(
 			b.timSuspectsYou,
 			b.celiaFindsOut,
@@ -2346,6 +2710,7 @@ export const OFFICE_PANIC_STORY = {
 			body,
 			internalThought: [
 				'Final board state decides the ending. Strong green bars create survivable stories. High red bars decide who sees through them.',
+				'Phase 6 now checks the three current route families directly: Tim disruption, Frank scapegoat, and environmental chaos.',
 			],
 		};
 	},
