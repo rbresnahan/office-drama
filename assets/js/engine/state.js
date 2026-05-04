@@ -2,6 +2,7 @@ import { getPhaseForTurn } from './story-helpers.js';
 
 export function createInitialState( story ) {
 	const bars = {};
+	const facts = {};
 
 	[ ...story.bars.green, ...story.bars.red ].forEach( ( bar ) => {
 		bars[ bar.id ] = Number.isInteger( bar.initial ) ? bar.initial : 0;
@@ -11,15 +12,21 @@ export function createInitialState( story ) {
 		turn: 1,
 		maxTurns: story.maxTurns || 24,
 		currentSceneId: story.startSceneId,
+		pendingReturnSceneId: '',
 		finaleStarted: false,
 		bars,
-		flags: {},
+		flags: facts,
+		facts,
+		hiddenEvents: [],
 		npc: {},
 		unlocked: [],
 		locked: [],
 		usedChoices: [],
 		usedScenes: [],
 		backlashTriggered: {},
+		forcedTriggered: {},
+		scheduleTriggered: {},
+		visibleAftermathQueue: [],
 		latestSignal: story.initialSignal || '',
 		feedback: '',
 		history: [],
@@ -27,8 +34,12 @@ export function createInitialState( story ) {
 }
 
 export function getCurrentPhase( state ) {
-	if ( state.finaleStarted || state.turn > state.maxTurns ) {
+	if ( state.finaleStarted ) {
 		return getPhaseForTurn( state.maxTurns + 1 );
+	}
+
+	if ( state.turn > state.maxTurns ) {
+		return getPhaseForTurn( state.maxTurns );
 	}
 
 	return getPhaseForTurn( state.turn );

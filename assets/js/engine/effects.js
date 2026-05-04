@@ -6,6 +6,28 @@ function applyMapValues( target, values = {} ) {
 	} );
 }
 
+function unsetMapValues( target, values = [] ) {
+	values.forEach( ( key ) => {
+		delete target[ key ];
+	} );
+}
+
+function normalizeList( value = [] ) {
+	if ( Array.isArray( value ) ) {
+		return value;
+	}
+
+	if ( typeof value === 'string' && value.trim() ) {
+		return [ value ];
+	}
+
+	return [];
+}
+
+function getFactState( state ) {
+	return state.facts || state.flags;
+}
+
 function applyUnlocks( state, unlocks = [] ) {
 	unlocks.forEach( ( unlock ) => {
 		setListValue( state.unlocked, unlock );
@@ -17,6 +39,36 @@ function applyLocks( state, locks = [] ) {
 	locks.forEach( ( lock ) => {
 		setListValue( state.locked, lock );
 		removeListValue( state.unlocked, lock );
+	} );
+}
+
+function queueVisibleAftermath( state, aftermathIds = [] ) {
+	if ( ! Array.isArray( state.visibleAftermathQueue ) ) {
+		state.visibleAftermathQueue = [];
+	}
+
+	normalizeList( aftermathIds ).forEach( ( aftermathId ) => {
+		setListValue( state.visibleAftermathQueue, aftermathId );
+	} );
+}
+
+function addHiddenEvents( state, hiddenEvents = [] ) {
+	if ( ! Array.isArray( state.hiddenEvents ) ) {
+		state.hiddenEvents = [];
+	}
+
+	normalizeList( hiddenEvents ).forEach( ( hiddenEvent ) => {
+		setListValue( state.hiddenEvents, hiddenEvent );
+	} );
+}
+
+function removeHiddenEvents( state, hiddenEvents = [] ) {
+	if ( ! Array.isArray( state.hiddenEvents ) ) {
+		state.hiddenEvents = [];
+	}
+
+	normalizeList( hiddenEvents ).forEach( ( hiddenEvent ) => {
+		removeListValue( state.hiddenEvents, hiddenEvent );
 	} );
 }
 
@@ -42,10 +94,16 @@ export function applyChoiceEffects( state, choice ) {
 		applyMapValues( state.flags, effects.flags );
 	}
 
+	if ( effects.facts ) {
+		applyMapValues( getFactState( state ), effects.facts );
+	}
+
 	if ( effects.unsetFlags ) {
-		effects.unsetFlags.forEach( ( flag ) => {
-			delete state.flags[ flag ];
-		} );
+		unsetMapValues( state.flags, effects.unsetFlags );
+	}
+
+	if ( effects.unsetFacts ) {
+		unsetMapValues( getFactState( state ), effects.unsetFacts );
 	}
 
 	if ( effects.npc ) {
@@ -58,6 +116,18 @@ export function applyChoiceEffects( state, choice ) {
 
 	if ( effects.locks ) {
 		applyLocks( state, effects.locks );
+	}
+
+	if ( effects.queueVisibleAftermath ) {
+		queueVisibleAftermath( state, effects.queueVisibleAftermath );
+	}
+
+	if ( effects.hiddenEvents ) {
+		addHiddenEvents( state, effects.hiddenEvents );
+	}
+
+	if ( effects.removeHiddenEvents ) {
+		removeHiddenEvents( state, effects.removeHiddenEvents );
 	}
 
 	if ( effects.signal ) {

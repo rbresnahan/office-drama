@@ -22,6 +22,39 @@ const OFFICE_CLOCK_TIMES = [
 	'5:00 PM',
 ];
 
+const FALLBACK_OFFICE_SCHEDULE = [
+	{
+		id: 'start',
+		label: 'Start',
+		time: '9:00 AM',
+		turn: 1,
+	},
+	{
+		id: 'morning_meeting',
+		label: 'Morning Meeting',
+		time: '10:13 AM',
+		turn: 3,
+	},
+	{
+		id: 'lunch',
+		label: 'Lunch',
+		time: '12:00 PM',
+		turn: 6,
+	},
+	{
+		id: 'afternoon_meeting',
+		label: 'Afternoon Meeting',
+		time: '3:18 PM',
+		turn: 10,
+	},
+	{
+		id: 'all_hands',
+		label: 'All-Hands',
+		time: '5:00 PM',
+		turn: 12,
+	},
+];
+
 const CHARACTER_PROFILES = {
 	betty: {
 		name: 'Betty',
@@ -114,6 +147,7 @@ const SCENE_CHARACTER_IDS = {
 
 let activeIntelPanelId = 'story';
 let lastRenderedSceneId = null;
+let lastRenderedHistoryLength = 0;
 let latestGame = null;
 let latestPanels = [];
 
@@ -152,6 +186,10 @@ function getClockLabel( state, clockTime ) {
 		return 'All-Hands';
 	}
 
+	if ( state.turn > state.maxTurns ) {
+		return 'Pressure Gate';
+	}
+
 	if ( clockTime === '12:00 PM' ) {
 		return 'Lunch';
 	}
@@ -172,6 +210,32 @@ function getClockProgress( state ) {
 	const currentTurn = Math.min( Math.max( state.turn || 1, 1 ), maxTurns );
 
 	return Math.round( ( ( currentTurn - 1 ) / Math.max( maxTurns - 1, 1 ) ) * 100 );
+}
+
+function getScheduleItems( game ) {
+	if ( Array.isArray( game.story.schedule ) && game.story.schedule.length ) {
+		return game.story.schedule;
+	}
+
+	return FALLBACK_OFFICE_SCHEDULE;
+}
+
+function getScheduleStatus( game, state ) {
+	if ( state.finaleStarted ) {
+		return 'Now: All-Hands';
+	}
+
+	if ( state.turn > state.maxTurns ) {
+		return 'All-Hands pending: pressure low';
+	}
+
+	const nextItem = getScheduleItems( game ).find( ( item ) => item.turn > state.turn );
+
+	if ( nextItem ) {
+		return `Next: ${ nextItem.label }${ nextItem.time ? ` · ${ nextItem.time }` : '' }`;
+	}
+
+	return 'Next: All-Hands';
 }
 
 function getResolvedSceneContent( game, scene, state ) {
@@ -199,6 +263,17 @@ function getResolvedSceneContent( game, scene, state ) {
 
 function getSceneCharacterId( scene ) {
 	return SCENE_CHARACTER_IDS[ scene.id ] || null;
+}
+
+function isForcedScene( scene ) {
+	return Boolean(
+		scene &&
+		(
+			scene.forced === true ||
+			scene.location === 'Backlash' ||
+			String( scene.id || '' ).startsWith( 'backlash_' )
+		)
+	);
 }
 
 function getStatusBars( bars, state ) {
@@ -234,6 +309,10 @@ function getHeatLabel( value ) {
 function getChoiceIcon( choice ) {
 	const id = choice.id || '';
 	const text = choice.text || '';
+
+	if ( id.startsWith( 'leave_' ) || text.includes( 'Leave' ) ) {
+		return '↩';
+	}
 
 	if ( id.includes( 'betty' ) || text.includes( 'Betty' ) ) {
 		return '▤';
@@ -288,13 +367,7 @@ function isMainNavigationChoiceSet( choices ) {
 	return choices.length > 0 && choices.every( ( choice ) => getChoiceCategory( choice ) === 'move' );
 }
 
-function shouldShowMoreButton( panel ) {
-	const textLength = panel.body.join( ' ' ).length + panel.notices.join( ' ' ).length;
-
-	return panel.body.length > 1 || panel.notices.length > 0 || textLength > 260;
-}
-
-function buildStoryPanel( content ) {
+function buildStoryPanel( scene, content ) {
 	return {
 		id: 'story',
 		label: 'Story',
@@ -304,6 +377,7 @@ function buildStoryPanel( content ) {
 		body: content.body,
 		variant: 'story',
 		notices: [],
+		danger: isForcedScene( scene ),
 	};
 }
 
@@ -325,10 +399,11 @@ function buildPeoplePanel( scene, content, characterId ) {
 		body,
 		variant: 'people',
 		notices: profile.notices,
+		danger: isForcedScene( scene ),
 	};
 }
 
-function buildChatterPanel( state ) {
+function buildChatterPanel( scene, state ) {
 	const feedbackParagraphs = normalizeParagraphs( state.feedback, state );
 	const signal = state.latestSignal || 'The bad email is loose. The all-hands is coming.';
 	const hasFeedback = feedbackParagraphs.length > 0;
@@ -342,10 +417,11 @@ function buildChatterPanel( state ) {
 		body: hasFeedback ? feedbackParagraphs : [ signal ],
 		variant: 'chatter',
 		notices: hasFeedback ? [ signal ] : [],
+		danger: isForcedScene( scene ),
 	};
 }
 
-function buildThoughtPanel( content ) {
+function buildThoughtPanel( scene, content ) {
 	return {
 		id: 'thought',
 		label: 'Thought',
@@ -355,26 +431,31 @@ function buildThoughtPanel( content ) {
 		body: content.internalThought.length ? content.internalThought : [ 'No useful thought has formed yet. This is not ideal, but it is honest.' ],
 		variant: 'thought',
 		notices: [],
+		danger: isForcedScene( scene ),
 	};
 }
 
 function buildIntelPanels( game, scene, state, content ) {
 	const characterId = getSceneCharacterId( scene );
-	const panels = [ buildStoryPanel( content ) ];
+	const panels = [ buildStoryPanel( scene, content ) ];
 	const peoplePanel = buildPeoplePanel( scene, content, characterId );
 
 	if ( peoplePanel ) {
 		panels.push( peoplePanel );
 	}
 
-	panels.push( buildChatterPanel( state ) );
-	panels.push( buildThoughtPanel( content ) );
+	panels.push( buildChatterPanel( scene, state ) );
+	panels.push( buildThoughtPanel( scene, content ) );
 
 	return panels;
 }
 
 function getDefaultIntelPanelId( scene, state ) {
 	const feedbackParagraphs = normalizeParagraphs( state.feedback, state );
+
+	if ( isForcedScene( scene ) ) {
+		return 'story';
+	}
 
 	if ( feedbackParagraphs.length && scene.id === 'hub' ) {
 		return 'chatter';
@@ -397,7 +478,7 @@ function renderIntelTabs( panels ) {
 	tabsContainer.innerHTML = panels
 		.map( ( panel ) => `
 			<button
-				class="intel-tab${ panel.id === activeIntelPanelId ? ' intel-tab--active' : '' }"
+				class="intel-tab${ panel.id === activeIntelPanelId ? ' intel-tab--active' : '' }${ panel.danger ? ' intel-tab--danger' : '' }"
 				type="button"
 				role="tab"
 				aria-selected="${ panel.id === activeIntelPanelId ? 'true' : 'false' }"
@@ -443,7 +524,7 @@ function renderPanelDots( panels ) {
 function renderExpandButton( panel ) {
 	return `
 		<button
-			class="intel-expand-button"
+			class="intel-expand-button${ panel.danger ? ' intel-expand-button--danger' : '' }"
 			type="button"
 			data-intel-more
 			aria-label="Read full ${ escapeHtml( panel.title ) }"
@@ -462,11 +543,12 @@ function renderIntelPanel( panels ) {
 	}
 
 	const activePanel = panels.find( ( panel ) => panel.id === activeIntelPanelId ) || panels[ 0 ];
+	const dangerClass = activePanel.danger ? ' intel-card--danger' : '';
 
 	panelContainer.innerHTML = `
 		<button class="intel-arrow intel-arrow--previous" type="button" data-intel-direction="previous" aria-label="Previous intel panel">‹</button>
 
-		<div class="intel-card intel-card--${ escapeHtml( activePanel.variant ) }">
+		<div class="intel-card intel-card--${ escapeHtml( activePanel.variant ) }${ dangerClass }">
 			<div class="intel-card__content">
 				<div class="intel-card__copy">
 					<div class="intel-card__header">
@@ -522,9 +604,10 @@ function renderChoices( game, scene ) {
 	choicesContainer.innerHTML = choices
 		.map( ( choice ) => {
 			const category = getChoiceCategory( choice );
+			const syntheticClass = choice.isSynthetic ? ' choice-button--synthetic' : '';
 
 			return `
-				<button class="choice-button choice-button--${ escapeHtml( category ) }" type="button" data-choice-id="${ escapeHtml( choice.id ) }">
+				<button class="choice-button choice-button--${ escapeHtml( category ) }${ syntheticClass }" type="button" data-choice-id="${ escapeHtml( choice.id ) }">
 					<span class="choice-button__icon" aria-hidden="true">${ escapeHtml( getChoiceIcon( choice ) ) }</span>
 					<span class="choice-button__text">${ escapeHtml( choice.text ) }</span>
 					<span class="choice-button__chevron" aria-hidden="true">›</span>
@@ -541,7 +624,9 @@ function renderStatusSummary( game, state ) {
 
 	const topPlan = getTopStatusBar( game.story.bars.green, state );
 	const topWatching = getTopStatusBar( game.story.bars.red, state );
-	const topHeatValue = Math.max( ...game.story.bars.red.map( ( bar ) => state.bars[ bar.id ] || 0 ), 0 );
+	const topHeatValue = typeof game.getPressure === 'function'
+		? game.getPressure()
+		: Math.max( ...game.story.bars.red.map( ( bar ) => state.bars[ bar.id ] || 0 ), 0 );
 	const heatLabel = getHeatLabel( topHeatValue );
 
 	if ( plansContainer ) {
@@ -599,6 +684,7 @@ function renderHeader( game, state ) {
 	const turnCount = document.querySelector( '#turn-count' );
 	const clockLabel = document.querySelector( '#clock-label' );
 	const timeTrack = document.querySelector( '#office-time-track' );
+	const scheduleLabel = document.querySelector( '#schedule-label' );
 	const phase = game.getPhase();
 	const clockTime = getClockTime( state );
 
@@ -617,6 +703,20 @@ function renderHeader( game, state ) {
 	if ( timeTrack ) {
 		timeTrack.style.setProperty( '--clock-progress', `${ getClockProgress( state ) }%` );
 	}
+
+	if ( scheduleLabel ) {
+		scheduleLabel.textContent = getScheduleStatus( game, state );
+	}
+}
+
+function renderBoardState( scene ) {
+	const gameBoard = document.querySelector( '.game-board' );
+
+	if ( ! gameBoard ) {
+		return;
+	}
+
+	gameBoard.classList.toggle( 'game-board--danger', isForcedScene( scene ) );
 }
 
 function closeIntelModal() {
@@ -643,7 +743,7 @@ function openIntelModal( panel ) {
 		<div id="intel-modal" class="intel-modal" role="dialog" aria-modal="true" aria-labelledby="intel-modal-title">
 			<div class="intel-modal__backdrop" data-intel-modal-close></div>
 
-			<div class="intel-modal__dialog">
+			<div class="intel-modal__dialog${ panel.danger ? ' intel-modal__dialog--danger' : '' }">
 				<div class="intel-modal__header">
 					<div>
 						<div class="section-label">${ escapeHtml( panel.eyebrow ) }</div>
@@ -719,6 +819,35 @@ function bindIntelControls() {
 	} );
 }
 
+function updateActivePanelForGameState( scene, state, content ) {
+	const sceneChanged = scene.id !== lastRenderedSceneId;
+	const historyChanged = state.history.length !== lastRenderedHistoryLength;
+	const feedbackParagraphs = normalizeParagraphs( state.feedback, state );
+
+	if ( sceneChanged ) {
+		activeIntelPanelId = getDefaultIntelPanelId( scene, state );
+		return;
+	}
+
+	if ( ! historyChanged ) {
+		return;
+	}
+
+	if ( isForcedScene( scene ) ) {
+		activeIntelPanelId = 'story';
+		return;
+	}
+
+	if ( feedbackParagraphs.length ) {
+		activeIntelPanelId = 'chatter';
+		return;
+	}
+
+	if ( content.internalThought.length ) {
+		activeIntelPanelId = 'thought';
+	}
+}
+
 export function render( game ) {
 	latestGame = game;
 
@@ -726,10 +855,7 @@ export function render( game ) {
 	const scene = game.getCurrentScene();
 	const content = getResolvedSceneContent( game, scene, state );
 
-	if ( scene.id !== lastRenderedSceneId ) {
-		activeIntelPanelId = getDefaultIntelPanelId( scene, state );
-		lastRenderedSceneId = scene.id;
-	}
+	updateActivePanelForGameState( scene, state, content );
 
 	const panels = buildIntelPanels( game, scene, state, content );
 
@@ -738,8 +864,11 @@ export function render( game ) {
 	}
 
 	latestPanels = panels;
+	lastRenderedSceneId = scene.id;
+	lastRenderedHistoryLength = state.history.length;
 
 	renderHeader( game, state );
+	renderBoardState( scene );
 	renderIntelTabs( panels );
 	renderIntelPanel( panels );
 	renderChoices( game, scene );

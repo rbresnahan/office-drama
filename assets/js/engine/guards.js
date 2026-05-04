@@ -17,6 +17,10 @@ function listHasAll( source, values = [] ) {
 	return values.every( ( value ) => source.includes( value ) );
 }
 
+function listHasAny( source, values = [] ) {
+	return values.some( ( value ) => source.includes( value ) );
+}
+
 function listHasNone( source, values = [] ) {
 	return values.every( ( value ) => ! source.includes( value ) );
 }
@@ -37,6 +41,14 @@ function npcStateMatches( state, npc = {} ) {
 	return Object.entries( npc ).every( ( [ key, expected ] ) => {
 		return state.npc[ key ] === expected;
 	} );
+}
+
+function getFactState( state ) {
+	return state.facts || state.flags;
+}
+
+function getHiddenEventsState( state ) {
+	return Array.isArray( state.hiddenEvents ) ? state.hiddenEvents : [];
 }
 
 export function requirementsMet( requirements = {}, state ) {
@@ -64,6 +76,30 @@ export function requirementsMet( requirements = {}, state ) {
 	}
 
 	if ( requirements.flagsNone && ! hasNone( state.flags, requirements.flagsNone ) ) {
+		return false;
+	}
+
+	if ( requirements.factsAll && ! hasAll( getFactState( state ), requirements.factsAll ) ) {
+		return false;
+	}
+
+	if ( requirements.factsAny && ! hasAny( getFactState( state ), requirements.factsAny ) ) {
+		return false;
+	}
+
+	if ( requirements.factsNone && ! hasNone( getFactState( state ), requirements.factsNone ) ) {
+		return false;
+	}
+
+	if ( requirements.hiddenEventsAll && ! listHasAll( getHiddenEventsState( state ), requirements.hiddenEventsAll ) ) {
+		return false;
+	}
+
+	if ( requirements.hiddenEventsAny && ! listHasAny( getHiddenEventsState( state ), requirements.hiddenEventsAny ) ) {
+		return false;
+	}
+
+	if ( requirements.hiddenEventsNone && ! listHasNone( getHiddenEventsState( state ), requirements.hiddenEventsNone ) ) {
 		return false;
 	}
 

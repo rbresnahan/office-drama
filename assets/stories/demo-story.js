@@ -2,11 +2,74 @@ export const OFFICE_PANIC_STORY = {
 	id: 'office_panic_demo',
 	title: 'Office Panic',
 	maxTurns: 12,
-	startSceneId: 'hub',
+	startSceneId: 'intro',
+	hubSceneId: 'hub',
+	allHandsIntroSceneId: 'all_hands_intro',
 	finaleSceneId: 'final_all_hands',
+	allHandsPressureThreshold: 75,
 	emailSubject: 'Celia',
 	emailSummary: 'You sent a damaging gossip email about Celia. The recall only partly worked.',
 	initialSignal: 'You sent a bad email about Celia. Recall only partly worked. Office physics are now in charge.',
+
+	visibleAftermathBeats: {
+		kitchen_bottle_taken_celia_bag: {
+			id: 'kitchen_bottle_taken_celia_bag',
+			location: 'Break Room Exit',
+			kicker: 'Aftermath',
+			title: 'The office notices motion.',
+			body: [
+				'As you leave the break room, Celia glances up from near the printer.',
+				'Not at your face.',
+				'At your bag.',
+				'Then she looks back down like she saw nothing, which is exactly how people look when they saw something.',
+			],
+			internalThought: [
+				'The bottle is no longer just something you have.',
+				'It is something someone may have seen you have.',
+				'Fantastic. Evidence with handles.',
+			],
+			continueText: 'Return to the open office.',
+		},
+	},
+
+	schedule: [
+		{
+			id: 'start',
+			label: 'Start',
+			time: '9:00 AM',
+			turn: 1,
+		},
+		{
+			id: 'morning_meeting',
+			label: 'Morning Meeting',
+			time: '10:13 AM',
+			turn: 3,
+			sceneId: 'schedule_morning_meeting',
+			signal: 'The morning meeting interrupts the day. People are pretending the bad email is not in the room.',
+		},
+		{
+			id: 'lunch',
+			label: 'Lunch',
+			time: '12:00 PM',
+			turn: 6,
+			sceneId: 'schedule_lunch',
+			signal: 'Lunch begins. Food creates movement. Movement creates witnesses. Terrible ecosystem.',
+		},
+		{
+			id: 'afternoon_meeting',
+			label: 'Afternoon Meeting',
+			time: '3:18 PM',
+			turn: 10,
+			sceneId: 'schedule_afternoon_meeting',
+			signal: 'The afternoon meeting window tightens the room. The day is running out of places to hide.',
+		},
+		{
+			id: 'all_hands',
+			label: 'All-Hands',
+			time: '5:00 PM',
+			turn: 12,
+		},
+	],
 
 	bars: {
 		green: [
@@ -109,7 +172,85 @@ export const OFFICE_PANIC_STORY = {
 		},
 	],
 
+	forcedRules: [
+		{
+			id: 'lisa_process_check_rule',
+			sceneId: 'forced_lisa_process_check',
+			excludeSceneIds: [
+				'lisa_area',
+				'forced_lisa_process_check',
+			],
+			requirements: {
+				phaseMin: 'narrative_building',
+				barsMin: {
+					managementEscalates: 25,
+				},
+				flagsNone: [
+					'lisaProcessCheckHandled',
+					'lisaIsDocumenting',
+				],
+			},
+			effects: {
+				flags: {
+					lisaProcessCheckPending: true,
+				},
+				signal: 'Lisa has stepped out of the office-manager background and into your personal weather system.',
+			},
+		},
+		{
+			id: 'celia_looks_up_rule',
+			sceneId: 'forced_celia_looks_up',
+			excludeSceneIds: [
+				'celia_area',
+				'forced_celia_looks_up',
+			],
+			requirements: {
+				phaseMin: 'pressure_rising',
+				barsMin: {
+					celiaFindsOut: 50,
+				},
+				flagsNone: [
+					'celiaLookedUpHandled',
+					'celiaHasFullEmail',
+				],
+			},
+			effects: {
+				flags: {
+					celiaLookedUpPending: true,
+				},
+				signal: 'Celia looks up. Not enough to accuse you. Enough to make every casual movement feel rehearsed.',
+			},
+		},
+	],
+
 	scenes: {
+		intro: {
+			id: 'intro',
+			location: 'Before The Damage Control Begins',
+			kicker: 'Intro',
+			title: 'You sent the bad email.',
+			body: [
+				'The recall only partly worked.',
+				'That means this is no longer a simple mistake. It is now a social physics problem with names, fragments, witnesses, and one all-hands meeting waiting at the end of the day.',
+				'The bad email was about Celia. Some people may have seen the whole thing. Some may have seen pieces. Some may only know that something ugly happened, which is sometimes worse because imagination gets overtime pay.',
+				'Your job is not to become innocent. That ship has sailed, hit a copier, and backed into HR. Your job is to survive the office narrative before the room decides what happened for you.',
+			],
+			internalThought: [
+				'Green bars are stories, leverage, or containment routes you are building.',
+				'Red bars are people and systems closing in on you.',
+				'Movement does not cost a turn. Interactions do. Bad decisions remain extremely available.',
+			],
+			choices: [
+				{
+					id: 'start_damage_control',
+					text: 'Start damage control.',
+					category: 'move',
+					advanceTurn: false,
+					nextScene: 'hub',
+				},
+			],
+		},
+
 		hub: {
 			id: 'hub',
 			location: 'Open Office Floor',
@@ -204,6 +345,274 @@ export const OFFICE_PANIC_STORY = {
 					category: 'move',
 					advanceTurn: false,
 					nextScene: 'bathroom_hallway',
+				},
+			],
+		},
+
+		schedule_morning_meeting: {
+			id: 'schedule_morning_meeting',
+			location: 'Morning Meeting',
+			kicker: 'Scheduled Event',
+			forced: true,
+			scheduleEvent: true,
+			title: 'The morning meeting tries to be normal.',
+			body: [
+				'The morning meeting starts with the stale optimism of people who still believe agendas are protective magic.',
+				'Lisa reviews priorities. Tim writes something down. Betty watches who reacts to which words. Celia is quiet in a way that makes the room more aware of its own breathing.',
+				'Nobody says “the email.” That does not mean the email is absent. It is sitting in the meeting like an unpaid consultant.',
+			],
+			internalThought: [
+				'This is the first pressure checkpoint. If nobody has a clean story yet, the room keeps collecting fragments.',
+				'You need routes, not vibes. Vibes are how people end up saying “I just feel like something is off,” which is office poison in mist form.',
+			],
+			choices: [
+				{
+					id: 'morning_meeting_stay_quiet',
+					text: 'Stay quiet and let the meeting pass.',
+					category: 'neutral',
+					advanceTurn: false,
+					once: true,
+					resultText: 'You stay quiet. It is not brave, but it avoids giving Tim a fresh sentence to pin to the wall.',
+					effects: {
+						signal: 'The morning meeting passes without a clean accusation. For now, silence did not betray you.',
+					},
+					nextScene: '__return__',
+				},
+				{
+					id: 'morning_meeting_push_system',
+					text: 'Lightly mention email recall confusion as a general process issue.',
+					category: 'cleanup',
+					advanceTurn: false,
+					once: true,
+					resultText: 'You make the recall sound like a process topic instead of a you topic. Lisa hears process. Tim hears direction.',
+					effects: {
+						bars: {
+							blameSystem: 25,
+							timSuspectsYou: 25,
+						},
+						flags: {
+							morningSystemAngleRaised: true,
+						},
+						signal: 'System blame picked up structure, but Tim noticed your hand near the steering wheel.',
+					},
+					nextScene: '__return__',
+				},
+			],
+		},
+
+		schedule_lunch: {
+			id: 'schedule_lunch',
+			location: 'Lunch',
+			kicker: 'Scheduled Event',
+			forced: true,
+			scheduleEvent: true,
+			title: 'Lunch opens the map.',
+			body: [
+				'Lunch does what lunch always does: breaks the office into smaller rooms where people say larger things.',
+				'The break room gets crowded. Tim checks his labeled food like a man verifying a treaty. Devon floats near the fridge with the spiritual discipline of a raccoon near a campground.',
+				'People move. People notice movement. People later pretend they did not notice movement until it becomes useful.',
+			],
+			internalThought: [
+				'Lunch is a timing window. If Tim’s routine matters, this is where it starts mattering loudly.',
+				'The break room is dangerous because it looks casual. Casual is where people say the part they would not put in writing.',
+			],
+			choices: [
+				{
+					id: 'lunch_keep_moving',
+					text: 'Keep moving and do not become part of a lunch cluster.',
+					category: 'neutral',
+					advanceTurn: false,
+					once: true,
+					resultText: 'You keep moving. Nobody gets a long look at you, which is almost the same as being subtle if nobody checks the tape.',
+					effects: {
+						signal: 'Lunch movement creates cover. It also creates witnesses. Office physics remain annoying.',
+					},
+					nextScene: '__return__',
+				},
+				{
+					id: 'lunch_watch_tim',
+					text: 'Watch whether Tim protects his lunch routine.',
+					category: 'info',
+					advanceTurn: false,
+					once: true,
+					resultText: 'Tim checks labels, containers, and the fridge shelf like the lunch bag has clearance levels.',
+					effects: {
+						flags: {
+							knowsTimLunchRoutine: true,
+						},
+						unlocks: [
+							'betty_ask_tim_lunch',
+						],
+						signal: 'Tim’s lunch routine is definitely a system. Systems can be disrupted. Terrible thought. Useful thought.',
+					},
+					nextScene: '__return__',
+				},
+			],
+		},
+
+		schedule_afternoon_meeting: {
+			id: 'schedule_afternoon_meeting',
+			location: 'Afternoon Meeting',
+			kicker: 'Scheduled Event',
+			forced: true,
+			scheduleEvent: true,
+			title: 'The afternoon meeting tightens the day.',
+			body: [
+				'By afternoon, the office has stopped pretending the day is normal. It is still doing work, technically, in the same way a burning toaster is still an appliance.',
+				'Lisa references the all-hands. Betty notices who stiffens. Tim looks like he has either found a pattern or badly wants one. Celia has become a silence with a chair.',
+				'There is less day left than problem.',
+			],
+			internalThought: [
+				'This is the last big checkpoint before the all-hands pressure gate.',
+				'Loose stories need commitment now. Half-built lies are just clues wearing rented shoes.',
+			],
+			choices: [
+				{
+					id: 'afternoon_meeting_stabilize',
+					text: 'Stay boring and avoid adding new contradictions.',
+					category: 'cleanup',
+					advanceTurn: false,
+					once: true,
+					resultText: 'You become operationally dull. It is emotionally unsatisfying and tactically useful.',
+					effects: {
+						bars: {
+							managementEscalates: -25,
+						},
+						signal: 'You lowered the formal temperature slightly. The room still remembers heat.',
+					},
+					nextScene: '__return__',
+				},
+				{
+					id: 'afternoon_meeting_commit_cover',
+					text: 'Commit harder to the strongest surviving cover story.',
+					category: 'commitment',
+					advanceTurn: false,
+					once: true,
+					resultText: 'You stop keeping every route open. That makes one story stronger and every abandoned story resentful.',
+					effects: {
+						bars: {
+							blameSystem: 25,
+							managementEscalates: 25,
+						},
+						flags: {
+							committedLateCoverStory: true,
+						},
+						signal: 'You committed late. The cover story has more shape now, and less room to dodge.',
+					},
+					nextScene: '__return__',
+				},
+			],
+		},
+
+		forced_lisa_process_check: {
+			id: 'forced_lisa_process_check',
+			location: 'Forced Interaction',
+			kicker: 'Forced Event',
+			forced: true,
+			title: 'Lisa steps into your path.',
+			body: [
+				'Lisa catches you between places, which is how office managers remind you that the hallway is not neutral territory.',
+				'She says leadership wants a cleaner account before the all-hands. She does not say “because of you.” She does not need to. The sentence has furniture.',
+			],
+			internalThought: [
+				'Lisa is not gossip. Lisa is process with shoes.',
+				'If she starts documenting too early, the game changes from social maneuvering to paper trail survival.',
+			],
+			choices: [
+				{
+					id: 'forced_lisa_give_clean_account',
+					text: 'Give Lisa a clean, boring account and do not improvise.',
+					category: 'cleanup',
+					advanceTurn: false,
+					once: true,
+					resultText: 'Lisa accepts the clean version because it is boring enough to file. Boring is not innocence, but it is sometimes shelter.',
+					effects: {
+						bars: {
+							managementEscalates: -25,
+							blameSystem: -25,
+						},
+						flags: {
+							lisaProcessCheckHandled: true,
+						},
+						signal: 'Lisa backs off slightly. The formal route cools, but the system-blame story loses some scaffolding.',
+					},
+					nextScene: '__return__',
+				},
+				{
+					id: 'forced_lisa_redirect_process',
+					text: 'Redirect Lisa toward recall failure and process confusion.',
+					category: 'underhanded',
+					advanceTurn: false,
+					once: true,
+					resultText: 'Lisa accepts the process angle because process can be reviewed. That helps until the review includes you.',
+					effects: {
+						bars: {
+							blameSystem: 25,
+							managementEscalates: 25,
+						},
+						flags: {
+							lisaProcessCheckHandled: true,
+							lisaProcessRedirected: true,
+						},
+						signal: 'The system story gets stronger, but Lisa is closer to making the whole thing official.',
+					},
+					nextScene: '__return__',
+				},
+			],
+		},
+
+		forced_celia_looks_up: {
+			id: 'forced_celia_looks_up',
+			location: 'Forced Interaction',
+			kicker: 'Forced Event',
+			forced: true,
+			title: 'Celia looks up.',
+			body: [
+				'Celia looks up from her screen and holds your face for half a second too long.',
+				'It is not a confrontation. Not yet. It is worse in a smaller way: recognition without a script.',
+			],
+			internalThought: [
+				'Celia may not have the full email yet, but she has enough shape to start asking the right wrong questions.',
+				'If someone gets to her first, your version becomes the response instead of the frame.',
+			],
+			choices: [
+				{
+					id: 'forced_celia_soft_apology',
+					text: 'Give Celia a small human apology without explaining.',
+					category: 'positive',
+					advanceTurn: false,
+					once: true,
+					resultText: 'Celia does not soften, exactly. But she hears a sentence that is not trying to sell her anything.',
+					effects: {
+						bars: {
+							containCelia: 25,
+							celiaFindsOut: -25,
+						},
+						flags: {
+							celiaLookedUpHandled: true,
+						},
+						signal: 'Celia is not contained, but the room did not get sharper around her yet.',
+					},
+					nextScene: '__return__',
+				},
+				{
+					id: 'forced_celia_act_normal',
+					text: 'Act normal and let the moment pass.',
+					category: 'neutral',
+					advanceTurn: false,
+					once: true,
+					resultText: 'You act normal. It is a performance with weak lighting and too much audience participation.',
+					effects: {
+						bars: {
+							celiaFindsOut: 25,
+							timSuspectsYou: 25,
+						},
+						flags: {
+							celiaLookedUpHandled: true,
+						},
+						signal: 'Celia noticed the performance. Tim may have noticed you performing it.',
+					},
+					nextScene: '__return__',
 				},
 			],
 		},
@@ -780,9 +1189,13 @@ export const OFFICE_PANIC_STORY = {
 						barsMin: {
 							frameFrank: 50,
 						},
-						flagsAll: [
+						factsAll: [
+							'playerHasBottle',
 							'confirmedFrankAway',
 							'sawFrankDeskEmpty',
+						],
+						factsNone: [
+							'bottlePlantedFrank',
 						],
 						npc: {
 							frankAwayFromDesk: true,
@@ -799,9 +1212,12 @@ export const OFFICE_PANIC_STORY = {
 							frankRetaliates: 25,
 							managementEscalates: 25,
 						},
-						flags: {
+						facts: {
 							bottlePlantedFrank: true,
 						},
+						unsetFacts: [
+							'playerHasBottle',
+						],
 						unlocks: [
 							'tell_tim_about_franks_desk',
 							'devon_discover_bottle',
@@ -885,14 +1301,97 @@ export const OFFICE_PANIC_STORY = {
 			id: 'break_room',
 			location: 'Break Room',
 			title: 'The break room is where facts go to get microwaved.',
-			body: [
-				'Devon is here, stirring coffee like he is auditioning for the role of Person Who Knows Too Much.',
-				'The fridge hums with the dead-eyed neutrality of an appliance that has seen crimes.',
-			],
-			internalThought: [
-				'Anything you say near Devon may travel. That is dangerous. That is also useful. Office gossip: nature’s cursed delivery network.',
-			],
+			body: ( state ) => {
+				const body = [
+					'Devon is here, stirring coffee like he is auditioning for the role of Person Who Knows Too Much.',
+					'The fridge hums with the dead-eyed neutrality of an appliance that has seen crimes.',
+				];
+
+				if ( state.facts.kitchenBottleMissing ) {
+					body.push( 'The top of the fridge looks weirdly clean now. That is not normally a sentence with tactical consequences, yet here everyone is.' );
+				} else if ( state.facts.kitchenBottleSeen ) {
+					body.push( 'Now that you know where to look, the half-pint bottle on top of the fridge feels less hidden and more like it is daring you to become worse.' );
+				}
+
+				return body;
+			},
+			internalThought: ( state ) => {
+				const thoughts = [
+					'Anything you say near Devon may travel. That is dangerous. That is also useful. Office gossip: nature’s cursed delivery network.',
+				];
+
+				if ( state.facts.playerHasBottle ) {
+					thoughts.push( 'The bottle is no longer office scenery. It is now your problem, which is traditionally how evidence becomes exciting and stupid.' );
+				} else if ( state.facts.kitchenBottleSeen ) {
+					thoughts.push( 'The bottle is real, reachable, and inappropriate enough to become a story if someone points at it correctly.' );
+				}
+
+				return thoughts;
+			},
 			choices: [
+				{
+					id: 'inspect_break_room_fridge',
+					text: 'Inspect the top of the fridge.',
+					category: 'info',
+					advanceTurn: false,
+					once: true,
+					requirements: {
+						factsNone: [
+							'kitchenBottleSeen',
+							'kitchenBottleMissing',
+						],
+					},
+					resultText: [
+						'You look past the motivational mug nobody uses and the dusty stack of paper plates.',
+						'Tucked on top of the fridge is a small half-pint bottle of cheap brown liquor.',
+						'It is hidden just well enough to prove someone meant to hide it, and badly enough to prove this office hires optimists.',
+					],
+					effects: {
+						facts: {
+							kitchenBottleSeen: true,
+						},
+						signal: 'You found a bottle on top of the break room fridge. It is not evidence yet. It is opportunity pretending to be glass.',
+					},
+				},
+				{
+					id: 'take_kitchen_bottle',
+					text: 'Take the bottle from the top of the fridge.',
+					category: 'underhanded',
+					once: true,
+					requirements: {
+						factsAll: [
+							'kitchenBottleSeen',
+						],
+						factsNone: [
+							'playerHasBottle',
+							'kitchenBottleMissing',
+						],
+					},
+					resultText: [
+						'You take the bottle and slide it into your bag.',
+						'It makes the smallest possible glass sound against your keys.',
+						'Naturally, that sounds deafening.',
+					],
+					effects: {
+						facts: {
+							playerHasBottle: true,
+							kitchenBottleMissing: true,
+						},
+						hiddenEvents: [
+							'celia_may_have_seen_bottle_bag',
+						],
+						bars: {
+							managementEscalates: 25,
+						},
+						unlocks: [
+							'plant_bottle_frank',
+						],
+						queueVisibleAftermath: [
+							'kitchen_bottle_taken_celia_bag',
+						],
+						signal: 'The bottle is in your bag. That makes it useful, suspicious, and suddenly much heavier than physics requires.',
+					},
+				},
 				{
 					id: 'devon_ask_who_saw',
 					text: 'Ask Devon who has seen the email.',
@@ -1087,10 +1586,18 @@ export const OFFICE_PANIC_STORY = {
 			id: 'celia_area',
 			location: 'Celia’s Area',
 			title: 'Celia has not looked at you yet.',
-			body: [
-				'That could mean she does not know. It could also mean she knows exactly enough.',
-				'Her monitor glows. Her hands are still. The silence around her feels like a meeting invite you cannot decline.',
-			],
+			body: ( state ) => {
+				const body = [
+					'That could mean she does not know. It could also mean she knows exactly enough.',
+					'Her monitor glows. Her hands are still. The silence around her feels like a meeting invite you cannot decline.',
+				];
+
+				if ( Array.isArray( state.hiddenEvents ) && state.hiddenEvents.includes( 'celia_may_have_seen_bottle_bag' ) ) {
+					body.push( 'Her eyes flick briefly toward your bag before returning to her screen. It is too quick to be an accusation and too specific to be nothing.' );
+				}
+
+				return body;
+			},
 			internalThought: [
 				'Celia is the subject of the email. If you talk now, you may control the first version she hears. If you wait, someone else gets there first.',
 			],
@@ -1438,6 +1945,7 @@ export const OFFICE_PANIC_STORY = {
 		backlash_tim: {
 			id: 'backlash_tim',
 			location: 'Backlash',
+			forced: true,
 			title: 'Tim asks a precise question.',
 			body: [
 				'Tim appears beside you with the calm face of a man carrying a contradiction.',
@@ -1487,6 +1995,7 @@ export const OFFICE_PANIC_STORY = {
 		backlash_frank: {
 			id: 'backlash_frank',
 			location: 'Backlash',
+			forced: true,
 			title: 'Frank knows the room is turning.',
 			body: [
 				'Frank catches you looking away from him too quickly.',
@@ -1535,6 +2044,7 @@ export const OFFICE_PANIC_STORY = {
 		backlash_betty: {
 			id: 'backlash_betty',
 			location: 'Backlash',
+			forced: true,
 			title: 'Betty sees the pattern.',
 			body: [
 				'Betty steps close enough that she does not have to raise her voice.',
@@ -1583,6 +2093,7 @@ export const OFFICE_PANIC_STORY = {
 		backlash_celia: {
 			id: 'backlash_celia',
 			location: 'Backlash',
+			forced: true,
 			title: 'Celia has the full message.',
 			body: [
 				'Celia looks at you now.',
@@ -1634,6 +2145,7 @@ export const OFFICE_PANIC_STORY = {
 		backlash_lisa: {
 			id: 'backlash_lisa',
 			location: 'Backlash',
+			forced: true,
 			title: 'Lisa starts documenting.',
 			body: [
 				'Lisa closes her notebook, which is somehow worse than opening it.',
@@ -1674,6 +2186,32 @@ export const OFFICE_PANIC_STORY = {
 						signal: 'System blame is stronger. So is formal attention. Office alchemy.',
 					},
 					nextScene: 'hub',
+				},
+			],
+		},
+
+		all_hands_intro: {
+			id: 'all_hands_intro',
+			location: 'All-Hands',
+			kicker: 'Forced Event',
+			forced: true,
+			title: 'The all-hands begins.',
+			body: [
+				'The room gathers with the quiet discipline of people pretending they are not excited by a disaster.',
+				'Lisa has her notebook. Tim has whatever timeline survived your interference. Betty has a face that says she knows more than she intends to say. Frank looks like a man calculating whether anger or silence is more expensive. Celia is the reason nobody is making jokes out loud.',
+				'Whatever story has the most support now gets the microphone. Whatever threat got too hot gets teeth. The office does not need the truth. It needs a version it can stand around without feeling stupid.',
+			],
+			internalThought: [
+				'This is the handoff from tactics to consequence.',
+				'The final board state decides which story survives the room.',
+			],
+			choices: [
+				{
+					id: 'enter_all_hands',
+					text: 'Step into the all-hands.',
+					category: 'commitment',
+					advanceTurn: false,
+					nextScene: 'final_all_hands',
 				},
 			],
 		},
