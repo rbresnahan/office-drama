@@ -105,9 +105,9 @@ export const scheduleAfternoonMeeting = {
 	kicker: 'Scheduled Event',
 	forced: true,
 	scheduleEvent: true,
-	title: 'The catch up is not helping.',
+	title: 'The afternoon checkup is not helping.',
 	body: [
-		'The conference room collects everyone again for the Catch Up, a meeting title with the emotional honesty of a wet napkin.',
+		'The conference room collects everyone again for the Afternoon Checkup, a meeting title with the emotional honesty of a wet napkin.',
 		'By afternoon, the office has stopped pretending the day is normal. It is still doing work, technically, in the same way a burning toaster is still an appliance.',
 		'Lisa references the all-hands. Betty notices who stiffens. Tim looks like he has either found a pattern or badly wants one. Celia has become a silence with a chair.',
 		'There is less day left than problem.',

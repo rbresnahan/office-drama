@@ -84,13 +84,10 @@ const breakRoom = {
 				bars: {
 					managementEscalates: 25,
 				},
-				unlocks: [
-					'plant_bottle_frank',
-				],
 				queueVisibleAftermath: [
 					'kitchen_bottle_taken_celia_bag',
 				],
-				signal: 'The bottle is in your bag. That makes it useful, suspicious, and suddenly much heavier than physics requires.',
+				signal: 'The bottle is in your bag. Useful, suspicious, and still waiting for a story to attach itself to.',
 			},
 		},
 		{
@@ -175,6 +172,15 @@ const breakRoom = {
 					devonLeak: 25,
 					frankRetaliates: 25,
 				},
+				flags: {
+					devonCarryingFrankStory: true,
+				},
+				hiddenEvents: [
+					'devon_spreads_frank_story',
+				],
+				queueVisibleAftermath: [
+					'devon_frank_story_travels',
+				],
 				signal: 'Devon now carries the Frank story. Handle with tongs.',
 			},
 			nextScene: 'hub',

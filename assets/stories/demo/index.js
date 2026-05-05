@@ -15,7 +15,11 @@ import {
 } from './scenes/scheduled-events.js';
 import {
 	forcedCeliaLooksUp,
+	forcedDevonFrankStoryMutated,
+	forcedDevonLisaAskingFrank,
+	forcedFrankHearsHisName,
 	forcedLisaProcessCheck,
+	forcedTimTimelineQuestion,
 } from './scenes/forced-scenes.js';
 import bettyDesk from './scenes/betty-desk.js';
 import timDesk from './scenes/tim-desk.js';
@@ -54,6 +58,10 @@ export const OFFICE_PANIC_STORY = {
 		schedule_afternoon_meeting: scheduleAfternoonMeeting,
 		forced_lisa_process_check: forcedLisaProcessCheck,
 		forced_celia_looks_up: forcedCeliaLooksUp,
+		forced_devon_lisa_asking_frank: forcedDevonLisaAskingFrank,
+		forced_devon_frank_story_mutated: forcedDevonFrankStoryMutated,
+		forced_frank_hears_his_name: forcedFrankHearsHisName,
+		forced_tim_timeline_question: forcedTimTimelineQuestion,
 		betty_desk: bettyDesk,
 		tim_desk: timDesk,
 		frank_desk: frankDesk,

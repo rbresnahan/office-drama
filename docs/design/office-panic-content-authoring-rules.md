@@ -22,6 +22,27 @@ If a choice does not affect pressure, information, trust, risk, or future option
 
 ---
 
+# Narrative Interaction Layer Rules
+
+The narrative interaction layer should make existing mechanics feel like character and environment reactivity.
+
+Use these rules when adding discovery, aftermath, hidden motion, or NPC reactions:
+
+- Prefer one useful fact per interaction.
+- Inspect choices usually do not advance the turn.
+- Meaningful actions usually advance the turn.
+- Aftermath often appears after the player leaves an area.
+- Keep scenes short.
+- Avoid giant dialogue trees.
+- Avoid NPC simulation.
+- Make scheme unlocks understandable.
+- Prefer clear cause and effect over hidden cleverness.
+- Keep mobile readability in mind.
+
+This layer should use existing facts, requirements, aftermath, hidden events, forced scenes, schedule, feedback, signals, unlocks, locks, bars, NPC state, and history before proposing engine changes.
+
+---
+
 # Story Unit Types
 
 The game should use these content units:
@@ -319,7 +340,7 @@ Examples:
 
 - `knows_tim_food_vulnerability`
 - `knows_frank_under_pressure`
-- `knows_devan_saw_email`
+- `knows_devon_saw_email`
 - `knows_celia_has_not_seen_full_email`
 - `knows_lisa_talked_to_management`
 - `bathroom_supplies_missing`

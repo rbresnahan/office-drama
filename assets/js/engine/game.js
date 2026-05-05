@@ -443,6 +443,12 @@ export function createGame( story ) {
 			return;
 		}
 
+		// Let authored immediate reactions resolve before calendar events take over.
+		if ( hasPendingVisibleAftermath( story, state ) ) {
+			state.currentSceneId = nextSceneId;
+			return;
+		}
+
 		const scheduleSceneId = getScheduleEventSceneId( story, state );
 
 		if ( scheduleSceneId ) {

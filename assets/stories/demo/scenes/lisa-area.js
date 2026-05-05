@@ -114,6 +114,12 @@ const lisaArea = {
 				flags: {
 					systemAngleWithLisa: true,
 				},
+				hiddenEvents: [
+					'lisa_documents_system_angle',
+				],
+				queueVisibleAftermath: [
+					'lisa_quietly_documents',
+				],
 				signal: 'The system route is stronger. So is the chance this becomes formal. Tiny tradeoff. Huge paperwork.',
 			},
 			nextScene: 'hub',

@@ -31,6 +31,21 @@ Discovery should often cost a turn.
 
 That turn should feel worthwhile because it unlocks future choices or makes later choices safer.
 
+Inspection is a content convention first, not a new engine system.
+
+An inspect choice should usually:
+
+- Use the `info` category.
+- Use `advanceTurn: false`.
+- Stay in the current scene unless the choice clearly moves the player.
+- Reveal one useful fact or flag.
+- Use short result text as immediate feedback.
+- May add `hiddenEvents`.
+- May queue visible aftermath through existing aftermath data.
+- May update `latestSignal` or player-facing feedback.
+
+Meaningful follow-up actions, such as taking, planting, sabotaging, or manipulating, usually advance the turn.
+
 ---
 
 # Why This Matters

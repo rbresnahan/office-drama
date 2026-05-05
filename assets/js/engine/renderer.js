@@ -31,7 +31,7 @@ const FALLBACK_OFFICE_SCHEDULE = [
 	},
 	{
 		id: 'morning_meeting',
-		label: 'Morning Meeting',
+		label: 'Stand Up',
 		time: '10:13 AM',
 		turn: 3,
 	},
@@ -43,7 +43,7 @@ const FALLBACK_OFFICE_SCHEDULE = [
 	},
 	{
 		id: 'afternoon_meeting',
-		label: 'Afternoon Meeting',
+		label: 'Afternoon Checkup',
 		time: '3:18 PM',
 		turn: 10,
 	},
@@ -122,11 +122,11 @@ const CHARACTER_PROFILES = {
 		],
 	},
 	devin: {
-		name: 'Devin',
+		name: 'Devon',
 		role: 'Rumor Distribution Network',
 		icon: '◈',
 		summary: [
-			'Devin has the energy of a person who calls gossip “context.”',
+			'Devon has the energy of a person who calls gossip “context.”',
 			'Anything he hears may travel, which is dangerous and therefore useful.',
 		],
 		notices: [
@@ -220,6 +220,18 @@ function getScheduleItems( game ) {
 	return FALLBACK_OFFICE_SCHEDULE;
 }
 
+function getScheduleDisplayLabel( item ) {
+	const labels = {
+		start: 'Start',
+		morning_meeting: 'Stand Up',
+		lunch: 'Lunch',
+		afternoon_meeting: 'Afternoon Checkup',
+		all_hands: 'All-Hands',
+	};
+
+	return labels[ item.id ] || item.label || 'Schedule';
+}
+
 function getScheduleStatus( game, state ) {
 	if ( state.finaleStarted ) {
 		return 'Now: All-Hands';
@@ -232,10 +244,104 @@ function getScheduleStatus( game, state ) {
 	const nextItem = getScheduleItems( game ).find( ( item ) => item.turn > state.turn );
 
 	if ( nextItem ) {
-		return `Next: ${ nextItem.label }${ nextItem.time ? ` · ${ nextItem.time }` : '' }`;
+		return `Next: ${ getScheduleDisplayLabel( nextItem ) }${ nextItem.time ? ` · ${ nextItem.time }` : '' }`;
 	}
 
-	return 'Next: All-Hands';
+	return 'All-Hands locked';
+}
+
+function getScheduleItemStatus( item, state, scene ) {
+	if ( item.id === 'all_hands' ) {
+		if ( state.finaleStarted ) {
+			return 'current';
+		}
+
+		if ( state.turn > state.maxTurns ) {
+			return 'pending';
+		}
+
+		return 'locked';
+	}
+
+	if ( item.sceneId && scene.id === item.sceneId ) {
+		return 'current';
+	}
+
+	if ( item.id === 'start' ) {
+		return state.turn <= item.turn ? 'current' : 'done';
+	}
+
+	if ( state.scheduleTriggered && state.scheduleTriggered[ item.id ] ) {
+		return 'done';
+	}
+
+	if ( item.turn > state.turn ) {
+		return 'upcoming';
+	}
+
+	return 'pending';
+}
+
+function getScheduleStatusSummary( status ) {
+	const summaries = {
+		done: 'Done',
+		current: 'Current',
+		upcoming: 'Upcoming',
+		pending: 'Pending',
+		locked: 'Locked',
+	};
+
+	return summaries[ status ] || 'Upcoming';
+}
+
+function getScheduleItemNote( item, status ) {
+	if ( item.id === 'all_hands' ) {
+		if ( status === 'current' ) {
+			return 'Activated by the existing pressure gate.';
+		}
+
+		if ( status === 'pending' ) {
+			return 'Waiting on the existing pressure gate.';
+		}
+
+		return 'Not guaranteed yet.';
+	}
+
+	if ( status === 'current' ) {
+		return 'Happening now.';
+	}
+
+	if ( status === 'done' ) {
+		return 'Already passed.';
+	}
+
+	if ( status === 'pending' ) {
+		return 'Waiting to resolve.';
+	}
+
+	return 'Scheduled pressure.';
+}
+
+function renderScheduleItems( game, state, scene ) {
+	return getScheduleItems( game )
+		.map( ( item ) => {
+			const status = getScheduleItemStatus( item, state, scene );
+
+			return `
+				<li class="schedule-modal__item schedule-modal__item--${ escapeHtml( status ) }">
+					<div class="schedule-modal__item-main">
+						<strong>${ escapeHtml( getScheduleDisplayLabel( item ) ) }</strong>
+						<span>${ escapeHtml( item.time || 'Time TBD' ) } · Turn ${ escapeHtml( item.turn || '?' ) }</span>
+					</div>
+
+					<div class="schedule-modal__item-side">
+						<span class="schedule-modal__status">${ escapeHtml( getScheduleStatusSummary( status ) ) }</span>
+						<span class="schedule-modal__note">${ escapeHtml( getScheduleItemNote( item, status ) ) }</span>
+					</div>
+				</li>
+			`;
+		} )
+		.join( '' );
 }
 
 function getResolvedSceneContent( game, scene, state ) {
@@ -749,7 +855,10 @@ function renderHeader( game, state ) {
 	}
 
 	if ( scheduleLabel ) {
-		scheduleLabel.textContent = getScheduleStatus( game, state );
+		const scheduleStatus = getScheduleStatus( game, state );
+
+		scheduleLabel.textContent = scheduleStatus;
+		scheduleLabel.setAttribute( 'aria-label', `Open schedule. ${ scheduleStatus }` );
 	}
 }
 
@@ -779,6 +888,65 @@ function handleIntelModalKeydown( event ) {
 	if ( event.key === 'Escape' ) {
 		closeIntelModal();
 	}
+}
+
+function closeScheduleModal() {
+	const existingModal = document.querySelector( '#schedule-modal' );
+
+	if ( existingModal ) {
+		existingModal.remove();
+	}
+
+	document.body.classList.remove( 'has-intel-modal' );
+	document.removeEventListener( 'keydown', handleScheduleModalKeydown );
+}
+
+function handleScheduleModalKeydown( event ) {
+	if ( event.key === 'Escape' ) {
+		closeScheduleModal();
+	}
+}
+
+function openScheduleModal() {
+	if ( ! latestGame ) {
+		return;
+	}
+
+	closeScheduleModal();
+
+	const state = latestGame.getState();
+	const scene = latestGame.getCurrentScene();
+	const modalMarkup = `
+		<div id="schedule-modal" class="intel-modal schedule-modal" role="dialog" aria-modal="true" aria-labelledby="schedule-modal-title">
+			<div class="intel-modal__backdrop" data-schedule-modal-close></div>
+
+			<div class="intel-modal__dialog schedule-modal__dialog">
+				<div class="intel-modal__header">
+					<div>
+						<div class="section-label">Office Schedule</div>
+						<h2 id="schedule-modal-title" class="intel-modal__title">Today’s pressure</h2>
+						<p class="intel-card__subtitle">The calendar does not care how ready you are.</p>
+					</div>
+
+					<button class="intel-modal__close" type="button" data-schedule-modal-close aria-label="Close schedule">×</button>
+				</div>
+
+				<div class="intel-modal__body schedule-modal__body">
+					<ol class="schedule-modal__list">
+						${ renderScheduleItems( latestGame, state, scene ) }
+					</ol>
+				</div>
+			</div>
+		</div>
+	`;
+
+	document.body.insertAdjacentHTML( 'beforeend', modalMarkup );
+	document.body.classList.add( 'has-intel-modal' );
+	document.addEventListener( 'keydown', handleScheduleModalKeydown );
+
+	document.querySelectorAll( '[data-schedule-modal-close]' ).forEach( ( closeButton ) => {
+		closeButton.addEventListener( 'click', closeScheduleModal );
+	} );
 }
 
 function openIntelModal( panel ) {
@@ -864,6 +1032,14 @@ function bindIntelControls() {
 	} );
 }
 
+function bindScheduleControls() {
+	const scheduleButton = document.querySelector( '#schedule-label' );
+
+	if ( scheduleButton ) {
+		scheduleButton.onclick = openScheduleModal;
+	}
+}
+
 function updateActivePanelForGameState( scene, state, content ) {
 	const sceneChanged = scene.id !== lastRenderedSceneId;
 	const historyChanged = state.history.length !== lastRenderedHistoryLength;
@@ -919,4 +1095,5 @@ export function render( game ) {
 	renderChoices( game, scene );
 	renderStatusSummary( game, state );
 	bindIntelControls();
+	bindScheduleControls();
 }

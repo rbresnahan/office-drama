@@ -86,8 +86,14 @@ const timDesk = {
 				flags: {
 					timCheckingFrank: true,
 				},
+				hiddenEvents: [
+					'tim_started_timeline_check',
+				],
 				unlocks: [
 					'plant_bottle_frank',
+				],
+				queueVisibleAftermath: [
+					'tim_starts_timeline_check',
 				],
 				signal: 'Tim is checking Frank now. He is also checking you. Multitasking: the enemy.',
 			},

@@ -23,11 +23,11 @@ export const schedule = [
 	},
 	{
 		id: 'afternoon_meeting',
-		label: 'Catch Up',
+		label: 'Afternoon Checkup',
 		time: '3:18 PM',
 		turn: 10,
 		sceneId: 'schedule_afternoon_meeting',
-		signal: 'The catch up starts in the conference room. The day is running out of places to hide.',
+		signal: 'The afternoon checkup starts in the conference room. The day is running out of places to hide.',
 	},
 	{
 		id: 'all_hands',

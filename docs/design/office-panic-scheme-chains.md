@@ -119,6 +119,23 @@ Possible discoveries:
 - Frank had access to something suspicious.
 - Someone already thinks Frank has been acting strange.
 
+The drinking version of this route should require discovered context before the commitment move feels available.
+
+The player should have:
+
+- Seen or taken the bottle.
+- Confirmed Frank absence, availability, or desk access context.
+- Found at least one social discovery or suspicion source.
+
+Valid social sources include:
+
+- Betty noting Frank was away.
+- Betty hearing Frank suspicion.
+- Lisa having HR or process context.
+- Devon repeating gossip.
+
+The story data does not need a new system for this. Use existing facts, flags, requirements, unlocks, feedback, latest signal, bars, and used choices to make the route feel earned before the bottle becomes a commitment move.
+
 ## Phase Availability
 
 ### Phase 1

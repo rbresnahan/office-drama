@@ -147,9 +147,15 @@ const bettyDesk = {
 					bettyHeardFrankSuspicion: true,
 					knowsFrankUnderPressure: true,
 				},
+				hiddenEvents: [
+					'betty_told_lisa_frank_suspicion',
+				],
 				unlocks: [
 					'tim_mention_frank_away',
 					'devon_frank_pressure',
+				],
+				queueVisibleAftermath: [
+					'betty_frank_suspicion_lisa_walk',
 				],
 				signal: 'Frank has entered Betty’s mental suspect board. Tiny corkboard. Big problem.',
 			},

@@ -82,6 +82,22 @@ The current slice should support:
 - Hidden fallout that changes later dialogue, interruptions, or all-hands.
 - A simple but reactive all-hands conclusion.
 
+## Current Implementation Status
+
+The core primitives for this refinement already exist.
+
+Current story and engine data already support:
+
+- Kitchen/bottle inspection.
+- Closet inspection.
+- Bathroom inspection.
+- Visible aftermath.
+- Hidden events.
+- Forced scenes.
+- Scheduled scenes.
+
+The next implementation work should refine clarity and gating, not create a new engine layer.
+
 ## Phase 1: Scope Lock
 
 Keep the prototype narrow.
@@ -92,7 +108,7 @@ Any new mechanic must directly support the existing slice.
 
 ## Phase 2: Inspectable Locations
 
-Add or refine inspect options for the current important locations.
+Use or refine the existing inspect options for the current important locations.
 
 Kitchen:
 
@@ -125,7 +141,7 @@ Visible aftermath is what the player can observe.
 Examples:
 
 - Betty walks toward Lisa after the player leaves.
-- Devin walks toward Tim.
+- Devon walks toward Tim.
 - Celia glances at the player’s bag after the kitchen interaction.
 - Frank reacts loudly after being nudged.
 - Lisa writes something down.
@@ -153,9 +169,11 @@ Hidden fallout should create later payoffs.
 
 The player should feel that conversations happened without them.
 
-## Phase 5: Kitchen Booze Vertical Slice
+## Phase 5: Frank Discovery and Unlock Clarity
 
-The first complete implementation target should be the kitchen booze path.
+The next complete implementation target should be the Frank drinking discovery path.
+
+The kitchen bottle primitive already exists, so this phase should focus on making the Frank commitment move feel earned and understandable.
 
 Acceptance criteria:
 
@@ -167,6 +185,9 @@ Acceptance criteria:
 - Taking the bottle removes or hides the bottle from future kitchen choices.
 - Taking the bottle queues visible aftermath.
 - Taking the bottle creates hidden fallout.
+- Frank absence or desk access context matters before the bottle is used as evidence.
+- At least one social discovery source supports the drinking angle.
+- The player gets clear feedback or latest signal explaining why the Frank route opened.
 - At least one later scene can reference the hidden fallout.
 
 ## Phase 6: Closet and Bathroom Chaos
@@ -194,7 +215,7 @@ Each current scheme should have at least one visible consequence and one later p
 Tim route:
 
 - Visible: Tim reacts, leaves, panics, documents, or misses something.
-- Hidden: Tim or Devin connects the player to the disruption.
+- Hidden: Tim or Devon connects the player to the disruption.
 - Payoff: meeting/all-hands acknowledges Tim’s disruption.
 
 Frank route:
@@ -206,7 +227,7 @@ Frank route:
 Chaos route:
 
 - Visible: bathroom/closet/kitchen consequences create office disturbance.
-- Hidden: Lisa, Celia, Tim, or Devin connects odd events.
+- Hidden: Lisa, Celia, Tim, or Devon connects odd events.
 - Payoff: all-hands becomes more volatile or distracted.
 
 ## Phase 8: All-Hands Resolution

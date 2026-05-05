@@ -201,13 +201,27 @@ h1 {
 .schedule-label {
 	overflow: hidden;
 	color: rgba(246, 241, 255, 0.72);
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.06);
+	cursor: pointer;
 	font-size: 0.78rem;
 	font-weight: 800;
 	letter-spacing: 0.08em;
+	min-width: 0;
+	padding: 8px 12px;
 	text-align: right;
 	text-overflow: ellipsis;
 	text-transform: uppercase;
 	white-space: nowrap;
+}
+
+.schedule-label:hover,
+.schedule-label:focus-visible {
+	color: var(--text);
+	border-color: rgba(255, 209, 102, 0.5);
+	background: rgba(255, 209, 102, 0.12);
+	outline: none;
 }
 
 .clock-pill__time {
@@ -974,6 +988,94 @@ h1 {
 	margin-top: 1.2rem;
 }
 
+.schedule-modal__dialog {
+	width: min(560px, 100%);
+}
+
+.schedule-modal__body {
+	padding-top: 18px;
+}
+
+.schedule-modal__list {
+	display: grid;
+	gap: 10px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.schedule-modal__item {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: 14px;
+	align-items: center;
+	padding: 14px;
+	border: 1px solid rgba(255, 255, 255, 0.14);
+	border-radius: 16px;
+	background: rgba(255, 255, 255, 0.06);
+}
+
+.schedule-modal__item--current {
+	border-color: rgba(255, 209, 102, 0.72);
+	background: rgba(255, 209, 102, 0.12);
+	box-shadow: 0 0 0 1px rgba(255, 209, 102, 0.18);
+}
+
+.schedule-modal__item--done {
+	color: rgba(246, 241, 255, 0.62);
+}
+
+.schedule-modal__item--locked {
+	border-style: dashed;
+	color: rgba(246, 241, 255, 0.58);
+}
+
+.schedule-modal__item--pending {
+	border-color: rgba(255, 93, 108, 0.54);
+	background: rgba(255, 93, 108, 0.1);
+}
+
+.schedule-modal__item-main,
+.schedule-modal__item-side {
+	min-width: 0;
+	display: grid;
+	gap: 4px;
+}
+
+.schedule-modal__item-main strong {
+	color: var(--text);
+	font-size: 1rem;
+	line-height: 1.1;
+}
+
+.schedule-modal__item-main span,
+.schedule-modal__note {
+	color: rgba(246, 241, 255, 0.68);
+	font-size: 0.78rem;
+	line-height: 1.25;
+}
+
+.schedule-modal__item-side {
+	justify-items: end;
+	text-align: right;
+}
+
+.schedule-modal__status {
+	display: inline-grid;
+	place-items: center;
+	min-height: 26px;
+	padding: 4px 9px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.1);
+	color: var(--gold);
+	font-size: 0.68rem;
+	font-weight: 900;
+	letter-spacing: 0.08em;
+	line-height: 1;
+	text-transform: uppercase;
+	white-space: nowrap;
+}
+
 @media (max-width: 900px) {
 	.app-shell {
 		width: min(100vw - 20px, 720px);
@@ -1025,6 +1127,7 @@ h1 {
 
 	.schedule-label {
 		font-size: 0.66rem;
+		padding: 7px 10px;
 	}
 
 	.game-board {
@@ -1224,6 +1327,7 @@ h1 {
 		text-align: center;
 		font-size: 0.57rem;
 		letter-spacing: 0.05em;
+		padding: 6px 8px;
 	}
 
 	.clock-pill__time {
@@ -1383,6 +1487,17 @@ h1 {
 
 	.intel-modal__body {
 		padding: 18px;
+	}
+
+	.schedule-modal__item {
+		grid-template-columns: 1fr;
+		gap: 10px;
+		padding: 12px;
+	}
+
+	.schedule-modal__item-side {
+		justify-items: start;
+		text-align: left;
 	}
 }
 

@@ -25,10 +25,7 @@ const frankDesk = {
 					confirmedFrankAway: true,
 					sawFrankDeskEmpty: true,
 				},
-				unlocks: [
-					'plant_bottle_frank',
-				],
-				signal: 'Frank is away from his desk. That opens doors you probably should not walk through.',
+				signal: 'Frank is away from his desk. That is access, not a story. Access only becomes useful once people have a reason to look at him.',
 			},
 			nextScene: 'hub',
 		},
@@ -72,6 +69,13 @@ const frankDesk = {
 				factsNone: [
 					'bottlePlantedFrank',
 				],
+				flagsAny: [
+					'bettySawFrankAway',
+					'bettyHeardFrankSuspicion',
+					'knowsFrankUnderPressure',
+					'timCheckingFrank',
+					'devonCarryingFrankStory',
+				],
 				npc: {
 					frankAwayFromDesk: true,
 				},
@@ -80,7 +84,11 @@ const frankDesk = {
 				],
 			},
 			once: true,
-			resultText: 'The bottle fits too easily. A good lie should resist a little. This one slides into place like the drawer was waiting for it.',
+			resultText: [
+				'The bottle fits too easily.',
+				'Frank is away, people already have a Frank-shaped worry, and now the drawer has something ugly for that worry to orbit.',
+				'A good lie should resist a little. This one slides into place like the office has been saving room for it.',
+			],
 			effects: {
 				bars: {
 					frameFrank: 25,
@@ -90,6 +98,9 @@ const frankDesk = {
 				facts: {
 					bottlePlantedFrank: true,
 				},
+				hiddenEvents: [
+					'frank_bottle_planted_offscreen_ripple',
+				],
 				unsetFacts: [
 					'playerHasBottle',
 				],
@@ -100,9 +111,11 @@ const frankDesk = {
 				locks: [
 					'frank_ask_for_help',
 				],
-				signal: 'The bottle is planted. The Frank story now has physical teeth.',
+				queueVisibleAftermath: [
+					'frank_bottle_planted_lisa_notice',
+				],
+				signal: 'The bottle is planted. The Frank story has moved from gossip to something people can point at.',
 			},
-			nextScene: 'hub',
 		},
 		{
 			id: 'frank_ask_for_help',

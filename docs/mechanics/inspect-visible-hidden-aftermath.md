@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines the inspection and consequence systems for the current Office Drama prototype.
+This document defines the inspection and consequence systems for the current Office Panic prototype.
 
 These systems exist to make the current limited slice feel interactive, physical, and reactive.
 
@@ -64,7 +64,7 @@ Visible aftermath is a consequence the player directly observes.
 Examples:
 
 - Betty walks to Lisa.
-- Devin walks to Tim.
+- Devon walks to Tim.
 - Celia looks at the player’s bag.
 - Frank slams his chair back.
 - Lisa writes something down.
@@ -87,6 +87,22 @@ Examples:
 - Frank hears that people are talking about him.
 
 Hidden fallout should affect later scenes, choices, pressure, suspicion, forced interruptions, or all-hands.
+
+## Current Implementation Mapping
+
+The current engine already supports this layer through story data.
+
+Inspection is represented as normal scene choices. An inspect choice is usually an `info` choice with `advanceTurn: false`, a fact or flag effect, short result text, and no new engine behavior.
+
+Facts and flags represent discovered information. Current story data uses them for things the player has learned, world details the player has changed, and route context that later requirements can check.
+
+`visibleAftermathQueue` stores visible office motion waiting to be shown. `visibleAftermathBeats` defines the short observed beat the player sees when the queue is resolved.
+
+`hiddenEvents` represent offscreen motion. They are not explained immediately, but later scenes, choices, forced interruptions, or all-hands resolution can check them.
+
+`forcedRules` represent NPC approach or interruption scenes. They let a character step into the player’s path after requirements are met without requiring a larger NPC simulation system.
+
+`latestSignal` and `feedback` provide player-facing clarity. `feedback` explains the immediate result of the choice, while `latestSignal` keeps the current tactical meaning visible after the player returns to the office flow.
 
 ## Turn Rules
 
@@ -294,14 +310,14 @@ The player should be able to create pressure around Tim through existing intel a
 Visible aftermath examples:
 
 - Tim walks away from his desk in a hurry.
-- Devin approaches Tim.
+- Devon approaches Tim.
 - Tim starts documenting.
 - Tim misses or nearly misses a meeting.
 
 Hidden fallout examples:
 
 - Tim suspects the player.
-- Devin warns Tim.
+- Devon warns Tim.
 - Tim starts connecting food, timing, and player behavior.
 
 ## Frank Pattern
@@ -342,7 +358,7 @@ Hidden fallout examples:
 
 - Lisa connects multiple disruptions.
 - Celia notices timing.
-- Devin reports something to Tim.
+- Devon reports something to Tim.
 - Betty becomes less willing to cover for the player.
 
 ## Implementation Notes
