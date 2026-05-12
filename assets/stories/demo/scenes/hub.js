@@ -20,18 +20,53 @@ function getUpcomingScheduleNotice( state ) {
 	return 'The schedule has run out of polite little meetings. The all-hands is the room now.';
 }
 
+const openingCompleteRequirement = {
+	flagsAll: [
+		'openingFirstInteractionComplete',
+	],
+};
+
+function getGuidedOpeningBody() {
+	return [
+		'The bad email has been sent. The mistake is no longer private, but the damage has not fully chosen a shape yet.',
+		'You need information before everyone starts forming their own version of the story.',
+		'Current objective: find out who has seen the email.',
+		'For now, keep the world small: your computer, Betty’s desk, and Lisa’s area. The rest of the office can become a disaster buffet later.',
+	];
+}
+
+function getOpenOfficeBody( state ) {
+	return [
+		'You sent a damaging gossip email about Celia. The recall only partly worked.',
+		'Some people may have seen the whole thing. Some may have seen fragments. Some only know that something ugly happened, which is sometimes worse because imagination gets overtime pay.',
+		'Betty keeps glancing up. Tim is doing quiet math with his face. Frank is somewhere between annoyed and unaware. Celia has not looked at you yet. Devon is probably already narrating this to someone.',
+		getUpcomingScheduleNotice( state ),
+	];
+}
+
 const hub = {
 	id: 'hub',
 	location: 'Open Office Floor',
 	kicker: 'Choose Your Next Move',
 	title: 'The bad email was about Celia.',
-	body: ( state ) => [
-		'You sent a damaging gossip email about Celia. The recall only partly worked.',
-		'Some people may have seen the whole thing. Some may have seen fragments. Some only know that something ugly happened, which is sometimes worse because imagination gets overtime pay.',
-		'Betty keeps glancing up. Tim is doing quiet math with his face. Frank is somewhere between annoyed and unaware. Celia has not looked at you yet. Devon is probably already narrating this to someone.',
-		getUpcomingScheduleNotice( state ),
-	],
+	body: ( state ) => {
+		if ( ! state.flags.openingFirstInteractionComplete ) {
+			return getGuidedOpeningBody();
+		}
+
+		return getOpenOfficeBody( state );
+	},
 	internalThought: ( state ) => {
+		if ( ! state.flags.openingFirstInteractionComplete ) {
+			return [
+				'Break room: you are too panicked to wander off yet.',
+				'Conference room: no meeting is happening yet.',
+				'Bathroom: you can hide later. Right now you need information.',
+				'Frank’s desk: you are not ready to approach Frank directly.',
+				'Tim’s desk: Tim is watching the room too closely.',
+			];
+		}
+
 		const thoughts = [];
 
 		if ( state.bars.frameFrank >= 50 ) {
@@ -76,11 +111,27 @@ const hub = {
 	},
 	choices: [
 		{
-			id: 'go_conference_room',
-			text: 'Check the conference room schedule.',
-			category: 'move',
+			id: 'opening_reread_email',
+			text: 'Re-read the email at your computer.',
+			category: 'info',
+			once: true,
 			advanceTurn: false,
-			nextScene: 'conference_room',
+			requirements: {
+				flagsAll: [
+					'guidedOpeningStarted',
+				],
+				flagsNone: [
+					'openingFirstInteractionComplete',
+				],
+			},
+			resultText: 'You re-read the email. The problem is not just the insult. It is the audience. You need to learn who actually saw it before the office decides that for you.',
+			effects: {
+				flags: {
+					openingRereadEmail: true,
+				},
+				signal: 'The bad email is real. The unknown audience is the problem.',
+			},
+			nextScene: 'hub',
 		},
 		{
 			id: 'go_betty',
@@ -90,41 +141,6 @@ const hub = {
 			nextScene: 'betty_desk',
 		},
 		{
-			id: 'go_tim',
-			text: 'Go to Tim’s desk.',
-			category: 'move',
-			advanceTurn: false,
-			nextScene: 'tim_desk',
-		},
-		{
-			id: 'go_frank',
-			text: 'Check Frank’s desk.',
-			category: 'move',
-			advanceTurn: false,
-			nextScene: 'frank_desk',
-		},
-		{
-			id: 'go_celia',
-			text: 'Go near Celia’s area.',
-			category: 'move',
-			advanceTurn: false,
-			nextScene: 'celia_area',
-		},
-		{
-			id: 'go_break_room',
-			text: 'Go to the break room.',
-			category: 'move',
-			advanceTurn: false,
-			nextScene: 'break_room',
-		},
-		{
-			id: 'go_supply_closet',
-			text: 'Check the supply closet.',
-			category: 'move',
-			advanceTurn: false,
-			nextScene: 'supply_closet',
-		},
-		{
 			id: 'go_lisa',
 			text: 'Check in with Lisa.',
 			category: 'move',
@@ -132,10 +148,59 @@ const hub = {
 			nextScene: 'lisa_area',
 		},
 		{
+			id: 'go_conference_room',
+			text: 'Check the conference room schedule.',
+			category: 'move',
+			advanceTurn: false,
+			requirements: openingCompleteRequirement,
+			nextScene: 'conference_room',
+		},
+		{
+			id: 'go_tim',
+			text: 'Go to Tim’s desk.',
+			category: 'move',
+			advanceTurn: false,
+			requirements: openingCompleteRequirement,
+			nextScene: 'tim_desk',
+		},
+		{
+			id: 'go_frank',
+			text: 'Check Frank’s desk.',
+			category: 'move',
+			advanceTurn: false,
+			requirements: openingCompleteRequirement,
+			nextScene: 'frank_desk',
+		},
+		{
+			id: 'go_celia',
+			text: 'Go near Celia’s area.',
+			category: 'move',
+			advanceTurn: false,
+			requirements: openingCompleteRequirement,
+			nextScene: 'celia_area',
+		},
+		{
+			id: 'go_break_room',
+			text: 'Go to the break room.',
+			category: 'move',
+			advanceTurn: false,
+			requirements: openingCompleteRequirement,
+			nextScene: 'break_room',
+		},
+		{
+			id: 'go_supply_closet',
+			text: 'Check the supply closet.',
+			category: 'move',
+			advanceTurn: false,
+			requirements: openingCompleteRequirement,
+			nextScene: 'supply_closet',
+		},
+		{
 			id: 'go_bathroom',
 			text: 'Pass by the bathroom hallway.',
 			category: 'move',
 			advanceTurn: false,
+			requirements: openingCompleteRequirement,
 			nextScene: 'bathroom_hallway',
 		},
 	],

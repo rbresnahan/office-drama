@@ -1,3 +1,13 @@
+function afterOpening( requirements = {} ) {
+	return {
+		...requirements,
+		flagsAll: [
+			...( requirements.flagsAll || [] ),
+			'openingFirstInteractionComplete',
+		],
+	};
+}
+
 const bettyDesk = {
 	id: 'betty_desk',
 	location: 'Betty’s Desk',
@@ -8,18 +18,130 @@ const bettyDesk = {
 		'From here, she can see the kitchen, the printer, the hallway bend near Lisa’s office, and most of the desks where people pretend they are not watching each other. It is not a desk. It is a lighthouse for gossip with ergonomic support.',
 		'Betty herself is half-facing her monitor, half-facing the room, performing the ancient office ritual of looking busy while receiving emotional weather reports from six directions.',
 	],
-	internalThought: [
-		'Betty wants to be included. Not asked. Included. There is a difference, and getting it wrong is how people become lunch conversation.',
-		'She is friendly enough to help, bored enough to enjoy a mess, and socially sharp enough to notice when someone is handing her a mess with instructions.',
-		'If you seem scared, she may soften. If you make her feel like an insider, she may talk. If you make her feel used, replaced, or stupid, she may become a problem with earrings.',
-		'The desk matters. She can see movement. She can confirm who went where. She can also turn one worried glance into a rumor with legs, teeth, and a calendar invite.',
-	],
+	internalThought: ( state ) => {
+		if ( ! state.flags.openingFirstInteractionComplete ) {
+			return [
+				'Betty is the safest dangerous person to ask first. She notices reactions before people realize they reacted.',
+				'This first conversation sets your angle: admit enough truth to get help, ask neutral questions to map the room, or start shaping blame before anyone else does.',
+			];
+		}
+
+		return [
+			'Betty wants to be included. Not asked. Included. There is a difference, and getting it wrong is how people become lunch conversation.',
+			'She is friendly enough to help, bored enough to enjoy a mess, and socially sharp enough to notice when someone is handing her a mess with instructions.',
+			'If you seem scared, she may soften. If you make her feel like an insider, she may talk. If you make her feel used, replaced, or stupid, she may become a problem with earrings.',
+			'The desk matters. She can see movement. She can confirm who went where. She can also turn one worried glance into a rumor with legs, teeth, and a calendar invite.',
+		];
+	},
 	choices: [
+		{
+			id: 'opening_betty_truth',
+			text: 'Tell Betty the truth: you sent something ugly and need to know who saw it.',
+			category: 'positive',
+			once: true,
+			requirements: {
+				flagsAll: [
+					'guidedOpeningStarted',
+				],
+				flagsNone: [
+					'openingFirstInteractionComplete',
+				],
+			},
+			resultText: 'Betty goes still in the precise way people do when they have heard enough to help and enough to judge. She says Devon looked up when the recall notice appeared, and Tim has been watching the room like it owes him a timeline.',
+			effects: {
+				bars: {
+					warmBetty: 25,
+					celiaFindsOut: 25,
+				},
+				flags: {
+					openingFirstInteractionComplete: true,
+					bettyHeardRemorse: true,
+					bettyNoticesOfficeMovement: true,
+					knowsBettyWatchesKitchen: true,
+					knowsTimInvestigating: true,
+				},
+				unlocks: [
+					'betty_give_small_truth',
+					'betty_ask_who_moved_where',
+				],
+				signal: 'Truth made Betty warmer, but it also moved the story closer to Celia.',
+			},
+			nextScene: 'hub',
+		},
+		{
+			id: 'opening_betty_neutral_probe',
+			text: 'Ask Betty whether anyone reacted to the recall notice.',
+			category: 'info',
+			once: true,
+			requirements: {
+				flagsAll: [
+					'guidedOpeningStarted',
+				],
+				flagsNone: [
+					'openingFirstInteractionComplete',
+				],
+			},
+			resultText: 'Betty does not ask why you are asking, which means she already knows why you are asking. She says Devon noticed the recall first. Tim noticed you noticing Devon. Perfect. A triangle of problems.',
+			effects: {
+				bars: {
+					containCelia: 25,
+					timSuspectsYou: 25,
+				},
+				flags: {
+					openingFirstInteractionComplete: true,
+					openingAskedBettyWhoSawEmail: true,
+					bettyNoticesOfficeMovement: true,
+					knowsBettyWatchesKitchen: true,
+					knowsTimInvestigating: true,
+				},
+				unlocks: [
+					'betty_ask_who_moved_where',
+					'ask_tim_recall_logs',
+				],
+				signal: 'You have first intel: Devon reacted, and Tim may be tracking reactions.',
+			},
+			nextScene: 'hub',
+		},
+		{
+			id: 'opening_betty_scheme_seed',
+			text: 'Suggest someone else may have forwarded the email before you noticed.',
+			category: 'underhanded',
+			once: true,
+			requirements: {
+				flagsAll: [
+					'guidedOpeningStarted',
+				],
+				flagsNone: [
+					'openingFirstInteractionComplete',
+				],
+			},
+			resultText: 'Betty frowns toward Frank’s empty chair. She does not believe the story yet. Worse and better: she can imagine it.',
+			effects: {
+				bars: {
+					frameFrank: 25,
+					frankRetaliates: 25,
+					bettyLosesTrust: 25,
+				},
+				flags: {
+					openingFirstInteractionComplete: true,
+					bettyHeardFrankSuspicion: true,
+					knowsFrankUnderPressure: true,
+					sawFrankDeskEmpty: true,
+				},
+				unlocks: [
+					'betty_ask_frank_strange',
+					'tim_mention_frank_away',
+				],
+				signal: 'The Frank story has a seed. Seeds are nice until they grow teeth.',
+			},
+			nextScene: 'hub',
+		},
 		{
 			id: 'betty_feel_awful',
 			text: 'Tell Betty you feel awful and do not know what to do.',
 			category: 'positive',
 			once: true,
+			requirements: afterOpening(),
 			resultText: 'Betty studies your face. She does not forgive you. But she does not leave either.',
 			effects: {
 				bars: {
@@ -40,14 +162,14 @@ const bettyDesk = {
 			text: 'Give Betty one small truth so the bigger lie has somewhere to hide.',
 			category: 'positive',
 			once: true,
-			requirements: {
+			requirements: afterOpening( {
 				usedChoicesAll: [
 					'betty_feel_awful',
 				],
 				barsMax: {
 					bettyLosesTrust: 50,
 				},
-			},
+			} ),
 			resultText: 'Betty listens because the truth sounds expensive. You give her just enough of it to buy credibility.',
 			effects: {
 				bars: {
@@ -66,14 +188,14 @@ const bettyDesk = {
 			text: 'Ask Betty what the right thing to do is, without asking her to fix it.',
 			category: 'positive',
 			once: true,
-			requirements: {
+			requirements: afterOpening( {
 				usedChoicesAll: [
 					'betty_feel_awful',
 				],
 				barsMax: {
 					bettyLosesTrust: 50,
 				},
-			},
+			} ),
 			resultText: 'Betty gives advice instead of an escape route. Annoying. Also useful. Also probably healthier, which feels off-brand for today.',
 			effects: {
 				bars: {
@@ -92,6 +214,7 @@ const bettyDesk = {
 			text: 'Ask whether she saw anyone go into the kitchen or break room.',
 			category: 'info',
 			once: true,
+			requirements: afterOpening(),
 			resultText: 'Betty says Tim was near the fridge earlier, but Devon was hovering too. Betty notices more traffic than she admits.',
 			effects: {
 				flags: {
@@ -111,11 +234,11 @@ const bettyDesk = {
 			text: 'Ask Betty who moved around after the email recall failed.',
 			category: 'info',
 			once: true,
-			requirements: {
+			requirements: afterOpening( {
 				flagsAll: [
 					'knowsBettyWatchesKitchen',
 				],
-			},
+			} ),
 			resultText: 'Betty remembers Frank leaving his desk and Devon drifting toward the break room. She says it casually, which is how useful facts sneak in.',
 			effects: {
 				flags: {
@@ -137,6 +260,7 @@ const bettyDesk = {
 			text: 'Ask Betty if Frank has seemed strange today.',
 			category: 'underhanded',
 			once: true,
+			requirements: afterOpening(),
 			resultText: 'Betty frowns. Not because she believes you. Because now she has a shape to put her worry into.',
 			effects: {
 				bars: {
@@ -166,6 +290,7 @@ const bettyDesk = {
 			text: 'Ask Betty why Tim is always so engaged with everyone’s business.',
 			category: 'info',
 			once: true,
+			requirements: afterOpening(),
 			resultText: [
 				'Betty’s desk looked aggressively tidy, like clutter had once disappointed her personally.',
 				'“Betty, you seem like someone who returns a shopping cart even when no one’s watching.”',
@@ -196,11 +321,11 @@ const bettyDesk = {
 			text: 'Ask why Tim labels everything in the fridge like it contains state secrets.',
 			category: 'info',
 			once: true,
-			requirements: {
+			requirements: afterOpening( {
 				flagsNone: [
 					'knowsTimFoodVulnerability',
 				],
-			},
+			} ),
 			resultText: [
 				'Betty’s desk had the kind of seasonal cheer corporate approved in bulk.',
 				'“Hey Betty, getting into anything crazy this weekend? Maybe a glass of wine, an episode of something British, lights out by 8:15?”',
@@ -234,9 +359,9 @@ const bettyDesk = {
 			text: 'Mention that small office things keep disappearing lately.',
 			category: 'underhanded',
 			once: true,
-			requirements: {
+			requirements: afterOpening( {
 				phaseMin: 'narrative_building',
-			},
+			} ),
 			resultText: 'Betty blinks like she is trying to remember whether she borrowed something. Useful. Ugly, but useful.',
 			effects: {
 				bars: {
@@ -255,11 +380,11 @@ const bettyDesk = {
 			text: 'Walk back the Frank comment before Betty repeats it.',
 			category: 'cleanup',
 			once: true,
-			requirements: {
+			requirements: afterOpening( {
 				barsMin: {
 					frameFrank: 25,
 				},
-			},
+			} ),
 			resultText: 'You soften the Frank angle. Betty relaxes a fraction. The Frank route loses heat.',
 			effects: {
 				bars: {
@@ -276,7 +401,7 @@ const bettyDesk = {
 			text: 'Ask Betty to speak up for you at the all-hands.',
 			category: 'commitment',
 			once: true,
-			requirements: {
+			requirements: afterOpening( {
 				phaseMin: 'pressure_rising',
 				barsMin: {
 					warmBetty: 75,
@@ -284,7 +409,7 @@ const bettyDesk = {
 				barsMax: {
 					bettyLosesTrust: 50,
 				},
-			},
+			} ),
 			resultText: 'Betty hates that you asked. She hates more that she is considering it.',
 			effects: {
 				bars: {
