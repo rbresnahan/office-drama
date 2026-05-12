@@ -35,6 +35,20 @@ const openingLisaRequirement = {
 	],
 };
 
+const lisaStrategyFlagIds = [
+	'lisaStrategyTruth',
+	'lisaStrategyScheme',
+	'lisaStrategyNeutral',
+];
+
+const noLisaStrategySelected = {
+	flagsNone: lisaStrategyFlagIds,
+};
+
+const lisaStrategySelected = {
+	flagsAny: lisaStrategyFlagIds,
+};
+
 const lisaArea = {
 	id: 'lisa_area',
 	location: 'Lisa’s Area',
@@ -98,6 +112,7 @@ const lisaArea = {
 			text: 'Strategy: Tell the truth.',
 			category: 'positive',
 			advanceTurn: false,
+			requirements: noLisaStrategySelected,
 			resultText: 'You decide to use honesty before the paperwork learns to walk upright.',
 			effects: {
 				flags: getLisaStrategyFlags( 'truth' ),
@@ -109,6 +124,7 @@ const lisaArea = {
 			text: 'Strategy: Scheme.',
 			category: 'underhanded',
 			advanceTurn: false,
+			requirements: noLisaStrategySelected,
 			resultText: 'You decide to use process as camouflage. Bold choice. Also the kind of thing process was invented to catch.',
 			effects: {
 				flags: getLisaStrategyFlags( 'scheme' ),
@@ -120,10 +136,27 @@ const lisaArea = {
 			text: 'Strategy: Stay neutral.',
 			category: 'info',
 			advanceTurn: false,
+			requirements: noLisaStrategySelected,
 			resultText: 'You decide to ask office-shaped questions and pretend they are normal. Office culture was built for this exact nonsense.',
 			effects: {
 				flags: getLisaStrategyFlags( 'neutral' ),
 				signal: 'Neutral choices reveal meetings, office movement, and NPC routes while keeping truth and scheme paths open.',
+			},
+		},
+		{
+			id: 'lisa_strategy_think_again',
+			text: 'Think again.',
+			category: 'info',
+			advanceTurn: false,
+			requirements: lisaStrategySelected,
+			resultText: 'You reconsider before handing Lisa a version of the story with a paper trail attached.',
+			effects: {
+				flags: {
+					lisaStrategyTruth: false,
+					lisaStrategyScheme: false,
+					lisaStrategyNeutral: false,
+				},
+				signal: 'You reconsider your approach with Lisa.',
 			},
 		},
 		{

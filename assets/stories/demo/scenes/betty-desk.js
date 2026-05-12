@@ -35,6 +35,20 @@ const openingBettyRequirement = {
 	],
 };
 
+const bettyStrategyFlagIds = [
+	'bettyStrategyTruth',
+	'bettyStrategyScheme',
+	'bettyStrategyNeutral',
+];
+
+const noBettyStrategySelected = {
+	flagsNone: bettyStrategyFlagIds,
+};
+
+const bettyStrategySelected = {
+	flagsAny: bettyStrategyFlagIds,
+};
+
 const bettyDesk = {
 	id: 'betty_desk',
 	location: 'Betty’s Desk',
@@ -97,6 +111,7 @@ const bettyDesk = {
 			text: 'Strategy: Tell the truth.',
 			category: 'positive',
 			advanceTurn: false,
+			requirements: noBettyStrategySelected,
 			resultText: 'You decide to try honesty, or at least the office-safe cousin of honesty that wears a badge and avoids specifics.',
 			effects: {
 				flags: getBettyStrategyFlags( 'truth' ),
@@ -108,6 +123,7 @@ const bettyDesk = {
 			text: 'Strategy: Scheme.',
 			category: 'underhanded',
 			advanceTurn: false,
+			requirements: noBettyStrategySelected,
 			resultText: 'You decide the truth needs a stunt double. Morally questionable, theatrically efficient.',
 			effects: {
 				flags: getBettyStrategyFlags( 'scheme' ),
@@ -119,10 +135,27 @@ const bettyDesk = {
 			text: 'Strategy: Stay neutral.',
 			category: 'info',
 			advanceTurn: false,
+			requirements: noBettyStrategySelected,
 			resultText: 'You decide to gather information before committing. A mature decision, suspiciously located near panic.',
 			effects: {
 				flags: getBettyStrategyFlags( 'neutral' ),
 				signal: 'Neutral choices reveal who saw what and keep routes open, but evasiveness has fingerprints.',
+			},
+		},
+		{
+			id: 'betty_strategy_think_again',
+			text: 'Think again.',
+			category: 'info',
+			advanceTurn: false,
+			requirements: bettyStrategySelected,
+			resultText: 'You stop yourself before committing to that angle. Tiny miracle. Probably temporary.',
+			effects: {
+				flags: {
+					bettyStrategyTruth: false,
+					bettyStrategyScheme: false,
+					bettyStrategyNeutral: false,
+				},
+				signal: 'You reconsider your approach with Betty.',
 			},
 		},
 		{
