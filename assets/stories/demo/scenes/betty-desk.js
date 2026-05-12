@@ -143,22 +143,6 @@ const bettyDesk = {
 			},
 		},
 		{
-			id: 'betty_strategy_think_again',
-			text: 'Think again.',
-			category: 'info',
-			advanceTurn: false,
-			requirements: bettyStrategySelected,
-			resultText: 'You stop yourself before committing to that angle. Tiny miracle. Probably temporary.',
-			effects: {
-				flags: {
-					bettyStrategyTruth: false,
-					bettyStrategyScheme: false,
-					bettyStrategyNeutral: false,
-				},
-				signal: 'You reconsider your approach with Betty.',
-			},
-		},
-		{
 			id: 'opening_betty_truth',
 			text: 'Tell the truth: apologize before Betty says anything.',
 			category: 'positive',
@@ -648,6 +632,22 @@ const bettyDesk = {
 				signal: 'Betty may defend you. Try not to visibly become worse as a person.',
 			},
 			nextScene: 'hub',
+		},
+		{
+			id: 'betty_strategy_think_again',
+			text: 'Think again.',
+			category: 'info',
+			advanceTurn: false,
+			requirements: bettyStrategySelected,
+			resultText: 'You stop yourself before committing to that angle. Tiny miracle. Probably temporary.',
+			effects: {
+				flags: {
+					bettyStrategyTruth: false,
+					bettyStrategyScheme: false,
+					bettyStrategyNeutral: false,
+				},
+				signal: 'You reconsider your approach with Betty.',
+			},
 		},
 	],
 };

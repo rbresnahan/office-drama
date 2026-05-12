@@ -144,22 +144,6 @@ const lisaArea = {
 			},
 		},
 		{
-			id: 'lisa_strategy_think_again',
-			text: 'Think again.',
-			category: 'info',
-			advanceTurn: false,
-			requirements: lisaStrategySelected,
-			resultText: 'You reconsider before handing Lisa a version of the story with a paper trail attached.',
-			effects: {
-				flags: {
-					lisaStrategyTruth: false,
-					lisaStrategyScheme: false,
-					lisaStrategyNeutral: false,
-				},
-				signal: 'You reconsider your approach with Lisa.',
-			},
-		},
-		{
 			id: 'opening_lisa_truth_mistake',
 			text: 'Tell the truth: admit the email was sent by mistake.',
 			category: 'positive',
@@ -535,6 +519,22 @@ const lisaArea = {
 				signal: 'You kept truth and scheme paths open, but Lisa can tell you are not just casually curious.',
 			},
 			nextScene: 'hub',
+		},
+		{
+			id: 'lisa_strategy_think_again',
+			text: 'Think again.',
+			category: 'info',
+			advanceTurn: false,
+			requirements: lisaStrategySelected,
+			resultText: 'You reconsider before handing Lisa a version of the story with a paper trail attached.',
+			effects: {
+				flags: {
+					lisaStrategyTruth: false,
+					lisaStrategyScheme: false,
+					lisaStrategyNeutral: false,
+				},
+				signal: 'You reconsider your approach with Lisa.',
+			},
 		},
 	],
 };
