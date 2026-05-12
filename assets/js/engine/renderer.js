@@ -432,12 +432,18 @@ function getStatusBars( bars, state ) {
 			...bar,
 			value: state.bars[ bar.id ] || 0,
 		} ) )
-		.filter( ( bar ) => bar.value >= 25 )
-		.sort( ( a, b ) => b.value - a.value );
-}
+		.filter( ( bar ) => {
+			if ( bar.value < 25 || ! bar.description ) {
+				return false;
+			}
 
-function getTopStatusBar( bars, state ) {
-	return getStatusBars( bars, state )[ 0 ] || null;
+			if ( bar.optional && ! state.flags[ `show_${ bar.id }` ] ) {
+				return false;
+			}
+
+			return true;
+		} )
+		.sort( ( a, b ) => b.value - a.value );
 }
 
 function getHeatLabel( value ) {
@@ -454,6 +460,31 @@ function getHeatLabel( value ) {
 	}
 
 	return 'Quiet';
+}
+
+function renderThreadList( threads, tone ) {
+	if ( ! threads.length ) {
+		return '<p class="empty-state empty-state--compact">Nothing active yet.</p>';
+	}
+
+	return `
+		<div class="thread-list">
+			${ threads
+				.map( ( thread ) => `
+					<article class="thread-item thread-item--${ escapeHtml( tone ) }">
+						<div class="thread-item__header">
+							<strong>${ escapeHtml( thread.label ) }</strong>
+							<span>${ thread.value }%</span>
+						</div>
+						<div class="progress-track" aria-hidden="true">
+							<div class="progress-fill progress-fill--${ tone === 'threat' ? 'red' : 'green' }" style="width: ${ thread.value }%;"></div>
+						</div>
+						<p>${ escapeHtml( thread.description ) }</p>
+					</article>
+				` )
+				.join( '' ) }
+		</div>
+	`;
 }
 
 function getChoiceIcon( choice ) {
@@ -772,47 +803,27 @@ function renderStatusSummary( game, state ) {
 	const watchingContainer = document.querySelector( '#watching-summary' );
 	const heatContainer = document.querySelector( '#heat-summary' );
 
-	const topPlan = getTopStatusBar( game.story.bars.green, state );
-	const topWatching = getTopStatusBar( game.story.bars.red, state );
+	const playerThreads = getStatusBars( game.story.bars.green, state );
+	const threatThreads = getStatusBars( game.story.bars.red, state );
 	const topHeatValue = typeof game.getPressure === 'function'
 		? game.getPressure()
 		: Math.max( ...game.story.bars.red.map( ( bar ) => state.bars[ bar.id ] || 0 ), 0 );
 	const heatLabel = getHeatLabel( topHeatValue );
 
 	if ( plansContainer ) {
-		plansContainer.innerHTML = topPlan
-			? `
-				<div class="status-summary__heading">Plans</div>
-				<div class="status-summary__row">
-					<strong>${ escapeHtml( topPlan.label ) }</strong>
-					<span>${ topPlan.value }%</span>
-				</div>
-				<div class="progress-track" aria-hidden="true">
-					<div class="progress-fill progress-fill--green" style="width: ${ topPlan.value }%;"></div>
-				</div>
-			`
-			: `
-				<div class="status-summary__heading">Plans</div>
-				<p class="empty-state empty-state--compact">Nothing active yet.</p>
-			`;
+		plansContainer.innerHTML = `
+			<div class="status-summary__heading">Active Threads</div>
+			<div class="status-summary__subheading">Player-Built Threads</div>
+			${ renderThreadList( playerThreads, 'player' ) }
+		`;
 	}
 
 	if ( watchingContainer ) {
-		watchingContainer.innerHTML = topWatching
-			? `
-				<div class="status-summary__heading">Watching You</div>
-				<div class="status-summary__row">
-					<strong>${ escapeHtml( topWatching.label.replace( /\s*(Suspects You|Finds Out|Retaliates|Loses Trust|Escalates)$/i, '' ) ) }</strong>
-					<span>${ topWatching.value }%</span>
-				</div>
-				<div class="watch-meter" aria-label="${ escapeHtml( topWatching.label ) } at ${ topWatching.value } percent">
-					${ [ 20, 40, 60, 80, 100 ].map( ( point ) => `<span class="watch-meter__eye${ topWatching.value >= point ? ' watch-meter__eye--active' : '' }">●</span>` ).join( '' ) }
-				</div>
-			`
-			: `
-				<div class="status-summary__heading">Watching You</div>
-				<p class="empty-state empty-state--compact">Nothing active yet.</p>
-			`;
+		watchingContainer.innerHTML = `
+			<div class="status-summary__heading">Active Threads</div>
+			<div class="status-summary__subheading status-summary__subheading--threat">Threat Threads</div>
+			${ renderThreadList( threatThreads, 'threat' ) }
+		`;
 	}
 
 	if ( heatContainer ) {

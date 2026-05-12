@@ -104,10 +104,6 @@ const frankDesk = {
 				unsetFacts: [
 					'playerHasBottle',
 				],
-				unlocks: [
-					'tell_tim_about_franks_desk',
-					'devon_discover_bottle',
-				],
 				locks: [
 					'frank_ask_for_help',
 				],

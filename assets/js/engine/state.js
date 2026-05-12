@@ -2,10 +2,27 @@ import { getPhaseForTurn } from './story-helpers.js';
 
 export function createInitialState( story ) {
 	const bars = {};
+	const barThreads = {};
 	const facts = {};
 
-	[ ...story.bars.green, ...story.bars.red ].forEach( ( bar ) => {
+	story.bars.green.forEach( ( bar ) => {
 		bars[ bar.id ] = Number.isInteger( bar.initial ) ? bar.initial : 0;
+		barThreads[ bar.id ] = {
+			id: bar.id,
+			label: bar.label,
+			type: 'green',
+			optional: Boolean( bar.optional ),
+		};
+	} );
+
+	story.bars.red.forEach( ( bar ) => {
+		bars[ bar.id ] = Number.isInteger( bar.initial ) ? bar.initial : 0;
+		barThreads[ bar.id ] = {
+			id: bar.id,
+			label: bar.label,
+			type: 'red',
+			optional: Boolean( bar.optional ),
+		};
 	} );
 
 	return {
@@ -17,6 +34,7 @@ export function createInitialState( story ) {
 		bars,
 		flags: facts,
 		facts,
+		barThreads,
 		hiddenEvents: [],
 		npc: {},
 		unlocked: [],

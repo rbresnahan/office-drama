@@ -133,8 +133,6 @@ const intro = {
 					guidedOpeningStarted: true,
 				},
 				unlocks: [
-					'opening_go_betty',
-					'opening_go_lisa',
 					'opening_reread_email',
 				],
 				signal: 'Current objective: find out who has seen the email.',

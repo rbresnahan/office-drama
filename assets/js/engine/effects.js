@@ -72,8 +72,76 @@ function removeHiddenEvents( state, hiddenEvents = [] ) {
 	} );
 }
 
+function isThreadVisibleForFeedback( state, effects, barId, thread ) {
+	if ( ! thread ) {
+		return false;
+	}
+
+	if ( ! thread.optional ) {
+		return true;
+	}
+
+	const revealFlag = `show_${ barId }`;
+
+	return Boolean(
+		state.flags[ revealFlag ] ||
+		( effects.flags && effects.flags[ revealFlag ] )
+	);
+}
+
+function getThreadFeedbackMessage( state, effects, barId, amount, before, after ) {
+	const thread = state.barThreads && state.barThreads[ barId ];
+
+	if ( amount === 0 || ! isThreadVisibleForFeedback( state, effects, barId, thread ) ) {
+		return '';
+	}
+
+	const label = thread.label || barId;
+	const wasActive = before >= 25;
+	const isActive = after >= 25;
+
+	if ( ! wasActive && isActive ) {
+		return thread.type === 'red'
+			? `New risk: ${ label }.`
+			: `Thread started: ${ label }.`;
+	}
+
+	if ( amount > 0 && isActive ) {
+		return thread.type === 'red'
+			? `Threat increased: ${ label }.`
+			: `Thread advanced: ${ label }.`;
+	}
+
+	if ( amount < 0 && wasActive ) {
+		return thread.type === 'red'
+			? `Threat reduced: ${ label }.`
+			: `Thread weakened: ${ label }.`;
+	}
+
+	return '';
+}
+
+function appendThreadFeedback( resultText, messages ) {
+	const visibleMessages = messages.filter( Boolean );
+
+	if ( ! visibleMessages.length ) {
+		return resultText || '';
+	}
+
+	if ( Array.isArray( resultText ) ) {
+		return [ ...resultText, ...visibleMessages ];
+	}
+
+	if ( typeof resultText === 'string' && resultText.trim() ) {
+		return [ resultText, ...visibleMessages ];
+	}
+
+	return visibleMessages;
+}
+
 export function applyChoiceEffects( state, choice ) {
 	const effects = choice.effects || {};
+	const threadFeedbackMessages = [];
 
 	state.usedChoices.push( choice.id );
 
@@ -86,7 +154,13 @@ export function applyChoiceEffects( state, choice ) {
 
 	if ( effects.bars ) {
 		Object.entries( effects.bars ).forEach( ( [ barId, amount ] ) => {
+			const before = state.bars[ barId ] || 0;
 			changeBar( state, barId, amount );
+			const after = state.bars[ barId ] || 0;
+
+			threadFeedbackMessages.push(
+				getThreadFeedbackMessage( state, effects, barId, amount, before, after )
+			);
 		} );
 	}
 
@@ -134,7 +208,7 @@ export function applyChoiceEffects( state, choice ) {
 		state.latestSignal = effects.signal;
 	}
 
-	state.feedback = choice.resultText || '';
+	state.feedback = appendThreadFeedback( choice.resultText, threadFeedbackMessages );
 
 	if ( choice.advanceTurn !== false ) {
 		state.turn += 1;
