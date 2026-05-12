@@ -14,6 +14,10 @@ const breakRoom = {
 			body.push( 'Now that you know where to look, the half-pint bottle on top of the fridge feels less hidden and more like it is daring you to become worse.' );
 		}
 
+		if ( state.flags.kitchenFeelsOff ) {
+			body.push( 'Someone has noticed the kitchen feels off. The room has acquired witnesses retroactively.' );
+		}
+
 		return body;
 	},
 	internalThought: ( state ) => {
@@ -78,6 +82,10 @@ const breakRoom = {
 					playerHasBottle: true,
 					kitchenBottleMissing: true,
 				},
+				flags: {
+					kitchenFeelsOff: true,
+					officeChatterStarted: true,
+				},
 				hiddenEvents: [
 					'celia_may_have_seen_bottle_bag',
 				],
@@ -86,6 +94,7 @@ const breakRoom = {
 				},
 				queueVisibleAftermath: [
 					'kitchen_bottle_taken_celia_bag',
+					'kitchen_missing_notice',
 				],
 				signal: 'The bottle is in your bag. Useful, suspicious, and still waiting for a story to attach itself to.',
 			},
@@ -174,12 +183,14 @@ const breakRoom = {
 				},
 				flags: {
 					devonCarryingFrankStory: true,
+					officeChatterStarted: true,
 				},
 				hiddenEvents: [
 					'devon_spreads_frank_story',
 				],
 				queueVisibleAftermath: [
 					'devon_frank_story_travels',
+					'frank_name_at_printer',
 				],
 				signal: 'Devon now carries the Frank story. Handle with tongs.',
 			},
@@ -282,6 +293,12 @@ const breakRoom = {
 					frankRetaliates: 25,
 					managementEscalates: 25,
 				},
+				flags: {
+					officeChatterStarted: true,
+				},
+				queueVisibleAftermath: [
+					'frank_name_at_printer',
+				],
 				signal: 'The Frank story is now traveling without supervision. Bold. Horrifying.',
 			},
 			nextScene: 'hub',

@@ -2,13 +2,33 @@ const frankDesk = {
 	id: 'frank_desk',
 	location: 'Frank’s Desk',
 	title: 'Frank’s desk is empty.',
-	body: [
-		'The chair is pushed in. His mug is still here. His desk has the private dullness of someone who never expected to become a plot device.',
-		'The empty desk matters only if someone later has a reason to care that it was empty.',
-	],
-	internalThought: [
-		'If the bottle appears after people are already suspicious, it becomes evidence. If it appears before that, it becomes a mystery. Mysteries invite Tim. Tim is bad.',
-	],
+	body: ( state ) => {
+		const body = [
+			'The chair is pushed in. His mug is still here. His desk has the private dullness of someone who never expected to become a plot device.',
+			'The empty desk matters only if someone later has a reason to care that it was empty.',
+		];
+
+		if ( state.flags.frankLeftBagOut ) {
+			body.push( 'Frank’s bag sits half-open beside the desk, unattended in a way that feels like a dare.' );
+		}
+
+		if ( state.npc.frankMood === 'alert' ) {
+			body.push( 'The drawer is shut hard now. The whole desk feels braced.' );
+		}
+
+		return body;
+	},
+	internalThought: ( state ) => {
+		const thoughts = [
+			'If the bottle appears after people are already suspicious, it becomes evidence. If it appears before that, it becomes a mystery. Mysteries invite Tim. Tim is bad.',
+		];
+
+		if ( state.flags.officeChatterStarted ) {
+			thoughts.push( 'Frank’s name is moving around the printer side of the room. Names do not move quietly for long.' );
+		}
+
+		return thoughts;
+	},
 	choices: [
 		{
 			id: 'frank_watch_desk',
@@ -43,6 +63,9 @@ const frankDesk = {
 			effects: {
 				flags: {
 					frankLeftBagOut: true,
+				},
+				npc: {
+					frankBagState: 'unattended',
 				},
 				bars: {
 					frameFrank: 25,
@@ -88,6 +111,12 @@ const frankDesk = {
 				facts: {
 					bottlePlantedFrank: true,
 				},
+				flags: {
+					officeChatterStarted: true,
+				},
+				npc: {
+					frankMood: 'alert',
+				},
 				hiddenEvents: [
 					'frank_bottle_planted_offscreen_ripple',
 				],
@@ -99,6 +128,7 @@ const frankDesk = {
 				],
 				queueVisibleAftermath: [
 					'frank_bottle_planted_lisa_notice',
+					'frank_drawer_slams',
 				],
 				signal: 'The bottle is planted. The Frank story has moved from gossip to something people can point at.',
 			},

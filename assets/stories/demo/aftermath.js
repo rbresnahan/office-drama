@@ -51,6 +51,22 @@ export const visibleAftermathBeats = {
 		],
 		continueText: 'Return to the open office.',
 	},
+	betty_reaction_map_tim_glance: {
+		id: 'betty_reaction_map_tim_glance',
+		location: 'Betty’s Desk Exit',
+		kicker: 'Aftermath',
+		title: 'Tim notices the map.',
+		body: [
+			'As you leave Betty’s desk, she glances toward Tim.',
+			'Tim looks down too quickly.',
+			'His pen is already in his hand.',
+		],
+		internalThought: [
+			'Betty gave you the room.',
+			'Tim may have noticed who asked for it.',
+		],
+		continueText: 'Return to the open office.',
+	},
 	devon_frank_story_travels: {
 		id: 'devon_frank_story_travels',
 		location: 'Break Room Exit',
@@ -65,6 +81,38 @@ export const visibleAftermathBeats = {
 		internalThought: [
 			'Devon carries gossip well because he never looks like he is carrying anything.',
 			'The Frank story can move without you now. That is useful and deeply unhelpful.',
+		],
+		continueText: 'Return to the open office.',
+	},
+	lisa_calendar_opens: {
+		id: 'lisa_calendar_opens',
+		location: 'Lisa’s Area Exit',
+		kicker: 'Aftermath',
+		title: 'Lisa checks the day.',
+		body: [
+			'As you leave Lisa’s area, she opens the office calendar.',
+			'Her cursor hovers over the all-hands invite.',
+			'She does not click it yet.',
+		],
+		internalThought: [
+			'Lisa is measuring where this fits.',
+			'Calendars are how quiet threats learn to stand up.',
+		],
+		continueText: 'Return to the open office.',
+	},
+	lisa_tim_notes_after_logs: {
+		id: 'lisa_tim_notes_after_logs',
+		location: 'Lisa’s Area Exit',
+		kicker: 'Aftermath',
+		title: 'Tim starts making a record.',
+		body: [
+			'As you leave Lisa’s area, Tim turns a sticky note sideways.',
+			'He writes down one time, then another.',
+			'Lisa sees him do it.',
+		],
+		internalThought: [
+			'The logs question has legs now.',
+			'Tim is giving those legs sensible shoes.',
 		],
 		continueText: 'Return to the open office.',
 	},
@@ -85,6 +133,22 @@ export const visibleAftermathBeats = {
 		],
 		continueText: 'Return to the open office.',
 	},
+	tim_sticky_note_times: {
+		id: 'tim_sticky_note_times',
+		location: 'Tim’s Desk Exit',
+		kicker: 'Aftermath',
+		title: 'Tim starts comparing times.',
+		body: [
+			'As you step away from Tim’s desk, he pulls a sticky note closer.',
+			'Three times go onto it in a neat little column.',
+			'Then he underlines the middle one.',
+		],
+		internalThought: [
+			'Tim has moved from suspicion to arithmetic.',
+			'Arithmetic is not famous for mercy.',
+		],
+		continueText: 'Return to the open office.',
+	},
 	lisa_quietly_documents: {
 		id: 'lisa_quietly_documents',
 		location: 'Lisa’s Area Exit',
@@ -101,6 +165,86 @@ export const visibleAftermathBeats = {
 			'Process categories have a way of becoming records.',
 		],
 		continueText: 'Return to the open office.',
+	},
+	frank_name_at_printer: {
+		id: 'frank_name_at_printer',
+		location: 'Open Office Floor',
+		kicker: 'Aftermath',
+		title: 'Frank’s name gets loose.',
+		body: [
+			'Near the printer, someone says Frank’s name.',
+			'Not loud.',
+			'Just loud enough for Frank’s empty desk to feel less empty.',
+		],
+		internalThought: [
+			'The Frank story is traveling without you.',
+			'That was the point. That is also the problem.',
+		],
+		continueText: 'Keep moving.',
+	},
+	kitchen_missing_notice: {
+		id: 'kitchen_missing_notice',
+		location: 'Break Room Exit',
+		kicker: 'Aftermath',
+		title: 'The kitchen feels wrong.',
+		body: [
+			'Someone steps into the break room after you leave.',
+			'There is a pause.',
+			'Then: “Did something move in here?”',
+		],
+		internalThought: [
+			'The missing bottle has become a missing thing.',
+			'People notice missing things when the day is already nervous.',
+		],
+		continueText: 'Return to the open office.',
+	},
+	frank_drawer_slams: {
+		id: 'frank_drawer_slams',
+		location: 'Frank’s Desk Exit',
+		kicker: 'Aftermath',
+		title: 'Frank’s desk gets tense.',
+		body: [
+			'Behind you, a drawer slams shut.',
+			'Frank is back at his desk.',
+			'No one asks what he was looking for.',
+		],
+		internalThought: [
+			'Frank can feel attention before he knows its shape.',
+			'That makes him dangerous in a very local way.',
+		],
+		continueText: 'Return to the open office.',
+	},
+	celia_scans_room: {
+		id: 'celia_scans_room',
+		location: 'Celia’s Area Exit',
+		kicker: 'Aftermath',
+		title: 'Celia looks up.',
+		body: [
+			'Celia looks at her screen.',
+			'Then she looks at the room.',
+			'The room forgets how to be casual.',
+		],
+		internalThought: [
+			'Celia is closer to the full email now.',
+			'Fragments are starting to want a source.',
+		],
+		continueText: 'Return to the open office.',
+	},
+	boss_office_door_closes: {
+		id: 'boss_office_door_closes',
+		location: 'Open Office Floor',
+		kicker: 'Aftermath',
+		title: 'Management gets a door.',
+		body: [
+			'The boss’s office door closes.',
+			'Lisa looks at the calendar again.',
+			'Nobody near the printer keeps talking.',
+		],
+		internalThought: [
+			'Management awareness is no longer theoretical.',
+			'It has hinges.',
+		],
+		continueText: 'Keep moving.',
 	},
 	closet_one_roll_taken: {
 		id: 'closet_one_roll_taken',

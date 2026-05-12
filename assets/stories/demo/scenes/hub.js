@@ -36,12 +36,30 @@ function getGuidedOpeningBody() {
 }
 
 function getOpenOfficeBody( state ) {
-	return [
+	const body = [
 		'You sent a damaging gossip email about Celia. The recall only partly worked.',
 		'Some people may have seen the whole thing. Some may have seen fragments. Some only know that something ugly happened, which is sometimes worse because imagination gets overtime pay.',
 		'Betty keeps glancing up. Tim is doing quiet math with his face. Frank is somewhere between annoyed and unaware. Celia has not looked at you yet. Devon is probably already narrating this to someone.',
 		getUpcomingScheduleNotice( state ),
 	];
+
+	if ( state.flags.officeChatterStarted ) {
+		body.push( 'Two people near the printer stop talking when you look over.' );
+	}
+
+	if ( state.npc.bettyLocation === 'lisa_area' ) {
+		body.push( 'Betty is near Lisa now. Their voices drop when you pass.' );
+	}
+
+	if ( state.flags.lisaCheckingSchedule ) {
+		body.push( 'Lisa’s calendar is open. The all-hands invite sits there like it has started listening.' );
+	}
+
+	if ( state.flags.bossDoorClosed ) {
+		body.push( 'The boss’s office door is closed.' );
+	}
+
+	return body;
 }
 
 const hub = {
@@ -85,6 +103,10 @@ const hub = {
 
 		if ( state.flags.timHasNotes ) {
 			thoughts.push( 'Tim has meeting notes. That means his threat is no longer just memory; it has bullet points.' );
+		}
+
+		if ( state.flags.timComparingTimes ) {
+			thoughts.push( 'Tim is comparing times now. The day is turning into a witness.' );
 		}
 
 		if ( state.bars.timSuspectsYou >= 50 ) {
