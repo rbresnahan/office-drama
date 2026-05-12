@@ -58,9 +58,6 @@ const frankDesk = {
 			category: 'commitment',
 			requirements: {
 				phaseMin: 'narrative_building',
-				barsMin: {
-					frameFrank: 50,
-				},
 				factsAll: [
 					'playerHasBottle',
 					'confirmedFrankAway',
@@ -68,13 +65,6 @@ const frankDesk = {
 				],
 				factsNone: [
 					'bottlePlantedFrank',
-				],
-				flagsAny: [
-					'bettySawFrankAway',
-					'bettyHeardFrankSuspicion',
-					'knowsFrankUnderPressure',
-					'timCheckingFrank',
-					'devonCarryingFrankStory',
 				],
 				npc: {
 					frankAwayFromDesk: true,
@@ -86,7 +76,7 @@ const frankDesk = {
 			once: true,
 			resultText: [
 				'The bottle fits too easily.',
-				'Frank is away, people already have a Frank-shaped worry, and now the drawer has something ugly for that worry to orbit.',
+				'Frank is away, you have access, and now the drawer has something ugly for people to find.',
 				'A good lie should resist a little. This one slides into place like the office has been saving room for it.',
 			],
 			effects: {
