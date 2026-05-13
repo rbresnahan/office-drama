@@ -62,6 +62,13 @@ const bettyDesk = {
 			];
 		}
 
+		if ( state.npc.bettyLocation === 'lisa_area' ) {
+			return [
+				'Betty is not at her desk.',
+				'The candy dish sits there unsupervised, which feels wrong.',
+			];
+		}
+
 		return [
 			'Betty’s desk has color-coded folders, seasonal decorations, three kinds of sticky notes, and one tiny ceramic pumpkin that has absolutely survived more office drama than HR.',
 			'Nothing looks messy. That is the first warning. The candy dish is full, the pens are aligned, and the framed vacation photo is angled just enough to look casual. Betty has built a friendly little command center and disguised it as personality.',
@@ -187,10 +194,17 @@ const bettyDesk = {
 					bettyHeardFrankSuspicion: true,
 					knowsFrankUnderPressure: true,
 					sawFrankDeskEmpty: true,
+					officeChatterStarted: true,
+				},
+				npc: {
+					bettyLocation: 'lisa_area',
 				},
 				unlocks: [
 					'betty_ask_frank_strange',
 					'tim_mention_frank_away',
+				],
+				queueVisibleAftermath: [
+					'betty_walks_to_lisa',
 				],
 				signal: 'The Frank story has a seed. Seeds are nice until they grow teeth.',
 			},
@@ -311,9 +325,16 @@ const bettyDesk = {
 				flags: {
 					bettySharedReactionMap: true,
 					knowsTimInvestigating: true,
+					timComparingTimes: true,
+				},
+				npc: {
+					timState: 'taking_notes',
 				},
 				unlocks: [
 					'ask_tim_recall_logs',
+				],
+				queueVisibleAftermath: [
+					'tim_starts_notes',
 				],
 				signal: 'Betty gave you a reaction map. Devon noticed first. Tim is watching the timeline.',
 			},
@@ -334,6 +355,10 @@ const bettyDesk = {
 				flags: {
 					bettyHeardFrankSuspicion: true,
 					knowsFrankUnderPressure: true,
+					officeChatterStarted: true,
+				},
+				npc: {
+					bettyLocation: 'lisa_area',
 				},
 				hiddenEvents: [
 					'betty_told_lisa_frank_suspicion',
@@ -343,7 +368,7 @@ const bettyDesk = {
 					'devon_frank_pressure',
 				],
 				queueVisibleAftermath: [
-					'betty_frank_suspicion_lisa_walk',
+					'betty_walks_to_lisa',
 				],
 				signal: 'Frank has entered Betty’s mental suspect board. Tiny corkboard. Big problem.',
 			},
@@ -416,9 +441,13 @@ const bettyDesk = {
 				flags: {
 					bettyHeardForwardedTheory: true,
 					sawFrankDeskEmpty: true,
+					officeChatterStarted: true,
 				},
 				unlocks: [
 					'tim_mention_frank_away',
+				],
+				queueVisibleAftermath: [
+					'printer_chatter_frank',
 				],
 				signal: 'The forwarded-email story can point at Frank, but it gives Tim a contradiction to chase.',
 			},
@@ -516,12 +545,16 @@ const bettyDesk = {
 				flags: {
 					bettySawFrankAway: true,
 					sawFrankDeskEmpty: true,
+					officeChatterStarted: true,
 				},
 				bars: {
 					frameFrank: 25,
 				},
 				unlocks: [
 					'tim_mention_frank_away',
+				],
+				queueVisibleAftermath: [
+					'printer_chatter_frank',
 				],
 				signal: 'Betty saw Frank away from his desk. The Frank story has a location now.',
 			},

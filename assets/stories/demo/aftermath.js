@@ -51,6 +51,22 @@ export const visibleAftermathBeats = {
 		],
 		continueText: 'Return to the open office.',
 	},
+	betty_walks_to_lisa: {
+		id: 'betty_walks_to_lisa',
+		location: 'Betty’s Desk Exit',
+		kicker: 'Aftermath',
+		title: 'Betty moves.',
+		body: [
+			'Betty stands with her coffee.',
+			'She walks toward Lisa’s desk.',
+			'She does not look back.',
+		],
+		internalThought: [
+			'The Frank story has left Betty’s desk.',
+			'That is useful. That is not control.',
+		],
+		continueText: 'Return to the open office.',
+	},
 	devon_frank_story_travels: {
 		id: 'devon_frank_story_travels',
 		location: 'Break Room Exit',
@@ -65,6 +81,21 @@ export const visibleAftermathBeats = {
 		internalThought: [
 			'Devon carries gossip well because he never looks like he is carrying anything.',
 			'The Frank story can move without you now. That is useful and deeply unhelpful.',
+		],
+		continueText: 'Return to the open office.',
+	},
+	tim_starts_notes: {
+		id: 'tim_starts_notes',
+		location: 'Tim’s Desk Exit',
+		kicker: 'Aftermath',
+		title: 'Tim writes it down.',
+		body: [
+			'Tim looks up.',
+			'Then he starts writing something down.',
+			'The pen moves too neatly.',
+		],
+		internalThought: [
+			'Tim has started making the day into evidence.',
 		],
 		continueText: 'Return to the open office.',
 	},
@@ -85,6 +116,22 @@ export const visibleAftermathBeats = {
 		],
 		continueText: 'Return to the open office.',
 	},
+	lisa_opens_calendar: {
+		id: 'lisa_opens_calendar',
+		location: 'Lisa’s Area Exit',
+		kicker: 'Aftermath',
+		title: 'Lisa checks the schedule.',
+		body: [
+			'Lisa opens the office calendar.',
+			'Her cursor stops over the all-hands invite.',
+			'She reads without blinking.',
+		],
+		internalThought: [
+			'Lisa is finding a place for this on the day.',
+			'That is how problems become official.',
+		],
+		continueText: 'Return to the open office.',
+	},
 	lisa_quietly_documents: {
 		id: 'lisa_quietly_documents',
 		location: 'Lisa’s Area Exit',
@@ -101,6 +148,85 @@ export const visibleAftermathBeats = {
 			'Process categories have a way of becoming records.',
 		],
 		continueText: 'Return to the open office.',
+	},
+	printer_chatter_frank: {
+		id: 'printer_chatter_frank',
+		location: 'Open Office Floor',
+		kicker: 'Aftermath',
+		title: 'Frank’s name travels.',
+		body: [
+			'Someone near the printer says Frank’s name.',
+			'Two heads tilt toward his empty desk.',
+			'Then everyone remembers how quiet to be.',
+		],
+		internalThought: [
+			'The office can say a name without accusing anyone.',
+			'For now.',
+		],
+		continueText: 'Keep moving.',
+	},
+	kitchen_bottle_missing: {
+		id: 'kitchen_bottle_missing',
+		location: 'Break Room Exit',
+		kicker: 'Aftermath',
+		title: 'The kitchen notices.',
+		body: [
+			'Someone steps into the break room.',
+			'There is a pause.',
+			'“Did something move in here?”',
+		],
+		internalThought: [
+			'The bottle is not just gone.',
+			'It is missing.',
+		],
+		continueText: 'Return to the open office.',
+	},
+	frank_drawer_slams: {
+		id: 'frank_drawer_slams',
+		location: 'Frank’s Desk Exit',
+		kicker: 'Aftermath',
+		title: 'Frank gets loud.',
+		body: [
+			'Behind you, Frank’s drawer slams shut.',
+			'Nobody asks why.',
+			'That somehow makes it louder.',
+		],
+		internalThought: [
+			'Frank can feel the room turning.',
+			'He may not know why yet.',
+		],
+		continueText: 'Return to the open office.',
+	},
+	celia_scans_room: {
+		id: 'celia_scans_room',
+		location: 'Celia’s Area Exit',
+		kicker: 'Aftermath',
+		title: 'Celia looks up.',
+		body: [
+			'Celia looks at her screen.',
+			'Then at the room.',
+			'The room forgets how to act normal.',
+		],
+		internalThought: [
+			'Celia is closer to the full shape of it.',
+		],
+		continueText: 'Return to the open office.',
+	},
+	boss_door_closes: {
+		id: 'boss_door_closes',
+		location: 'Open Office Floor',
+		kicker: 'Aftermath',
+		title: 'Management gets closer.',
+		body: [
+			'The boss’s office door closes.',
+			'Lisa looks at the calendar again.',
+			'The printer goes quiet.',
+		],
+		internalThought: [
+			'Management awareness has a sound.',
+			'Apparently it is a door latch.',
+		],
+		continueText: 'Keep moving.',
 	},
 	closet_one_roll_taken: {
 		id: 'closet_one_roll_taken',

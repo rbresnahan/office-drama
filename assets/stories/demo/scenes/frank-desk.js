@@ -2,10 +2,18 @@ const frankDesk = {
 	id: 'frank_desk',
 	location: 'Frank’s Desk',
 	title: 'Frank’s desk is empty.',
-	body: [
-		'The chair is pushed in. His mug is still here. His desk has the private dullness of someone who never expected to become a plot device.',
-		'The empty desk matters only if someone later has a reason to care that it was empty.',
-	],
+	body: ( state ) => {
+		const body = [
+			'The chair is pushed in. His mug is still here. His desk has the private dullness of someone who never expected to become a plot device.',
+			'The empty desk matters only if someone later has a reason to care that it was empty.',
+		];
+
+		if ( state.npc.frankMood === 'alert' ) {
+			body.push( 'Frank’s drawer is closed too hard. The desk feels less unattended than it looks.' );
+		}
+
+		return body;
+	},
 	internalThought: [
 		'If the bottle appears after people are already suspicious, it becomes evidence. If it appears before that, it becomes a mystery. Mysteries invite Tim. Tim is bad.',
 	],
@@ -43,11 +51,15 @@ const frankDesk = {
 			effects: {
 				flags: {
 					frankLeftBagOut: true,
+					officeChatterStarted: true,
 				},
 				bars: {
 					frameFrank: 25,
 					frankRetaliates: 25,
 				},
+				queueVisibleAftermath: [
+					'printer_chatter_frank',
+				],
 				signal: 'Frank left something unattended. The Frank route gained texture and risk.',
 			},
 			nextScene: 'hub',
@@ -88,6 +100,12 @@ const frankDesk = {
 				facts: {
 					bottlePlantedFrank: true,
 				},
+				flags: {
+					officeChatterStarted: true,
+				},
+				npc: {
+					frankMood: 'alert',
+				},
 				hiddenEvents: [
 					'frank_bottle_planted_offscreen_ripple',
 				],
@@ -99,6 +117,7 @@ const frankDesk = {
 				],
 				queueVisibleAftermath: [
 					'frank_bottle_planted_lisa_notice',
+					'frank_drawer_slams',
 				],
 				signal: 'The bottle is planted. The Frank story has moved from gossip to something people can point at.',
 			},

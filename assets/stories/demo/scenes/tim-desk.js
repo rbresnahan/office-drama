@@ -2,10 +2,18 @@ const timDesk = {
 	id: 'tim_desk',
 	location: 'Tim’s Desk',
 	title: 'Tim has the expression of a man assembling a timeline.',
-	body: [
-		'Tim does not look angry. That is worse. Angry people react. Tim collects.',
-		'His screen has three windows open. None of them look fun. A lunch bag with his name written in aggressive block letters sits beside his monitor.',
-	],
+	body: ( state ) => {
+		const body = [
+			'Tim does not look angry. That is worse. Angry people react. Tim collects.',
+			'His screen has three windows open. None of them look fun. A lunch bag with his name written in aggressive block letters sits beside his monitor.',
+		];
+
+		if ( state.npc.timState === 'taking_notes' || state.flags.timComparingTimes ) {
+			body.push( 'A sticky note beside Tim’s keyboard has three times written on it.' );
+		}
+
+		return body;
+	},
 	internalThought: [
 		'If you send Tim toward the wrong technical question, you may buy time. If you learn his routines, you may unlock worse options. But every question you ask tells him what you are afraid of.',
 	],
@@ -39,6 +47,9 @@ const timDesk = {
 					timHasNotes: true,
 					timChecksRecallLogs: true,
 				},
+				npc: {
+					timState: 'taking_notes',
+				},
 				unlocks: [
 					'tim_distract_from_notes',
 				],
@@ -61,7 +72,14 @@ const timDesk = {
 				flags: {
 					knowsRecallLogsMatter: true,
 					timChecksRecallLogs: true,
+					timComparingTimes: true,
 				},
+				npc: {
+					timState: 'taking_notes',
+				},
+				queueVisibleAftermath: [
+					'tim_starts_notes',
+				],
 				signal: 'The system-blame route is alive, but Tim noticed where you pointed.',
 			},
 			nextScene: 'hub',
@@ -85,6 +103,10 @@ const timDesk = {
 				},
 				flags: {
 					timCheckingFrank: true,
+					timComparingTimes: true,
+				},
+				npc: {
+					timState: 'taking_notes',
 				},
 				hiddenEvents: [
 					'tim_started_timeline_check',

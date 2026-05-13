@@ -71,6 +71,14 @@ const lisaArea = {
 			body.push( 'A sticky note near her keyboard says “supplies?” with a question mark that feels legally active.' );
 		}
 
+		if ( state.npc.bettyLocation === 'lisa_area' ) {
+			body.push( 'Betty is near Lisa now. They stop talking when you get close.' );
+		}
+
+		if ( state.flags.lisaCheckingSchedule ) {
+			body.push( 'Lisa’s calendar is open. The all-hands invite sits selected.' );
+		}
+
 		return body;
 	},
 	internalThought: ( state ) => {
@@ -159,10 +167,17 @@ const lisaArea = {
 					openingFirstInteractionComplete: true,
 					lisaCanDelayEscalation: true,
 					knowsManagementPressure: true,
+					lisaCheckingSchedule: true,
+				},
+				npc: {
+					lisaState: 'checking_calendar',
 				},
 				unlocks: [
 					'lisa_ask_agenda',
 					'lisa_process_explanation',
+				],
+				queueVisibleAftermath: [
+					'lisa_opens_calendar',
 				],
 				signal: 'Lisa can contain the situation for now, but the formal risk is awake.',
 			},
@@ -186,10 +201,17 @@ const lisaArea = {
 					knowsAllHandsAgendaShifted: true,
 					knowsManagementPressure: true,
 					knowsRecallLogsExist: true,
+					timComparingTimes: true,
+				},
+				npc: {
+					timState: 'taking_notes',
 				},
 				unlocks: [
 					'lisa_push_system_failure',
 					'ask_tim_recall_logs',
+				],
+				queueVisibleAftermath: [
+					'tim_starts_notes',
 				],
 				signal: 'The recall-log route exists. So does the suspicion created by asking about it.',
 			},
@@ -210,10 +232,17 @@ const lisaArea = {
 					openingFirstInteractionComplete: true,
 					knowsLisaTalkedToManagement: true,
 					knowsManagementPressure: true,
+					lisaCheckingSchedule: true,
+				},
+				npc: {
+					lisaState: 'checking_calendar',
 				},
 				unlocks: [
 					'lisa_ask_agenda',
 					'lisa_process_explanation',
+				],
+				queueVisibleAftermath: [
+					'lisa_opens_calendar',
 				],
 				signal: 'No formal complaint yet. Lisa has introduced the concept, which is rude but useful.',
 			},
@@ -234,10 +263,14 @@ const lisaArea = {
 					knowsLisaTalkedToManagement: true,
 					knowsAllHandsAgendaShifted: true,
 					knowsManagementPressure: true,
+					bossDoorClosed: true,
 				},
 				unlocks: [
 					'lisa_overreacting_seed',
 					'lisa_push_system_failure',
+				],
+				queueVisibleAftermath: [
+					'boss_door_closes',
 				],
 				signal: 'Management is aware enough to be dangerous.',
 			},
@@ -258,7 +291,14 @@ const lisaArea = {
 				flags: {
 					knowsBossMayNotHaveSeenEmail: true,
 					knowsManagementPressure: true,
+					lisaCheckingSchedule: true,
 				},
+				npc: {
+					lisaState: 'checking_calendar',
+				},
+				queueVisibleAftermath: [
+					'lisa_opens_calendar',
+				],
 				signal: 'The boss may not have seen it yet. That gives you time, which is not the same as safety.',
 			},
 			nextScene: 'hub',
@@ -301,7 +341,14 @@ const lisaArea = {
 				},
 				flags: {
 					lisaCanDelayEscalation: true,
+					lisaCheckingSchedule: true,
 				},
+				npc: {
+					lisaState: 'checking_calendar',
+				},
+				queueVisibleAftermath: [
+					'lisa_opens_calendar',
+				],
 				signal: 'You lowered formal risk by becoming boring, but the system-blame route lost leverage.',
 			},
 			nextScene: 'hub',
@@ -362,9 +409,16 @@ const lisaArea = {
 				flags: {
 					knowsLisaControlsSchedule: true,
 					knowsAllHandsAgendaShifted: true,
+					lisaCheckingSchedule: true,
+				},
+				npc: {
+					lisaState: 'checking_calendar',
 				},
 				unlocks: [
 					'lisa_push_system_failure',
+				],
+				queueVisibleAftermath: [
+					'lisa_opens_calendar',
 				],
 				signal: 'Lisa controls schedule logistics. Leadership controls escalation. Both are problems with chairs.',
 			},
@@ -384,9 +438,16 @@ const lisaArea = {
 				flags: {
 					knowsTimInvestigating: true,
 					knowsRecallLogsExist: true,
+					timComparingTimes: true,
+				},
+				npc: {
+					timState: 'taking_notes',
 				},
 				unlocks: [
 					'ask_tim_recall_logs',
+				],
+				queueVisibleAftermath: [
+					'tim_starts_notes',
 				],
 				signal: 'Tim may be checking recall details. The timeline threat is no longer theoretical.',
 			},
@@ -441,12 +502,17 @@ const lisaArea = {
 				},
 				flags: {
 					systemAngleWithLisa: true,
+					lisaCheckingSchedule: true,
+				},
+				npc: {
+					lisaState: 'checking_calendar',
 				},
 				hiddenEvents: [
 					'lisa_documents_system_angle',
 				],
 				queueVisibleAftermath: [
 					'lisa_quietly_documents',
+					'lisa_opens_calendar',
 				],
 				signal: 'The system route is stronger. So is the chance this becomes formal. Tiny tradeoff. Huge paperwork.',
 			},
