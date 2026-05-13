@@ -152,18 +152,6 @@ export function applyChoiceEffects( state, choice ) {
 		choiceText: choice.text,
 	} );
 
-	if ( effects.bars ) {
-		Object.entries( effects.bars ).forEach( ( [ barId, amount ] ) => {
-			const before = state.bars[ barId ] || 0;
-			changeBar( state, barId, amount );
-			const after = state.bars[ barId ] || 0;
-
-			threadFeedbackMessages.push(
-				getThreadFeedbackMessage( state, effects, barId, amount, before, after )
-			);
-		} );
-	}
-
 	if ( effects.flags ) {
 		applyMapValues( state.flags, effects.flags );
 	}
@@ -178,6 +166,18 @@ export function applyChoiceEffects( state, choice ) {
 
 	if ( effects.unsetFacts ) {
 		unsetMapValues( getFactState( state ), effects.unsetFacts );
+	}
+
+	if ( effects.bars ) {
+		Object.entries( effects.bars ).forEach( ( [ barId, amount ] ) => {
+			const before = state.bars[ barId ] || 0;
+			changeBar( state, barId, amount );
+			const after = state.bars[ barId ] || 0;
+
+			threadFeedbackMessages.push(
+				getThreadFeedbackMessage( state, effects, barId, amount, before, after )
+			);
+		} );
 	}
 
 	if ( effects.npc ) {

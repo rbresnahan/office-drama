@@ -12,6 +12,7 @@ export function createInitialState( story ) {
 			label: bar.label,
 			type: 'green',
 			optional: Boolean( bar.optional ),
+			capUntil: bar.capUntil || null,
 		};
 	} );
 
@@ -22,6 +23,7 @@ export function createInitialState( story ) {
 			label: bar.label,
 			type: 'red',
 			optional: Boolean( bar.optional ),
+			capUntil: bar.capUntil || null,
 		};
 	} );
 
@@ -75,9 +77,35 @@ export function clampBarValue( value ) {
 	return value;
 }
 
+function anyStateValuePresent( source = {}, values = [] ) {
+	return values.some( ( value ) => Boolean( source[ value ] ) );
+}
+
+function isBarCapUnlocked( state, capUntil = {} ) {
+	const flags = state.flags || {};
+	const facts = state.facts || flags;
+
+	if ( Array.isArray( capUntil.flagsAny ) && anyStateValuePresent( flags, capUntil.flagsAny ) ) {
+		return true;
+	}
+
+	if ( Array.isArray( capUntil.factsAny ) && anyStateValuePresent( facts, capUntil.factsAny ) ) {
+		return true;
+	}
+
+	return false;
+}
+
 export function changeBar( state, barId, amount ) {
 	const current = state.bars[ barId ] || 0;
-	state.bars[ barId ] = clampBarValue( current + amount );
+	const capUntil = state.barThreads && state.barThreads[ barId ] && state.barThreads[ barId ].capUntil;
+	let nextValue = clampBarValue( current + amount );
+
+	if ( capUntil && ! isBarCapUnlocked( state, capUntil ) && nextValue > capUntil.value ) {
+		nextValue = capUntil.value;
+	}
+
+	state.bars[ barId ] = nextValue;
 }
 
 export function setListValue( list, value ) {

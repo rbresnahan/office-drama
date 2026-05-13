@@ -1,6 +1,16 @@
 export const bars = {
 	green: [
-		{ id: 'frameFrank', label: 'Frame Frank', initial: 0, description: 'People are starting to believe Frank may be involved.' },
+		{
+			id: 'frameFrank',
+			label: 'Frame Frank',
+			initial: 0,
+			description: 'People are starting to believe Frank may be involved.',
+			capUntil: {
+				value: 85,
+				flagsAny: [ 'bottlePlantedFrank' ],
+				factsAny: [ 'bottlePlantedFrank' ],
+			},
+		},
 		{ id: 'warmBetty', label: 'Win Betty Over', initial: 0, description: 'Betty thinks this may have been a mistake, not sabotage.' },
 		{ id: 'distractTim', label: 'Distract Tim', initial: 0, description: 'You are giving Tim other work, details, or worries to chase.' },
 		{ id: 'containCelia', label: 'Contain Celia', initial: 0, description: 'You are slowing the story before it reaches Celia directly.' },

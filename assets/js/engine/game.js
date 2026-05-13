@@ -161,6 +161,11 @@ function shouldStartFinale( story, state ) {
 	return true;
 }
 
+function startFinale( story, state ) {
+	state.finaleStarted = true;
+	state.currentSceneId = story.allHandsIntroSceneId || story.finaleSceneId;
+}
+
 function shouldStayInCurrentLocation( story, scene, choice ) {
 	if ( ! isNormalLocationScene( story, scene ) ) {
 		return false;
@@ -400,6 +405,11 @@ export function createGame( story ) {
 		if ( isVisibleAftermathScene( scene ) ) {
 			clearCurrentVisibleAftermath();
 			state.currentSceneId = getNextSceneId( story, state, scene, choice );
+
+			if ( shouldStartFinale( story, state ) ) {
+				startFinale( story, state );
+			}
+
 			return;
 		}
 
@@ -413,6 +423,11 @@ export function createGame( story ) {
 
 		if ( shouldTriggerVisibleAftermath( story, state, scene, choice ) ) {
 			triggerInterruptScene( VISIBLE_AFTERMATH_SCENE_ID, nextSceneId );
+			return;
+		}
+
+		if ( shouldStartFinale( story, state ) ) {
+			startFinale( story, state );
 			return;
 		}
 
@@ -433,12 +448,6 @@ export function createGame( story ) {
 		// Let authored immediate reactions resolve before calendar events take over.
 		if ( hasPendingVisibleAftermath( story, state ) ) {
 			state.currentSceneId = nextSceneId;
-			return;
-		}
-
-		if ( shouldStartFinale( story, state ) ) {
-			state.finaleStarted = true;
-			state.currentSceneId = story.allHandsIntroSceneId || story.finaleSceneId;
 			return;
 		}
 
