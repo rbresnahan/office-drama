@@ -16,12 +16,19 @@ function getLisaStrategyFlags( strategy ) {
 	};
 }
 
-function withLisaStrategy( strategy, requirements = {} ) {
+function getLisaAngleFlags( selectedAngle ) {
+	return Object.fromEntries(
+		lisaAngleFlagIds.map( ( angle ) => [ angle, angle === selectedAngle ] )
+	);
+}
+
+function withLisaAngle( strategy, angle, requirements = {} ) {
 	return {
 		...requirements,
 		flagsAll: [
 			...( requirements.flagsAll || [] ),
 			`lisaStrategy${ strategy }`,
+			angle,
 		],
 	};
 }
@@ -41,6 +48,18 @@ const lisaStrategyFlagIds = [
 	'lisaStrategyNeutral',
 ];
 
+const lisaAngleFlagIds = [
+	'lisaTruthRepairDamage',
+	'lisaTruthAskContainment',
+	'lisaTruthLearnFormalRisk',
+	'lisaSchemeFrameFrank',
+	'lisaSchemeProbeTim',
+	'lisaSchemeBlameSystem',
+	'lisaNeutralCheckSchedule',
+	'lisaNeutralMapOffice',
+	'lisaNeutralLearnWhoKnows',
+];
+
 const noLisaStrategySelected = {
 	flagsNone: lisaStrategyFlagIds,
 };
@@ -48,6 +67,19 @@ const noLisaStrategySelected = {
 const lisaStrategySelected = {
 	flagsAny: lisaStrategyFlagIds,
 };
+
+const lisaAngleSelected = {
+	flagsAny: lisaAngleFlagIds,
+};
+
+function lisaStrategyNeedsAngle( strategy ) {
+	return {
+		flagsAll: [
+			`lisaStrategy${ strategy }`,
+		],
+		flagsNone: lisaAngleFlagIds,
+	};
+}
 
 const lisaArea = {
 	id: 'lisa_area',
@@ -152,11 +184,119 @@ const lisaArea = {
 			},
 		},
 		{
+			id: 'lisa_truth_angle_repair_damage',
+			text: 'Choose angle: Repair Damage.',
+			category: 'positive',
+			advanceTurn: false,
+			requirements: lisaStrategyNeedsAngle( 'Truth' ),
+			resultText: 'You decide to make the incident smaller before Lisa gives it folders.',
+			effects: {
+				flags: getLisaAngleFlags( 'lisaTruthRepairDamage' ),
+				signal: 'Repair Damage focuses on boring, corrective truth that can lower formal heat.',
+			},
+		},
+		{
+			id: 'lisa_truth_angle_ask_containment',
+			text: 'Choose angle: Ask for Containment.',
+			category: 'positive',
+			advanceTurn: false,
+			requirements: lisaStrategyNeedsAngle( 'Truth' ),
+			resultText: 'You choose to ask Lisa for help before help becomes a policy memo.',
+			effects: {
+				flags: getLisaAngleFlags( 'lisaTruthAskContainment' ),
+				signal: 'Ask for Containment focuses on getting Lisa to slow escalation.',
+			},
+		},
+		{
+			id: 'lisa_truth_angle_learn_formal_risk',
+			text: 'Choose angle: Learn Formal Risk.',
+			category: 'positive',
+			advanceTurn: false,
+			requirements: lisaStrategyNeedsAngle( 'Truth' ),
+			resultText: 'You choose to find out how official this is before the word official starts charging rent.',
+			effects: {
+				flags: getLisaAngleFlags( 'lisaTruthLearnFormalRisk' ),
+				signal: 'Learn Formal Risk focuses on management, calendars, and how bad this looks.',
+			},
+		},
+		{
+			id: 'lisa_scheme_angle_frame_frank',
+			text: 'Choose angle: Frame Frank.',
+			category: 'underhanded',
+			advanceTurn: false,
+			requirements: lisaStrategyNeedsAngle( 'Scheme' ),
+			resultText: 'You decide Lisa’s process might make Frank look less like gossip and more like a line item.',
+			effects: {
+				flags: getLisaAngleFlags( 'lisaSchemeFrameFrank' ),
+				signal: 'Frame Frank focuses only on Lisa choices that support Frank suspicion.',
+			},
+		},
+		{
+			id: 'lisa_scheme_angle_probe_tim',
+			text: 'Choose angle: Probe Tim.',
+			category: 'underhanded',
+			advanceTurn: false,
+			requirements: lisaStrategyNeedsAngle( 'Scheme' ),
+			resultText: 'You choose to learn what Tim has already put together before he staples it to your afternoon.',
+			effects: {
+				flags: getLisaAngleFlags( 'lisaSchemeProbeTim' ),
+				signal: 'Probe Tim focuses on recall logs, concerns, and timeline risk.',
+			},
+		},
+		{
+			id: 'lisa_scheme_angle_blame_system',
+			text: 'Choose angle: Blame the System.',
+			category: 'underhanded',
+			advanceTurn: false,
+			requirements: lisaStrategyNeedsAngle( 'Scheme' ),
+			resultText: 'You choose calendars, recall logs, process fog, and the beautiful office trick where responsibility becomes plural.',
+			effects: {
+				flags: getLisaAngleFlags( 'lisaSchemeBlameSystem' ),
+				signal: 'Blame the System focuses on recall confusion, process, and schedule leverage.',
+			},
+		},
+		{
+			id: 'lisa_neutral_angle_check_schedule',
+			text: 'Choose angle: Check Schedule.',
+			category: 'info',
+			advanceTurn: false,
+			requirements: lisaStrategyNeedsAngle( 'Neutral' ),
+			resultText: 'You choose the calendar, because the day is already becoming a trap with meeting invites.',
+			effects: {
+				flags: getLisaAngleFlags( 'lisaNeutralCheckSchedule' ),
+				signal: 'Check Schedule focuses on meetings, all-hands timing, and whether anything has gone formal.',
+			},
+		},
+		{
+			id: 'lisa_neutral_angle_map_office',
+			text: 'Choose angle: Map Office.',
+			category: 'info',
+			advanceTurn: false,
+			requirements: lisaStrategyNeedsAngle( 'Neutral' ),
+			resultText: 'You choose to find out who is physically in play before choosing who becomes narratively in play.',
+			effects: {
+				flags: getLisaAngleFlags( 'lisaNeutralMapOffice' ),
+				signal: 'Map Office focuses on who is in the office and where attention can move.',
+			},
+		},
+		{
+			id: 'lisa_neutral_angle_learn_who_knows',
+			text: 'Choose angle: Learn Who Knows.',
+			category: 'info',
+			advanceTurn: false,
+			requirements: lisaStrategyNeedsAngle( 'Neutral' ),
+			resultText: 'You choose the safest-looking question: who knows enough to become dangerous?',
+			effects: {
+				flags: getLisaAngleFlags( 'lisaNeutralLearnWhoKnows' ),
+				signal: 'Learn Who Knows focuses on chatter, unusual reports, and Lisa’s read of the room.',
+			},
+		},
+		{
 			id: 'opening_lisa_truth_mistake',
 			text: 'Tell the truth: admit the email was sent by mistake.',
 			category: 'positive',
 			once: true,
-			requirements: withLisaStrategy( 'Truth', openingLisaRequirement ),
+			requirements: withLisaAngle( 'Truth', 'lisaTruthRepairDamage', openingLisaRequirement ),
 			resultText: 'Lisa writes down “reply-all mistake” with the steady hand of someone building a bridge you may later be thrown from. Still, she does not call anyone yet.',
 			effects: {
 				bars: {
@@ -188,7 +328,7 @@ const lisaArea = {
 			text: 'Scheme: ask whether recall logs show who opened it.',
 			category: 'underhanded',
 			once: true,
-			requirements: withLisaStrategy( 'Scheme', openingLisaRequirement ),
+			requirements: withLisaAngle( 'Scheme', 'lisaSchemeBlameSystem', openingLisaRequirement ),
 			resultText: 'Lisa says logs may exist, then immediately regrets saying something interesting. You now know the system route is real. You also know asking about logs makes you look like a person with something to bury. Because you are.',
 			effects: {
 				bars: {
@@ -222,7 +362,7 @@ const lisaArea = {
 			text: 'Stay neutral: ask whether anyone has reported anything unusual.',
 			category: 'info',
 			once: true,
-			requirements: withLisaStrategy( 'Neutral', openingLisaRequirement ),
+			requirements: withLisaAngle( 'Neutral', 'lisaNeutralCheckSchedule', openingLisaRequirement ),
 			resultText: 'Lisa says no one has filed anything formal. The word “formal” lands on the desk like a stapler dropped from a height.',
 			effects: {
 				bars: {
@@ -253,7 +393,7 @@ const lisaArea = {
 			text: 'Tell the truth: ask how bad this looks.',
 			category: 'positive',
 			once: true,
-			requirements: withLisaStrategy( 'Truth', afterOpening() ),
+			requirements: withLisaAngle( 'Truth', 'lisaTruthLearnFormalRisk', afterOpening() ),
 			resultText: 'Lisa says leadership wants to address communication norms. Congratulations, you have become a norm.',
 			effects: {
 				bars: {
@@ -281,7 +421,7 @@ const lisaArea = {
 			text: 'Tell the truth: ask whether the boss has seen it.',
 			category: 'positive',
 			once: true,
-			requirements: withLisaStrategy( 'Truth', afterOpening() ),
+			requirements: withLisaAngle( 'Truth', 'lisaTruthLearnFormalRisk', afterOpening() ),
 			resultText: 'Lisa says the boss has not said anything yet. Yet enters the room, removes its coat, and gets comfortable.',
 			effects: {
 				bars: {
@@ -308,7 +448,7 @@ const lisaArea = {
 			text: 'Tell the truth: ask for help containing the situation.',
 			category: 'positive',
 			once: true,
-			requirements: withLisaStrategy( 'Truth', afterOpening() ),
+			requirements: withLisaAngle( 'Truth', 'lisaTruthAskContainment', afterOpening() ),
 			resultText: 'Lisa says the safest path is a short corrective message and no hallway campaigning. Rude to your schemes. Excellent for your blood pressure.',
 			effects: {
 				bars: {
@@ -328,7 +468,7 @@ const lisaArea = {
 			text: 'Tell the truth: give Lisa a boring process-focused explanation.',
 			category: 'cleanup',
 			once: true,
-			requirements: withLisaStrategy( 'Truth', afterOpening( {
+			requirements: withLisaAngle( 'Truth', 'lisaTruthRepairDamage', afterOpening( {
 				barsMin: {
 					managementEscalates: 25,
 				},
@@ -358,7 +498,7 @@ const lisaArea = {
 			text: 'Scheme: ask whether Frank has complained about you recently.',
 			category: 'underhanded',
 			once: true,
-			requirements: withLisaStrategy( 'Scheme', afterOpening() ),
+			requirements: withLisaAngle( 'Scheme', 'lisaSchemeFrameFrank', afterOpening() ),
 			resultText: 'Lisa looks up slowly. That was not subtle. Still, she says Frank has been “frustrated with communication lately,” which is bureaucratic music to your awful little ears.',
 			effects: {
 				bars: {
@@ -381,7 +521,7 @@ const lisaArea = {
 			text: 'Scheme: suggest someone may have misread the email.',
 			category: 'underhanded',
 			once: true,
-			requirements: withLisaStrategy( 'Scheme', afterOpening() ),
+			requirements: withLisaAngle( 'Scheme', 'lisaSchemeBlameSystem', afterOpening() ),
 			resultText: 'Lisa says tone is difficult in email. She says it like a person laying down a tarp before painting over blood.',
 			effects: {
 				bars: {
@@ -400,7 +540,7 @@ const lisaArea = {
 			text: 'Scheme: ask who controls the meeting schedule.',
 			category: 'underhanded',
 			once: true,
-			requirements: withLisaStrategy( 'Scheme', afterOpening() ),
+			requirements: withLisaAngle( 'Scheme', 'lisaSchemeBlameSystem', afterOpening() ),
 			resultText: 'Lisa says she manages the calendar, but leadership can change priorities. Translation: Lisa holds the map, management holds the trapdoor.',
 			effects: {
 				bars: {
@@ -429,7 +569,7 @@ const lisaArea = {
 			text: 'Scheme: try to learn whether Tim has raised concerns.',
 			category: 'underhanded',
 			once: true,
-			requirements: withLisaStrategy( 'Scheme', afterOpening() ),
+			requirements: withLisaAngle( 'Scheme', 'lisaSchemeProbeTim', afterOpening() ),
 			resultText: 'Lisa says Tim asked whether recall notices are tracked. She does not say why. She does not need to. Tim has found a shovel and is calling it procedure.',
 			effects: {
 				bars: {
@@ -458,7 +598,7 @@ const lisaArea = {
 			text: 'Scheme: suggest Lisa may be making this bigger than it needs to be.',
 			category: 'underhanded',
 			once: true,
-			requirements: withLisaStrategy( 'Scheme', afterOpening( {
+			requirements: withLisaAngle( 'Scheme', 'lisaSchemeBlameSystem', afterOpening( {
 				phaseMin: 'narrative_building',
 				flagsAny: [
 					'knowsAllHandsAgendaShifted',
@@ -484,7 +624,7 @@ const lisaArea = {
 			text: 'Scheme: push the system-failure angle through Lisa.',
 			category: 'commitment',
 			once: true,
-			requirements: withLisaStrategy( 'Scheme', afterOpening( {
+			requirements: withLisaAngle( 'Scheme', 'lisaSchemeBlameSystem', afterOpening( {
 				phaseMin: 'pressure_rising',
 				flagsAll: [
 					'knowsAllHandsAgendaShifted',
@@ -523,7 +663,7 @@ const lisaArea = {
 			text: 'Stay neutral: ask if anything unusual is happening today.',
 			category: 'info',
 			once: true,
-			requirements: withLisaStrategy( 'Neutral', afterOpening() ),
+			requirements: withLisaAngle( 'Neutral', 'lisaNeutralLearnWhoKnows', afterOpening() ),
 			resultText: 'Lisa says there has been “some chatter.” The office has elevated gossip into weather. You are the humidity.',
 			effects: {
 				bars: {
@@ -541,7 +681,7 @@ const lisaArea = {
 			text: 'Stay neutral: ask whether there are meetings later.',
 			category: 'info',
 			once: true,
-			requirements: withLisaStrategy( 'Neutral', afterOpening() ),
+			requirements: withLisaAngle( 'Neutral', 'lisaNeutralCheckSchedule', afterOpening() ),
 			resultText: 'Lisa says there is a 10:13 Stand Up, lunch at noon, a 3:18 Catch Up, and the 5:00 All-Hands. The calendar is now a threat display.',
 			effects: {
 				flags: {
@@ -557,7 +697,7 @@ const lisaArea = {
 			text: 'Stay neutral: ask who is currently in the office.',
 			category: 'info',
 			once: true,
-			requirements: withLisaStrategy( 'Neutral', afterOpening() ),
+			requirements: withLisaAngle( 'Neutral', 'lisaNeutralMapOffice', afterOpening() ),
 			resultText: 'Lisa says Betty, Tim, Frank, Celia, and Devon are all in. That is not a staff list. That is a suspect menu.',
 			effects: {
 				flags: {
@@ -573,7 +713,7 @@ const lisaArea = {
 			text: 'Stay neutral: say you are trying to understand the situation.',
 			category: 'info',
 			once: true,
-			requirements: withLisaStrategy( 'Neutral', afterOpening() ),
+			requirements: withLisaAngle( 'Neutral', 'lisaNeutralLearnWhoKnows', afterOpening() ),
 			resultText: 'Lisa accepts the sentence because it contains no obvious lie. Unfortunately, it also contains no obvious truth. Office neutrality: somehow both boring and incriminating.',
 			effects: {
 				bars: {
@@ -598,8 +738,21 @@ const lisaArea = {
 					lisaStrategyTruth: false,
 					lisaStrategyScheme: false,
 					lisaStrategyNeutral: false,
+					...getLisaAngleFlags(),
 				},
 				signal: 'You reconsider your approach with Lisa.',
+			},
+		},
+		{
+			id: 'lisa_choose_different_angle',
+			text: 'Choose a different angle.',
+			category: 'info',
+			advanceTurn: false,
+			requirements: lisaAngleSelected,
+			resultText: 'You keep the same approach with Lisa, but change what you are trying to build from it.',
+			effects: {
+				flags: getLisaAngleFlags(),
+				signal: 'You choose a different Lisa angle.',
 			},
 		},
 	],

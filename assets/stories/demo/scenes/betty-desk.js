@@ -16,12 +16,19 @@ function getBettyStrategyFlags( strategy ) {
 	};
 }
 
-function withBettyStrategy( strategy, requirements = {} ) {
+function getBettyAngleFlags( selectedAngle ) {
+	return Object.fromEntries(
+		bettyAngleFlagIds.map( ( angle ) => [ angle, angle === selectedAngle ] )
+	);
+}
+
+function withBettyAngle( strategy, angle, requirements = {} ) {
 	return {
 		...requirements,
 		flagsAll: [
 			...( requirements.flagsAll || [] ),
 			`bettyStrategy${ strategy }`,
+			angle,
 		],
 	};
 }
@@ -41,6 +48,18 @@ const bettyStrategyFlagIds = [
 	'bettyStrategyNeutral',
 ];
 
+const bettyAngleFlagIds = [
+	'bettyTruthWinBetty',
+	'bettyTruthRepairDamage',
+	'bettyTruthContainCelia',
+	'bettySchemeFrameFrank',
+	'bettySchemeProbeTim',
+	'bettySchemeBlameSystem',
+	'bettyNeutralGatherReactions',
+	'bettyNeutralMapMovement',
+	'bettyNeutralDelayCommitment',
+];
+
 const noBettyStrategySelected = {
 	flagsNone: bettyStrategyFlagIds,
 };
@@ -48,6 +67,19 @@ const noBettyStrategySelected = {
 const bettyStrategySelected = {
 	flagsAny: bettyStrategyFlagIds,
 };
+
+const bettyAngleSelected = {
+	flagsAny: bettyAngleFlagIds,
+};
+
+function bettyStrategyNeedsAngle( strategy ) {
+	return {
+		flagsAll: [
+			`bettyStrategy${ strategy }`,
+		],
+		flagsNone: bettyAngleFlagIds,
+	};
+}
 
 const bettyDesk = {
 	id: 'betty_desk',
@@ -150,11 +182,119 @@ const bettyDesk = {
 			},
 		},
 		{
+			id: 'betty_truth_angle_win_betty',
+			text: 'Choose angle: Win Betty Over.',
+			category: 'positive',
+			advanceTurn: false,
+			requirements: bettyStrategyNeedsAngle( 'Truth' ),
+			resultText: 'You decide Betty needs to see a person in trouble, not a person managing optics.',
+			effects: {
+				flags: getBettyAngleFlags( 'bettyTruthWinBetty' ),
+				signal: 'Win Betty Over focuses on warmth, remorse, and earning Betty as a softer witness.',
+			},
+		},
+		{
+			id: 'betty_truth_angle_repair_damage',
+			text: 'Choose angle: Repair Damage.',
+			category: 'cleanup',
+			advanceTurn: false,
+			requirements: bettyStrategyNeedsAngle( 'Truth' ),
+			resultText: 'You choose the least theatrical option: make the harm smaller before it grows a department.',
+			effects: {
+				flags: getBettyAngleFlags( 'bettyTruthRepairDamage' ),
+				signal: 'Repair Damage focuses on lowering risk from earlier comments and cleaning up contradictions.',
+			},
+		},
+		{
+			id: 'betty_truth_angle_contain_celia',
+			text: 'Choose angle: Contain Celia.',
+			category: 'positive',
+			advanceTurn: false,
+			requirements: bettyStrategyNeedsAngle( 'Truth' ),
+			resultText: 'You decide the important thing is keeping Celia from becoming the center of the room.',
+			effects: {
+				flags: getBettyAngleFlags( 'bettyTruthContainCelia' ),
+				signal: 'Contain Celia focuses on reaction maps and slowing the emotional spread.',
+			},
+		},
+		{
+			id: 'betty_scheme_angle_frame_frank',
+			text: 'Choose angle: Frame Frank.',
+			category: 'underhanded',
+			advanceTurn: false,
+			requirements: bettyStrategyNeedsAngle( 'Scheme' ),
+			resultText: 'You choose Frank as the shape of the story. Shapes can become cages. Sometimes for the wrong person.',
+			effects: {
+				flags: getBettyAngleFlags( 'bettySchemeFrameFrank' ),
+				signal: 'Frame Frank focuses only on actions that point suspicion toward Frank.',
+			},
+		},
+		{
+			id: 'betty_scheme_angle_probe_tim',
+			text: 'Choose angle: Probe Tim.',
+			category: 'underhanded',
+			advanceTurn: false,
+			requirements: bettyStrategyNeedsAngle( 'Scheme' ),
+			resultText: 'You decide Tim is the problem you need to understand before he becomes the problem that understands you.',
+			effects: {
+				flags: getBettyAngleFlags( 'bettySchemeProbeTim' ),
+				signal: 'Probe Tim focuses on learning what Tim is watching and how he can be redirected.',
+			},
+		},
+		{
+			id: 'betty_scheme_angle_blame_system',
+			text: 'Choose angle: Blame the System.',
+			category: 'underhanded',
+			advanceTurn: false,
+			requirements: bettyStrategyNeedsAngle( 'Scheme' ),
+			resultText: 'You choose process confusion, missing context, and the sacred office art of making nobody fully responsible.',
+			effects: {
+				flags: getBettyAngleFlags( 'bettySchemeBlameSystem' ),
+				signal: 'Blame the System focuses on process, context, and alternate explanations.',
+			},
+		},
+		{
+			id: 'betty_neutral_angle_gather_reactions',
+			text: 'Choose angle: Gather Reactions.',
+			category: 'info',
+			advanceTurn: false,
+			requirements: bettyStrategyNeedsAngle( 'Neutral' ),
+			resultText: 'You choose to read the room before the room starts reading from a prepared statement.',
+			effects: {
+				flags: getBettyAngleFlags( 'bettyNeutralGatherReactions' ),
+				signal: 'Gather Reactions focuses on who noticed, who reacted, and what Betty thinks happened.',
+			},
+		},
+		{
+			id: 'betty_neutral_angle_map_movement',
+			text: 'Choose angle: Map Office Movement.',
+			category: 'info',
+			advanceTurn: false,
+			requirements: bettyStrategyNeedsAngle( 'Neutral' ),
+			resultText: 'You choose traffic patterns, desk absences, and the little geography of office panic.',
+			effects: {
+				flags: getBettyAngleFlags( 'bettyNeutralMapMovement' ),
+				signal: 'Map Office Movement focuses on who went where and what Betty could see from her desk.',
+			},
+		},
+		{
+			id: 'betty_neutral_angle_delay_commitment',
+			text: 'Choose angle: Delay Commitment.',
+			category: 'info',
+			advanceTurn: false,
+			requirements: bettyStrategyNeedsAngle( 'Neutral' ),
+			resultText: 'You choose to keep the story soft for one more minute. Soft things still leave fingerprints.',
+			effects: {
+				flags: getBettyAngleFlags( 'bettyNeutralDelayCommitment' ),
+				signal: 'Delay Commitment keeps options open while risking that Betty notices the evasion.',
+			},
+		},
+		{
 			id: 'opening_betty_truth',
 			text: 'Tell the truth: apologize before Betty says anything.',
 			category: 'positive',
 			once: true,
-			requirements: withBettyStrategy( 'Truth', openingBettyRequirement ),
+			requirements: withBettyAngle( 'Truth', 'bettyTruthWinBetty', openingBettyRequirement ),
 			resultText: 'Betty goes still in the precise way people do when they have heard enough to help and enough to judge. She says Devon looked up when the recall notice appeared, and Tim has been watching the room like it owes him a timeline.',
 			effects: {
 				bars: {
@@ -181,7 +321,7 @@ const bettyDesk = {
 			text: 'Scheme: imply someone else may have edited or forwarded something.',
 			category: 'underhanded',
 			once: true,
-			requirements: withBettyStrategy( 'Scheme', openingBettyRequirement ),
+			requirements: withBettyAngle( 'Scheme', 'bettySchemeFrameFrank', openingBettyRequirement ),
 			resultText: 'Betty frowns toward Frank’s empty chair. She does not believe the story yet. Worse and better: she can imagine it.',
 			effects: {
 				bars: {
@@ -214,7 +354,7 @@ const bettyDesk = {
 			text: 'Stay neutral: ask whether anyone reacted to the recall notice.',
 			category: 'info',
 			once: true,
-			requirements: withBettyStrategy( 'Neutral', openingBettyRequirement ),
+			requirements: withBettyAngle( 'Neutral', 'bettyNeutralGatherReactions', openingBettyRequirement ),
 			resultText: 'Betty does not ask why you are asking, which means she already knows why you are asking. She says Devon noticed the recall first. Tim noticed you noticing Devon. Perfect. A triangle of problems.',
 			effects: {
 				bars: {
@@ -241,7 +381,7 @@ const bettyDesk = {
 			text: 'Tell the truth: admit the email was a mistake.',
 			category: 'positive',
 			once: true,
-			requirements: withBettyStrategy( 'Truth', afterOpening() ),
+			requirements: withBettyAngle( 'Truth', 'bettyTruthWinBetty', afterOpening() ),
 			resultText: 'Betty studies your face. She does not forgive you. But she does not leave either.',
 			effects: {
 				bars: {
@@ -262,7 +402,7 @@ const bettyDesk = {
 			text: 'Tell the truth: retract the cruelest part of what the email said.',
 			category: 'positive',
 			once: true,
-			requirements: withBettyStrategy( 'Truth', afterOpening( {
+			requirements: withBettyAngle( 'Truth', 'bettyTruthWinBetty', afterOpening( {
 				usedChoicesAll: [
 					'betty_feel_awful',
 				],
@@ -288,7 +428,7 @@ const bettyDesk = {
 			text: 'Tell the truth: ask Betty what the right thing to do is.',
 			category: 'positive',
 			once: true,
-			requirements: withBettyStrategy( 'Truth', afterOpening( {
+			requirements: withBettyAngle( 'Truth', 'bettyTruthWinBetty', afterOpening( {
 				usedChoicesAll: [
 					'betty_feel_awful',
 				],
@@ -314,7 +454,7 @@ const bettyDesk = {
 			text: 'Tell the truth: ask if anyone else has reacted yet.',
 			category: 'positive',
 			once: true,
-			requirements: withBettyStrategy( 'Truth', afterOpening() ),
+			requirements: withBettyAngle( 'Truth', 'bettyTruthContainCelia', afterOpening() ),
 			resultText: 'Betty exhales through her nose. “Devon noticed the recall. Tim noticed you. Celia has not reacted yet.” Yet is doing Olympic-level work in that sentence.',
 			effects: {
 				bars: {
@@ -344,7 +484,7 @@ const bettyDesk = {
 			text: 'Scheme: suggest Frank has been acting weird.',
 			category: 'underhanded',
 			once: true,
-			requirements: withBettyStrategy( 'Scheme', afterOpening() ),
+			requirements: withBettyAngle( 'Scheme', 'bettySchemeFrameFrank', afterOpening() ),
 			resultText: 'Betty frowns. Not because she believes you. Because now she has a shape to put her worry into.',
 			effects: {
 				bars: {
@@ -377,7 +517,7 @@ const bettyDesk = {
 			text: 'Scheme: ask if Tim has been asking questions.',
 			category: 'underhanded',
 			once: true,
-			requirements: withBettyStrategy( 'Scheme', afterOpening() ),
+			requirements: withBettyAngle( 'Scheme', 'bettySchemeProbeTim', afterOpening() ),
 			resultText: [
 				'Betty’s desk looked aggressively tidy, like clutter had once disappointed her personally.',
 				'“Betty, you seem like someone who returns a shopping cart even when no one’s watching.”',
@@ -409,7 +549,7 @@ const bettyDesk = {
 			text: 'Scheme: say the email looks worse without context.',
 			category: 'underhanded',
 			once: true,
-			requirements: withBettyStrategy( 'Scheme', afterOpening() ),
+			requirements: withBettyAngle( 'Scheme', 'bettySchemeBlameSystem', afterOpening() ),
 			resultText: 'Betty hears “context” and immediately looks tired. Context is what people ask for when the sentence is already guilty.',
 			effects: {
 				bars: {
@@ -428,7 +568,7 @@ const bettyDesk = {
 			text: 'Scheme: imply someone else may have forwarded the email.',
 			category: 'underhanded',
 			once: true,
-			requirements: withBettyStrategy( 'Scheme', afterOpening() ),
+			requirements: withBettyAngle( 'Scheme', 'bettySchemeFrameFrank', afterOpening() ),
 			resultText: 'Betty glances at Frank’s empty chair again. A rumor does not need proof to start walking. It just needs shoes.',
 			effects: {
 				bars: {
@@ -452,7 +592,7 @@ const bettyDesk = {
 			text: 'Stay neutral: ask what Betty thinks happened.',
 			category: 'info',
 			once: true,
-			requirements: withBettyStrategy( 'Neutral', afterOpening() ),
+			requirements: withBettyAngle( 'Neutral', 'bettyNeutralGatherReactions', afterOpening() ),
 			resultText: 'Betty says, “I think you are asking me what I know without asking what I know.” That is unfairly accurate and deeply unhelpful emotionally.',
 			effects: {
 				bars: {
@@ -471,7 +611,7 @@ const bettyDesk = {
 			text: 'Stay neutral: say you need to check something first.',
 			category: 'info',
 			once: true,
-			requirements: withBettyStrategy( 'Neutral', afterOpening() ),
+			requirements: withBettyAngle( 'Neutral', 'bettyNeutralDelayCommitment', afterOpening() ),
 			resultText: 'Betty nods like she accepts this. Betty does not accept this. She simply files it under “interesting cowardice.”',
 			effects: {
 				bars: {
@@ -490,7 +630,7 @@ const bettyDesk = {
 			text: 'Stay neutral: say the message was sent before you were finished.',
 			category: 'info',
 			once: true,
-			requirements: withBettyStrategy( 'Neutral', afterOpening() ),
+			requirements: withBettyAngle( 'Neutral', 'bettyNeutralDelayCommitment', afterOpening() ),
 			resultText: 'Betty looks at you like she has met unfinished drafts before and they usually do not contain complete insults by accident.',
 			effects: {
 				bars: {
@@ -509,7 +649,7 @@ const bettyDesk = {
 			text: 'Stay neutral: ask whether she saw anyone go into the kitchen or break room.',
 			category: 'info',
 			once: true,
-			requirements: withBettyStrategy( 'Neutral', afterOpening() ),
+			requirements: withBettyAngle( 'Neutral', 'bettyNeutralMapMovement', afterOpening() ),
 			resultText: 'Betty says Tim was near the fridge earlier, but Devon was hovering too. Betty notices more traffic than she admits.',
 			effects: {
 				flags: {
@@ -529,11 +669,15 @@ const bettyDesk = {
 			text: 'Stay neutral: ask who moved around after the email recall failed.',
 			category: 'info',
 			once: true,
-			requirements: withBettyStrategy( 'Neutral', afterOpening( {
+			requirements: afterOpening( {
 				flagsAll: [
 					'knowsBettyWatchesKitchen',
 				],
-			} ) ),
+				flagsAny: [
+					'bettySchemeFrameFrank',
+					'bettyNeutralMapMovement',
+				],
+			} ),
 			resultText: 'Betty remembers Frank leaving his desk and Devon drifting toward the break room. She says it casually, which is how useful facts sneak in.',
 			effects: {
 				flags: {
@@ -555,7 +699,7 @@ const bettyDesk = {
 			text: 'Stay neutral: ask why Tim labels everything in the fridge.',
 			category: 'info',
 			once: true,
-			requirements: withBettyStrategy( 'Neutral', afterOpening( {
+			requirements: withBettyAngle( 'Neutral', 'bettyNeutralMapMovement', afterOpening( {
 				flagsNone: [
 					'knowsTimFoodVulnerability',
 				],
@@ -593,7 +737,7 @@ const bettyDesk = {
 			text: 'Scheme: mention that small office things keep disappearing lately.',
 			category: 'underhanded',
 			once: true,
-			requirements: withBettyStrategy( 'Scheme', afterOpening( {
+			requirements: withBettyAngle( 'Scheme', 'bettySchemeBlameSystem', afterOpening( {
 				phaseMin: 'narrative_building',
 			} ) ),
 			resultText: 'Betty blinks like she is trying to remember whether she borrowed something. Useful. Ugly, but useful.',
@@ -614,7 +758,7 @@ const bettyDesk = {
 			text: 'Tell the truth: walk back the Frank comment before Betty repeats it.',
 			category: 'cleanup',
 			once: true,
-			requirements: withBettyStrategy( 'Truth', afterOpening( {
+			requirements: withBettyAngle( 'Truth', 'bettyTruthRepairDamage', afterOpening( {
 				barsMin: {
 					frameFrank: 25,
 				},
@@ -635,7 +779,7 @@ const bettyDesk = {
 			text: 'Tell the truth: ask Betty to speak up for you at the all-hands.',
 			category: 'commitment',
 			once: true,
-			requirements: withBettyStrategy( 'Truth', afterOpening( {
+			requirements: withBettyAngle( 'Truth', 'bettyTruthWinBetty', afterOpening( {
 				phaseMin: 'pressure_rising',
 				barsMin: {
 					warmBetty: 75,
@@ -668,8 +812,21 @@ const bettyDesk = {
 					bettyStrategyTruth: false,
 					bettyStrategyScheme: false,
 					bettyStrategyNeutral: false,
+					...getBettyAngleFlags(),
 				},
 				signal: 'You reconsider your approach with Betty.',
+			},
+		},
+		{
+			id: 'betty_choose_different_angle',
+			text: 'Choose a different angle.',
+			category: 'info',
+			advanceTurn: false,
+			requirements: bettyAngleSelected,
+			resultText: 'You keep the same approach, but change what you are trying to build with Betty.',
+			effects: {
+				flags: getBettyAngleFlags(),
+				signal: 'You choose a different Betty angle.',
 			},
 		},
 	],
