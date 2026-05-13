@@ -12,10 +12,6 @@ const celiaArea = {
 			body.push( 'Her eyes flick briefly toward your bag before returning to her screen. It is too quick to be an accusation and too specific to be nothing.' );
 		}
 
-		if ( state.flags.celiaScanningRoom ) {
-			body.push( 'Celia looks from her screen to the room, then back again.' );
-		}
-
 		return body;
 	},
 	internalThought: [
@@ -72,14 +68,10 @@ const celiaArea = {
 				flags: {
 					knowsCeliaHasHeardRumor: true,
 					celiaHeardFragments: true,
-					celiaScanningRoom: true,
 				},
 				bars: {
 					containCelia: 25,
 				},
-				queueVisibleAftermath: [
-					'celia_scans_room',
-				],
 				signal: 'Celia has heard a rumor, not the full blast. The window is small.',
 			},
 			nextScene: 'hub',
@@ -109,11 +101,7 @@ const celiaArea = {
 				},
 				flags: {
 					show_celiaDramatic: true,
-					celiaScanningRoom: true,
 				},
-				queueVisibleAftermath: [
-					'celia_scans_room',
-				],
 				signal: 'You pushed the fragment story. If the full email appears, this gets ugly fast.',
 			},
 			nextScene: 'hub',
