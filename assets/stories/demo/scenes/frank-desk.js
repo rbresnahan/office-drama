@@ -51,15 +51,10 @@ const frankDesk = {
 			effects: {
 				flags: {
 					frankLeftBagOut: true,
-					officeChatterStarted: true,
 				},
 				bars: {
-					frameFrank: 25,
-					frankRetaliates: 25,
+					frameFrank: 10,
 				},
-				queueVisibleAftermath: [
-					'printer_chatter_frank',
-				],
 				signal: 'Frank left something unattended. The Frank route gained texture and risk.',
 			},
 			nextScene: 'hub',
@@ -93,7 +88,7 @@ const frankDesk = {
 			],
 			effects: {
 				bars: {
-					frameFrank: 25,
+					frameFrank: 50,
 					frankRetaliates: 25,
 					managementEscalates: 25,
 				},
@@ -102,6 +97,7 @@ const frankDesk = {
 				},
 				flags: {
 					officeChatterStarted: true,
+					frankHeardRumor: true,
 				},
 				npc: {
 					frankMood: 'alert',
@@ -137,7 +133,7 @@ const frankDesk = {
 				bars: {
 					frankRetaliates: -25,
 					timSuspectsYou: -25,
-					frameFrank: -25,
+					frameFrank: -20,
 				},
 				flags: {
 					frankTalkedHonestly: true,
@@ -168,8 +164,8 @@ const frankDesk = {
 			resultText: 'Frank accepts the friendly tone. Tim may not. There is something suspicious about standing beside a fire while holding a cup of water and a book of matches.',
 			effects: {
 				bars: {
-					frankRetaliates: -25,
-					frameFrank: -25,
+					frankRetaliates: -20,
+					frameFrank: -20,
 					timSuspectsYou: 25,
 				},
 				signal: 'Frank cools down, but Tim notices the shape of the contradiction.',

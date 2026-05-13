@@ -33,6 +33,9 @@ export const backlashRules = [
 		id: 'frank_backlash_rule',
 		sceneId: 'backlash_frank',
 		requirements: {
+			flagsAll: [
+				'frankHeardRumor',
+			],
 			barsMin: {
 				frankRetaliates: 75,
 				frameFrank: 50,

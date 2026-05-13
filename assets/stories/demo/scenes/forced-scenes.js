@@ -136,8 +136,8 @@ export const forcedDevonLisaAskingFrank = {
 			effects: {
 				bars: {
 					devonLeak: -25,
-					frameFrank: -25,
-					frankRetaliates: -25,
+					frameFrank: -20,
+					frankRetaliates: -10,
 					managementEscalates: 25,
 				},
 				flags: {
@@ -157,8 +157,7 @@ export const forcedDevonLisaAskingFrank = {
 			effects: {
 				bars: {
 					devonLeak: 25,
-					frameFrank: 25,
-					frankRetaliates: 25,
+					frameFrank: 20,
 					managementEscalates: 25,
 				},
 				flags: {
@@ -196,8 +195,7 @@ export const forcedDevonFrankStoryMutated = {
 			effects: {
 				bars: {
 					devonLeak: -25,
-					frameFrank: -25,
-					frankRetaliates: -25,
+					frameFrank: -20,
 					timSuspectsYou: 25,
 				},
 				flags: {
@@ -218,7 +216,6 @@ export const forcedDevonFrankStoryMutated = {
 				bars: {
 					devonLeak: 25,
 					frameFrank: 25,
-					frankRetaliates: 25,
 					timSuspectsYou: 25,
 				},
 				flags: {
@@ -256,7 +253,7 @@ export const forcedFrankHearsHisName = {
 			effects: {
 				bars: {
 					frankRetaliates: -25,
-					frameFrank: -25,
+					frameFrank: -20,
 					managementEscalates: 25,
 				},
 				flags: {
@@ -376,7 +373,6 @@ export const forcedTimTimelineQuestion = {
 					frameFrank: 25,
 					distractTim: 25,
 					timSuspectsYou: 25,
-					frankRetaliates: 25,
 				},
 				flags: {
 					timTimelineQuestionHandled: true,

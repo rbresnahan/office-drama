@@ -362,7 +362,7 @@ const lisaArea = {
 			resultText: 'Lisa looks up slowly. That was not subtle. Still, she says Frank has been “frustrated with communication lately,” which is bureaucratic music to your awful little ears.',
 			effects: {
 				bars: {
-					frameFrank: 25,
+					frameFrank: 15,
 					managementEscalates: 25,
 				},
 				flags: {

@@ -119,7 +119,6 @@ export const forcedRules = [
 			phaseMin: 'pressure_rising',
 			barsMin: {
 				frameFrank: 50,
-				frankRetaliates: 50,
 			},
 			hiddenEventsAny: [
 				'betty_told_lisa_frank_suspicion',
@@ -134,6 +133,7 @@ export const forcedRules = [
 		effects: {
 			flags: {
 				frankHearsHisNamePending: true,
+				frankHeardRumor: true,
 			},
 			signal: 'Frank has heard enough of his name moving around the office to start looking for the source.',
 		},

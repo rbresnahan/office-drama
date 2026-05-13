@@ -149,29 +149,16 @@ function getEnvironmentalPressure( story, state ) {
 	return Math.max( ...redBars.map( ( bar ) => state.bars[ bar.id ] || 0 ) );
 }
 
-function hasPredeterminedAllHandsTrigger( state ) {
-	return Boolean(
-		state.flags.celiaHasFullEmail ||
-		state.flags.lisaIsDocumenting ||
-		state.flags.timConfrontedYou ||
-		state.flags.frankKnowsHeIsTargeted ||
-		state.flags.allHandsForced
-	);
-}
-
 function shouldStartFinale( story, state ) {
 	if ( state.finaleStarted ) {
 		return true;
 	}
 
-	if ( state.turn <= state.maxTurns ) {
+	if ( state.turn < state.maxTurns ) {
 		return false;
 	}
 
-	const pressureThreshold = Number.isInteger( story.allHandsPressureThreshold ) ? story.allHandsPressureThreshold : 75;
-	const environmentalPressure = getEnvironmentalPressure( story, state );
-
-	return environmentalPressure >= pressureThreshold || hasPredeterminedAllHandsTrigger( state );
+	return true;
 }
 
 function shouldStayInCurrentLocation( story, scene, choice ) {
@@ -449,16 +436,16 @@ export function createGame( story ) {
 			return;
 		}
 
+		if ( shouldStartFinale( story, state ) ) {
+			state.finaleStarted = true;
+			state.currentSceneId = story.allHandsIntroSceneId || story.finaleSceneId;
+			return;
+		}
+
 		const scheduleSceneId = getScheduleEventSceneId( story, state );
 
 		if ( scheduleSceneId ) {
 			triggerInterruptScene( scheduleSceneId, nextSceneId );
-			return;
-		}
-
-		if ( shouldStartFinale( story, state ) ) {
-			state.finaleStarted = true;
-			state.currentSceneId = story.allHandsIntroSceneId || story.finaleSceneId;
 			return;
 		}
 

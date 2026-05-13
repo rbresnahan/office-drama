@@ -90,8 +90,9 @@ const timDesk = {
 			category: 'underhanded',
 			once: true,
 			requirements: {
+				phaseMin: 'narrative_building',
 				barsMin: {
-					frameFrank: 25,
+					frameFrank: 10,
 				},
 			},
 			resultText: 'Tim writes nothing down. Somehow that is more threatening than writing it down.',
@@ -99,7 +100,7 @@ const timDesk = {
 				bars: {
 					frameFrank: 25,
 					distractTim: 25,
-					timSuspectsYou: 25,
+					timSuspectsYou: 10,
 				},
 				flags: {
 					timCheckingFrank: true,

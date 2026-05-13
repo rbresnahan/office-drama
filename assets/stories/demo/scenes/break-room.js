@@ -178,7 +178,7 @@ const breakRoom = {
 				bars: {
 					frameFrank: 25,
 					devonLeak: 25,
-					frankRetaliates: 25,
+					managementEscalates: 10,
 				},
 				flags: {
 					devonCarryingFrankStory: true,
@@ -279,7 +279,7 @@ const breakRoom = {
 			requirements: {
 				phaseMin: 'pressure_rising',
 				barsMin: {
-					frameFrank: 75,
+					frameFrank: 50,
 					devonLeak: 25,
 				},
 			},
@@ -287,14 +287,17 @@ const breakRoom = {
 			resultText: 'Devon walks away with a version of the story that has your fingerprints and his volume.',
 			effects: {
 				bars: {
-					frameFrank: 25,
+					frameFrank: 35,
 					devonLeak: 25,
-					frankRetaliates: 25,
 					managementEscalates: 25,
 				},
 				flags: {
 					officeChatterStarted: true,
+					devonSpreadFrankStory: true,
 				},
+				hiddenEvents: [
+					'devon_spreads_frank_story',
+				],
 				queueVisibleAftermath: [
 					'printer_chatter_frank',
 				],

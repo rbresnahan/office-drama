@@ -185,8 +185,7 @@ const bettyDesk = {
 			resultText: 'Betty frowns toward Frank’s empty chair. She does not believe the story yet. Worse and better: she can imagine it.',
 			effects: {
 				bars: {
-					frameFrank: 25,
-					frankRetaliates: 25,
+					frameFrank: 15,
 					bettyLosesTrust: 25,
 				},
 				flags: {
@@ -349,8 +348,7 @@ const bettyDesk = {
 			resultText: 'Betty frowns. Not because she believes you. Because now she has a shape to put her worry into.',
 			effects: {
 				bars: {
-					frameFrank: 25,
-					frankRetaliates: 25,
+					frameFrank: 10,
 				},
 				flags: {
 					bettyHeardFrankSuspicion: true,
@@ -434,20 +432,16 @@ const bettyDesk = {
 			resultText: 'Betty glances at Frank’s empty chair again. A rumor does not need proof to start walking. It just needs shoes.',
 			effects: {
 				bars: {
-					frameFrank: 25,
-					frankRetaliates: 25,
+					frameFrank: 20,
+					timSuspectsYou: 10,
 					bettyLosesTrust: 25,
 				},
 				flags: {
 					bettyHeardForwardedTheory: true,
 					sawFrankDeskEmpty: true,
-					officeChatterStarted: true,
 				},
 				unlocks: [
 					'tim_mention_frank_away',
-				],
-				queueVisibleAftermath: [
-					'printer_chatter_frank',
 				],
 				signal: 'The forwarded-email story can point at Frank, but it gives Tim a contradiction to chase.',
 			},
@@ -545,16 +539,12 @@ const bettyDesk = {
 				flags: {
 					bettySawFrankAway: true,
 					sawFrankDeskEmpty: true,
-					officeChatterStarted: true,
 				},
 				bars: {
-					frameFrank: 25,
+					frameFrank: 10,
 				},
 				unlocks: [
 					'tim_mention_frank_away',
-				],
-				queueVisibleAftermath: [
-					'printer_chatter_frank',
 				],
 				signal: 'Betty saw Frank away from his desk. The Frank story has a location now.',
 			},
@@ -632,8 +622,8 @@ const bettyDesk = {
 			resultText: 'You soften the Frank angle. Betty relaxes a fraction. The Frank route loses heat.',
 			effects: {
 				bars: {
-					frameFrank: -25,
-					frankRetaliates: -25,
+					frameFrank: -20,
+					frankRetaliates: -10,
 					bettyLosesTrust: -25,
 				},
 				signal: 'You lowered the Frank temperature. Boring, responsible, annoyingly useful.',
