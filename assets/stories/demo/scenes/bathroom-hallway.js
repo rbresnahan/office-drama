@@ -23,7 +23,6 @@ const bathroomHallway = {
 			id: 'bathroom_check_supplies',
 			text: 'Inspect the stall and supply cabinet.',
 			category: 'info',
-			advanceTurn: false,
 			once: true,
 			requirements: {
 				factsNone: [

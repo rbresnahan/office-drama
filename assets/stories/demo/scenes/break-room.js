@@ -225,7 +225,6 @@ const breakRoom = {
 			id: 'inspect_break_room_fridge',
 			text: 'Inspect the top of the fridge.',
 			category: 'info',
-			advanceTurn: false,
 			once: true,
 			requirements: withBreakRoomAngle( 'Neutral', 'breakRoomNeutralInspectRoom', {
 				factsNone: [

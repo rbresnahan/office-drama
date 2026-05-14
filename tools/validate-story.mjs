@@ -550,6 +550,75 @@ function validateChoiceEffects( choices, barIds, aftermathIds ) {
 	}
 }
 
+function isBacklashScene( scene ) {
+	return Boolean(
+		scene &&
+		(
+			scene.forced === true ||
+			scene.location === 'Backlash' ||
+			String( scene.id || '' ).startsWith( 'backlash_' )
+		)
+	);
+}
+
+function isCalendarOrInterruptScene( scene ) {
+	return Boolean( scene && ( scene.scheduleEvent === true || isBacklashScene( scene ) ) );
+}
+
+function isMenuChoice( choice ) {
+	const text = choice.text || '';
+
+	return Boolean(
+		text.startsWith( 'Strategy: ' ) ||
+		text.startsWith( 'Choose angle: ' ) ||
+		text === 'Think again.' ||
+		text === 'Choose a different angle.'
+	);
+}
+
+function hasRealEffects( effects ) {
+	if ( ! isPlainObject( effects ) ) {
+		return false;
+	}
+
+	return Object.keys( effects ).some( ( key ) => key !== 'signal' );
+}
+
+function validateNoTurnActionChoices( story, choices ) {
+	const exemptSceneIds = new Set( [
+		story.startSceneId,
+		story.hubSceneId,
+		story.allHandsIntroSceneId,
+		story.finaleSceneId,
+	] );
+
+	for ( const { sceneKey, scene, choice } of choices ) {
+		if ( ! choice || ! isPlainObject( choice ) ) {
+			continue;
+		}
+
+		if ( choice.advanceTurn !== false ) {
+			continue;
+		}
+
+		if ( exemptSceneIds.has( scene.id ) || isCalendarOrInterruptScene( scene ) ) {
+			continue;
+		}
+
+		if ( choice.category === 'move' || isMenuChoice( choice ) ) {
+			continue;
+		}
+
+		if ( ! hasRealEffects( choice.effects ) ) {
+			continue;
+		}
+
+		addError(
+			`${ formatChoiceLocation( sceneKey, choice ) } is a real action with effects but advanceTurn is false. Use no-turn only for movement, strategy, angle, or menu choices.`
+		);
+	}
+}
+
 function printReport() {
 	const errorCount = issues.errors.length;
 	const warningCount = issues.warnings.length;
@@ -614,6 +683,7 @@ function main() {
 	validateChoiceSceneTargets( choices, sceneIds );
 	validateChoiceReferences( choices, choiceIds );
 	validateChoiceEffects( choices, barIds, aftermathIds );
+	validateNoTurnActionChoices( story, choices );
 
 	printReport();
 

@@ -38,7 +38,6 @@ const supplyCloset = {
 			id: 'inspect_closet_shelves',
 			text: 'Inspect the storage shelves.',
 			category: 'info',
-			advanceTurn: false,
 			once: true,
 			requirements: {
 				factsNone: [
