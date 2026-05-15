@@ -825,6 +825,182 @@ function renderIntelPanel( panels ) {
 	`;
 }
 
+function getFlagValue( state, flagId ) {
+	return Boolean( state.flags && state.flags[ flagId ] );
+}
+
+function getFactValue( state, factId ) {
+	const facts = state.facts || state.flags || {};
+
+	return Boolean( facts[ factId ] );
+}
+
+function getNpcValue( state, npcId ) {
+	return Boolean( state.npc && state.npc[ npcId ] );
+}
+
+function getBarValue( state, barId ) {
+	const value = state.bars && Number( state.bars[ barId ] );
+
+	if ( ! Number.isFinite( value ) ) {
+		return 0;
+	}
+
+	return Math.max( 0, Math.min( 100, value ) );
+}
+
+function createBarMetric( label, value ) {
+	return {
+		label,
+		type: 'bar',
+		value,
+		displayValue: `${ value }%`,
+	};
+}
+
+function createBooleanMetric( label, value ) {
+	return {
+		label,
+		type: 'status',
+		value: value ? 'Yes' : 'No',
+		tone: value ? 'active' : 'quiet',
+	};
+}
+
+function getBettyCurrentRead( state ) {
+	const sympathy = getBarValue( state, 'warmBetty' );
+	const trustRisk = getBarValue( state, 'bettyLosesTrust' );
+	const frankStoryHeard = getFlagValue( state, 'bettyHeardFrankSuspicion' ) ||
+		getFlagValue( state, 'bettyHeardForwardedTheory' ) ||
+		getFlagValue( state, 'bettySawFrankAway' );
+
+	if ( trustRisk >= 50 ) {
+		return 'She is reading this as management, not panic.';
+	}
+
+	if ( sympathy >= 50 ) {
+		return 'She is warmer, but still checking the story.';
+	}
+
+	if ( frankStoryHeard ) {
+		return 'She has enough Frank material to carry it.';
+	}
+
+	return 'Observant, available, not committed.';
+}
+
+function getFrankCurrentRead( state ) {
+	const suspicion = getBarValue( state, 'frameFrank' );
+	const hostility = getBarValue( state, 'frankRetaliates' );
+	const frankAlert = state.npc && state.npc.frankMood === 'alert';
+
+	if ( getFactValue( state, 'bottlePlantedFrank' ) ) {
+		return 'The Frank story has physical evidence attached.';
+	}
+
+	if ( frankAlert || getFlagValue( state, 'frankHeardRumor' ) || hostility >= 50 ) {
+		return 'He has noticed the story taking his shape.';
+	}
+
+	if ( suspicion >= 50 ) {
+		return 'People can start reading him as suspicious.';
+	}
+
+	return 'Still an opportunity, not a committed story.';
+}
+
+function getNpcStatusCard( scene, state ) {
+	if ( scene.id === 'betty_desk' ) {
+		const frankStoryHeard = getFlagValue( state, 'bettyHeardFrankSuspicion' ) ||
+			getFlagValue( state, 'bettyHeardForwardedTheory' ) ||
+			getFlagValue( state, 'bettySawFrankAway' );
+
+		return {
+			name: 'Betty',
+			role: 'Desk Intel',
+			read: getBettyCurrentRead( state ),
+			metrics: [
+				createBarMetric( 'Sympathy', getBarValue( state, 'warmBetty' ) ),
+				createBarMetric( 'Trust Risk', getBarValue( state, 'bettyLosesTrust' ) ),
+				createBooleanMetric( 'Frank Story Heard', frankStoryHeard ),
+			],
+		};
+	}
+
+	if ( scene.id === 'frank_desk' ) {
+		const deskAccess = getNpcValue( state, 'frankAwayFromDesk' ) ||
+			getFlagValue( state, 'confirmedFrankAway' ) ||
+			getFlagValue( state, 'sawFrankDeskEmpty' );
+
+		return {
+			name: 'Frank',
+			role: 'Desk Intel',
+			read: getFrankCurrentRead( state ),
+			metrics: [
+				createBarMetric( 'Suspicion Around Frank', getBarValue( state, 'frameFrank' ) ),
+				createBarMetric( 'Hostility', getBarValue( state, 'frankRetaliates' ) ),
+				createBooleanMetric( 'Desk Access', deskAccess ),
+			],
+		};
+	}
+
+	return null;
+}
+
+function renderNpcMetric( metric ) {
+	if ( metric.type === 'bar' ) {
+		return `
+			<div class="npc-status__metric npc-status__metric--bar">
+				<div class="npc-status__metric-row">
+					<span>${ escapeHtml( metric.label ) }</span>
+					<strong>${ escapeHtml( metric.displayValue ) }</strong>
+				</div>
+				<div class="npc-status__track" aria-hidden="true">
+					<div class="npc-status__fill" style="width: ${ metric.value }%;"></div>
+				</div>
+			</div>
+		`;
+	}
+
+	return `
+		<div class="npc-status__metric npc-status__metric--status npc-status__metric--${ escapeHtml( metric.tone || 'quiet' ) }">
+			<span>${ escapeHtml( metric.label ) }</span>
+			<strong>${ escapeHtml( metric.value ) }</strong>
+		</div>
+	`;
+}
+
+function renderNpcStatusCard( scene, state ) {
+	const container = document.querySelector( '#npc-status' );
+
+	if ( ! container ) {
+		return;
+	}
+
+	const card = getNpcStatusCard( scene, state );
+
+	if ( ! card ) {
+		container.hidden = true;
+		container.innerHTML = '';
+		return;
+	}
+
+	container.hidden = false;
+	container.innerHTML = `
+		<div class="npc-status__header">
+			<div>
+				<div class="section-label">NPC Status</div>
+				<h2 class="npc-status__name">${ escapeHtml( card.name ) }</h2>
+			</div>
+			<span class="npc-status__role">${ escapeHtml( card.role ) }</span>
+		</div>
+		<div class="npc-status__metrics">
+			${ card.metrics.map( renderNpcMetric ).join( '' ) }
+		</div>
+		<p class="npc-status__read">${ escapeHtml( card.read ) }</p>
+	`;
+}
+
 function renderChoices( game, scene ) {
 	const choicesContainer = document.querySelector( '#choices' );
 
@@ -1173,6 +1349,7 @@ export function render( game ) {
 	renderBoardState( scene );
 	renderIntelTabs( panels );
 	renderIntelPanel( panels );
+	renderNpcStatusCard( scene, state );
 	renderChoices( game, scene );
 	renderStatusSummary( game, state );
 	bindIntelControls();
