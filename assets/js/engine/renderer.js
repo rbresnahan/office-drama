@@ -535,6 +535,81 @@ function getChoiceCategory( choice ) {
 	return category || 'neutral';
 }
 
+const STRATEGY_CATEGORY_BUTTONS = [
+	{
+		key: 'truth',
+		label: 'Truth',
+	},
+	{
+		key: 'scheme',
+		label: 'Scheme',
+	},
+	{
+		key: 'neutral',
+		label: 'Neutral',
+	},
+];
+
+function getStrategyCategoryKey( choice ) {
+	const match = String( choice.id || '' ).match( /_strategy_(truth|scheme|neutral)$/ );
+
+	return match ? match[ 1 ] : '';
+}
+
+function isStrategyParentChoice( choice ) {
+	return Boolean( getStrategyCategoryKey( choice ) );
+}
+
+function isStrategyThinkAgainChoice( choice ) {
+	return /_strategy_think_again$/.test( choice.id || '' );
+}
+
+function renderChoiceButton( choice, extraClass = '' ) {
+	const category = getChoiceCategory( choice );
+	const syntheticClass = choice.isSynthetic ? ' choice-button--synthetic' : '';
+
+	return `
+		<button class="choice-button choice-button--${ escapeHtml( category ) }${ syntheticClass }${ extraClass }" type="button" data-choice-id="${ escapeHtml( choice.id ) }">
+			<span class="choice-button__icon" aria-hidden="true">${ escapeHtml( getChoiceIcon( choice ) ) }</span>
+			<span class="choice-button__text">${ escapeHtml( choice.text ) }</span>
+			<span class="choice-button__chevron" aria-hidden="true">›</span>
+		</button>
+	`;
+}
+
+function renderStrategyCategoryRow( game, scene, choices ) {
+	const strategyChoices = choices.filter( isStrategyParentChoice );
+
+	if ( ! strategyChoices.length ) {
+		return '';
+	}
+
+	return `
+		<div class="choice-strategy-row" aria-label="Strategy">
+			${ STRATEGY_CATEGORY_BUTTONS.map( ( strategyCategory ) => {
+				const choice = strategyChoices.find( ( strategyChoice ) => {
+					return getStrategyCategoryKey( strategyChoice ) === strategyCategory.key;
+				} );
+				const hasRealFollowUp = choice && game.hasRealFollowUpForChoice( scene, choice.id );
+				const disabledAttribute = hasRealFollowUp ? '' : ' disabled aria-disabled="true"';
+				const choiceIdAttribute = hasRealFollowUp ? ` data-choice-id="${ escapeHtml( choice.id ) }"` : '';
+				const categoryClass = choice ? getChoiceCategory( choice ) : 'neutral';
+
+				return `
+					<button
+						class="choice-button choice-button--strategy choice-button--${ escapeHtml( categoryClass ) }${ hasRealFollowUp ? '' : ' choice-button--disabled' }"
+						type="button"
+						${ choiceIdAttribute }
+						${ disabledAttribute }
+					>
+						<span class="choice-button__text">${ escapeHtml( strategyCategory.label ) }</span>
+					</button>
+				`;
+			} ).join( '' ) }
+		</div>
+	`;
+}
+
 function isMainNavigationChoiceSet( choices ) {
 	return choices.length > 0 && choices.every( ( choice ) => getChoiceCategory( choice ) === 'move' );
 }
@@ -765,28 +840,22 @@ function renderChoices( game, scene ) {
 
 	const choices = game.getAvailableChoices( scene );
 	const isMainNavigation = isMainNavigationChoiceSet( choices );
+	const hasStrategyChoices = choices.some( isStrategyParentChoice );
+	const visibleChoices = hasStrategyChoices
+		? choices.filter( ( choice ) => ! isStrategyParentChoice( choice ) && ! isStrategyThinkAgainChoice( choice ) )
+		: choices.filter( ( choice ) => ! isStrategyThinkAgainChoice( choice ) );
 
-	choicesContainer.className = `choices-panel ${ isMainNavigation ? 'choices-panel--grid' : 'choices-panel--stacked' }`;
+	choicesContainer.className = `choices-panel ${ isMainNavigation ? 'choices-panel--grid' : 'choices-panel--stacked' }${ hasStrategyChoices ? ' choices-panel--strategy' : '' }`;
 
 	if ( ! choices.length ) {
 		choicesContainer.innerHTML = '<p class="empty-state">No useful moves are available here. That is rarely comforting.</p>';
 		return;
 	}
 
-	choicesContainer.innerHTML = choices
-		.map( ( choice ) => {
-			const category = getChoiceCategory( choice );
-			const syntheticClass = choice.isSynthetic ? ' choice-button--synthetic' : '';
-
-			return `
-				<button class="choice-button choice-button--${ escapeHtml( category ) }${ syntheticClass }" type="button" data-choice-id="${ escapeHtml( choice.id ) }">
-					<span class="choice-button__icon" aria-hidden="true">${ escapeHtml( getChoiceIcon( choice ) ) }</span>
-					<span class="choice-button__text">${ escapeHtml( choice.text ) }</span>
-					<span class="choice-button__chevron" aria-hidden="true">›</span>
-				</button>
-			`;
-		} )
-		.join( '' );
+	choicesContainer.innerHTML = [
+		renderStrategyCategoryRow( game, scene, choices ),
+		...visibleChoices.map( ( choice ) => renderChoiceButton( choice, hasStrategyChoices && choice.isSynthetic ? ' choice-button--full-width' : '' ) ),
+	].join( '' );
 }
 
 function renderStatusSummary( game, state ) {

@@ -686,6 +686,16 @@ h1 {
 	overscroll-behavior: contain;
 }
 
+.choices-panel--strategy {
+	grid-template-columns: 1fr;
+}
+
+.choice-strategy-row {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 8px;
+}
+
 .choice-button {
 	min-width: 0;
 	min-height: 52px;
@@ -765,6 +775,36 @@ h1 {
 	border-style: dashed;
 	color: rgba(246, 241, 255, 0.8);
 	background: rgba(255, 255, 255, 0.04);
+}
+
+.choice-button--strategy {
+	min-height: 46px;
+	grid-template-columns: minmax(0, 1fr);
+	place-items: center;
+	padding-inline: 8px;
+	text-align: center;
+}
+
+.choice-button--strategy .choice-button__text {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.choice-button--full-width {
+	width: 100%;
+}
+
+.choice-button--disabled,
+.choice-button:disabled {
+	cursor: not-allowed;
+	opacity: 0.45;
+}
+
+.choice-button--disabled:hover,
+.choice-button:disabled:hover {
+	transform: none;
+	background: rgba(255, 255, 255, 0.08);
 }
 
 .status-summary {

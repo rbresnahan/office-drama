@@ -15,6 +15,33 @@ function getChoiceCategory( choice ) {
 	return category || 'neutral';
 }
 
+function cloneState( sourceState ) {
+	return JSON.parse( JSON.stringify( sourceState ) );
+}
+
+function isStrategyParentChoice( choice ) {
+	return Boolean( choice && /_strategy_(truth|scheme|neutral)$/.test( choice.id || '' ) );
+}
+
+function isStrategyThinkAgainChoice( choice ) {
+	return Boolean( choice && /_strategy_think_again$/.test( choice.id || '' ) );
+}
+
+function isMenuChoice( choice ) {
+	const text = choice.text || '';
+
+	return (
+		isStrategyParentChoice( choice ) ||
+		isStrategyThinkAgainChoice( choice ) ||
+		text.startsWith( 'Choose angle:' ) ||
+		text === 'Choose a different angle.'
+	);
+}
+
+function isRealFollowUpChoice( choice ) {
+	return getChoiceCategory( choice ) !== 'move' && ! isMenuChoice( choice );
+}
+
 function isVisibleAftermathScene( scene ) {
 	return Boolean( scene && scene.id === VISIBLE_AFTERMATH_SCENE_ID );
 }
@@ -202,6 +229,48 @@ function getNextSceneId( story, state, scene, choice ) {
 	return choice.nextScene || getHubSceneId( story );
 }
 
+function getStoryScene( story, sceneId ) {
+	return story.scenes[ sceneId ] || story.scenes[ story.startSceneId ];
+}
+
+function getAvailableStoryChoicesForState( scene, candidateState ) {
+	return ( scene.choices || [] ).filter( ( choice ) => {
+		if ( choice.once && candidateState.usedChoices.includes( choice.id ) ) {
+			return false;
+		}
+
+		return requirementsMet( choice.requirements || {}, candidateState );
+	} );
+}
+
+function hasAvailableRealFollowUp( story, scene, candidateState, seenMenuChoices = new Set() ) {
+	const choices = getAvailableStoryChoicesForState( scene, candidateState );
+
+	if ( choices.some( isRealFollowUpChoice ) ) {
+		return true;
+	}
+
+	return choices.some( ( choice ) => {
+		if ( ! isMenuChoice( choice ) || isStrategyThinkAgainChoice( choice ) ) {
+			return false;
+		}
+
+		if ( seenMenuChoices.has( choice.id ) ) {
+			return false;
+		}
+
+		const nextState = cloneState( candidateState );
+		const nextSeenMenuChoices = new Set( seenMenuChoices );
+		nextSeenMenuChoices.add( choice.id );
+		applyChoiceEffects( nextState, choice );
+
+		const nextSceneId = getNextSceneId( story, nextState, scene, choice );
+		const nextScene = getStoryScene( story, nextSceneId );
+
+		return hasAvailableRealFollowUp( story, nextScene, nextState, nextSeenMenuChoices );
+	} );
+}
+
 function applyRuleEffects( state, rule ) {
 	if ( ! rule.effects ) {
 		return;
@@ -319,19 +388,30 @@ export function createGame( story ) {
 	}
 
 	function getAvailableChoices( scene = getCurrentScene() ) {
-		const choices = ( scene.choices || [] ).filter( ( choice ) => {
-			if ( choice.once && state.usedChoices.includes( choice.id ) ) {
-				return false;
-			}
-
-			return requirementsMet( choice.requirements || {}, state );
-		} );
+		const choices = getAvailableStoryChoicesForState( scene, state );
 
 		if ( shouldAddLeaveChoice( story, scene ) ) {
 			return [ ...choices, createLeaveChoice( scene, story ) ];
 		}
 
 		return choices;
+	}
+
+	function hasRealFollowUpForChoice( scene, choiceId ) {
+		const choice = getAvailableStoryChoicesForState( scene, state )
+			.find( ( availableChoice ) => availableChoice.id === choiceId );
+
+		if ( ! choice || ! isStrategyParentChoice( choice ) ) {
+			return false;
+		}
+
+		const candidateState = cloneState( state );
+		applyChoiceEffects( candidateState, choice );
+
+		const nextSceneId = getNextSceneId( story, candidateState, scene, choice );
+		const nextScene = getStoryScene( story, nextSceneId );
+
+		return hasAvailableRealFollowUp( story, nextScene, candidateState );
 	}
 
 	function getTriggeredBacklashSceneId() {
@@ -488,6 +568,7 @@ export function createGame( story ) {
 		getScene,
 		getCurrentScene,
 		getAvailableChoices,
+		hasRealFollowUpForChoice,
 		getFinaleResult,
 		getPhase,
 		getPressure,
