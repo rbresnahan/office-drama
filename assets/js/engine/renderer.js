@@ -577,7 +577,7 @@ function renderChoiceButton( choice, extraClass = '' ) {
 	`;
 }
 
-function renderStrategyCategoryRow( game, scene, choices ) {
+function renderStrategyCategoryRow( choices ) {
 	const strategyChoices = choices.filter( isStrategyParentChoice );
 
 	if ( ! strategyChoices.length ) {
@@ -590,14 +590,14 @@ function renderStrategyCategoryRow( game, scene, choices ) {
 				const choice = strategyChoices.find( ( strategyChoice ) => {
 					return getStrategyCategoryKey( strategyChoice ) === strategyCategory.key;
 				} );
-				const hasRealFollowUp = choice && game.hasRealFollowUpForChoice( scene, choice.id );
-				const disabledAttribute = hasRealFollowUp ? '' : ' disabled aria-disabled="true"';
-				const choiceIdAttribute = hasRealFollowUp ? ` data-choice-id="${ escapeHtml( choice.id ) }"` : '';
+				const isDisabled = ! choice || choice.disabled;
+				const disabledAttribute = isDisabled ? ' disabled aria-disabled="true"' : '';
+				const choiceIdAttribute = isDisabled ? '' : ` data-choice-id="${ escapeHtml( choice.id ) }"`;
 				const categoryClass = choice ? getChoiceCategory( choice ) : 'neutral';
 
 				return `
 					<button
-						class="choice-button choice-button--strategy choice-button--${ escapeHtml( categoryClass ) }${ hasRealFollowUp ? '' : ' choice-button--disabled' }"
+						class="choice-button choice-button--strategy choice-button--${ escapeHtml( categoryClass ) }${ isDisabled ? ' choice-button--disabled' : '' }"
 						type="button"
 						${ choiceIdAttribute }
 						${ disabledAttribute }
@@ -686,6 +686,7 @@ function buildIntelPanels( game, scene, state, content ) {
 	const characterId = getSceneCharacterId( scene );
 	const panels = [ buildStoryPanel( scene, content ) ];
 	const peoplePanel = buildPeoplePanel( scene, content, characterId );
+	const npcStatus = getNpcStatusCard( scene, state );
 
 	if ( peoplePanel ) {
 		panels.push( peoplePanel );
@@ -694,7 +695,10 @@ function buildIntelPanels( game, scene, state, content ) {
 	panels.push( buildChatterPanel( scene, state ) );
 	panels.push( buildThoughtPanel( scene, content ) );
 
-	return panels;
+	return panels.map( ( panel ) => ( {
+		...panel,
+		npcStatus,
+	} ) );
 }
 
 function getDefaultIntelPanelId( scene, state ) {
@@ -758,6 +762,28 @@ function renderNotices( notices ) {
 	`;
 }
 
+function renderNpcStatusContent( card ) {
+	if ( ! card ) {
+		return '';
+	}
+
+	return `
+		<div class="npc-status" aria-label="${ escapeHtml( card.name ) } status">
+			<div class="npc-status__header">
+				<div>
+					<div class="section-label">NPC Status</div>
+					<h2 class="npc-status__name">${ escapeHtml( card.name ) }</h2>
+				</div>
+				<span class="npc-status__role">${ escapeHtml( card.role ) }</span>
+			</div>
+			<div class="npc-status__metrics">
+				${ card.metrics.map( renderNpcMetric ).join( '' ) }
+			</div>
+			<p class="npc-status__read">${ escapeHtml( card.read ) }</p>
+		</div>
+	`;
+}
+
 function renderPanelDots( panels ) {
 	return `
 		<div class="intel-dots" aria-hidden="true">
@@ -814,6 +840,7 @@ function renderIntelPanel( panels ) {
 						</div>
 
 						${ renderNotices( activePanel.notices ) }
+						${ renderNpcStatusContent( activePanel.npcStatus ) }
 					</div>
 				</div>
 			</div>
@@ -911,10 +938,6 @@ function getFrankCurrentRead( state ) {
 
 function getNpcStatusCard( scene, state ) {
 	if ( scene.id === 'betty_desk' ) {
-		const frankStoryHeard = getFlagValue( state, 'bettyHeardFrankSuspicion' ) ||
-			getFlagValue( state, 'bettyHeardForwardedTheory' ) ||
-			getFlagValue( state, 'bettySawFrankAway' );
-
 		return {
 			name: 'Betty',
 			role: 'Desk Intel',
@@ -922,7 +945,6 @@ function getNpcStatusCard( scene, state ) {
 			metrics: [
 				createBarMetric( 'Sympathy', getBarValue( state, 'warmBetty' ) ),
 				createBarMetric( 'Trust Risk', getBarValue( state, 'bettyLosesTrust' ) ),
-				createBooleanMetric( 'Frank Story Heard', frankStoryHeard ),
 			],
 		};
 	}
@@ -970,37 +992,6 @@ function renderNpcMetric( metric ) {
 	`;
 }
 
-function renderNpcStatusCard( scene, state ) {
-	const container = document.querySelector( '#npc-status' );
-
-	if ( ! container ) {
-		return;
-	}
-
-	const card = getNpcStatusCard( scene, state );
-
-	if ( ! card ) {
-		container.hidden = true;
-		container.innerHTML = '';
-		return;
-	}
-
-	container.hidden = false;
-	container.innerHTML = `
-		<div class="npc-status__header">
-			<div>
-				<div class="section-label">NPC Status</div>
-				<h2 class="npc-status__name">${ escapeHtml( card.name ) }</h2>
-			</div>
-			<span class="npc-status__role">${ escapeHtml( card.role ) }</span>
-		</div>
-		<div class="npc-status__metrics">
-			${ card.metrics.map( renderNpcMetric ).join( '' ) }
-		</div>
-		<p class="npc-status__read">${ escapeHtml( card.read ) }</p>
-	`;
-}
-
 function renderChoices( game, scene ) {
 	const choicesContainer = document.querySelector( '#choices' );
 
@@ -1029,7 +1020,7 @@ function renderChoices( game, scene ) {
 	}
 
 	choicesContainer.innerHTML = [
-		renderStrategyCategoryRow( game, scene, choices ),
+		renderStrategyCategoryRow( choices ),
 		...visibleChoices.map( ( choice ) => renderChoiceButton( choice, hasStrategyChoices && choice.isSynthetic ? ' choice-button--full-width' : '' ) ),
 	].join( '' );
 }
@@ -1349,7 +1340,6 @@ export function render( game ) {
 	renderBoardState( scene );
 	renderIntelTabs( panels );
 	renderIntelPanel( panels );
-	renderNpcStatusCard( scene, state );
 	renderChoices( game, scene );
 	renderStatusSummary( game, state );
 	bindIntelControls();

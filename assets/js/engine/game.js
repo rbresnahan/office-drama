@@ -42,6 +42,48 @@ function isRealFollowUpChoice( choice ) {
 	return getChoiceCategory( choice ) !== 'move' && ! isMenuChoice( choice );
 }
 
+function getStrategyParentChoices( scene ) {
+	return ( scene.choices || [] ).filter( isStrategyParentChoice );
+}
+
+function isStrategyScene( scene ) {
+	return getStrategyParentChoices( scene ).length > 0;
+}
+
+function getMenuEffectFlagIds( scene ) {
+	const flagIds = new Set();
+
+	( scene.choices || [] ).forEach( ( choice ) => {
+		const flags = choice.effects && choice.effects.flags;
+
+		if ( ! isMenuChoice( choice ) || ! flags ) {
+			return;
+		}
+
+		Object.entries( flags ).forEach( ( [ flagId, value ] ) => {
+			if ( typeof value === 'boolean' ) {
+				flagIds.add( flagId );
+			}
+		} );
+	} );
+
+	return flagIds;
+}
+
+function clearTemporaryStrategyState( scene, targetState ) {
+	getMenuEffectFlagIds( scene ).forEach( ( flagId ) => {
+		targetState.flags[ flagId ] = false;
+	} );
+}
+
+function applyChoiceEffectsForCandidate( scene, candidateState, choice ) {
+	if ( isStrategyParentChoice( choice ) ) {
+		clearTemporaryStrategyState( scene, candidateState );
+	}
+
+	applyChoiceEffects( candidateState, choice );
+}
+
 function isVisibleAftermathScene( scene ) {
 	return Boolean( scene && scene.id === VISIBLE_AFTERMATH_SCENE_ID );
 }
@@ -262,7 +304,7 @@ function hasAvailableRealFollowUp( story, scene, candidateState, seenMenuChoices
 		const nextState = cloneState( candidateState );
 		const nextSeenMenuChoices = new Set( seenMenuChoices );
 		nextSeenMenuChoices.add( choice.id );
-		applyChoiceEffects( nextState, choice );
+		applyChoiceEffectsForCandidate( scene, nextState, choice );
 
 		const nextSceneId = getNextSceneId( story, nextState, scene, choice );
 		const nextScene = getStoryScene( story, nextSceneId );
@@ -389,16 +431,32 @@ export function createGame( story ) {
 
 	function getAvailableChoices( scene = getCurrentScene() ) {
 		const choices = getAvailableStoryChoicesForState( scene, state );
+		const strategyParentChoices = getStrategyParentChoices( scene );
+		const shouldRenderStrategyRow = strategyParentChoices.length > 0;
+		const visibleChoices = shouldRenderStrategyRow
+			? choices.filter( ( choice ) => ! isStrategyParentChoice( choice ) )
+			: choices;
 
-		if ( shouldAddLeaveChoice( story, scene ) ) {
-			return [ ...choices, createLeaveChoice( scene, story ) ];
+		let availableChoices = visibleChoices;
+
+		if ( shouldRenderStrategyRow ) {
+			const renderedStrategyChoices = strategyParentChoices.map( ( choice ) => ( {
+				...choice,
+				disabled: ! hasRealFollowUpForChoice( scene, choice.id ),
+			} ) );
+
+			availableChoices = [ ...renderedStrategyChoices, ...visibleChoices ];
 		}
 
-		return choices;
+		if ( shouldAddLeaveChoice( story, scene ) ) {
+			return [ ...availableChoices, createLeaveChoice( scene, story ) ];
+		}
+
+		return availableChoices;
 	}
 
 	function hasRealFollowUpForChoice( scene, choiceId ) {
-		const choice = getAvailableStoryChoicesForState( scene, state )
+		const choice = ( scene.choices || [] )
 			.find( ( availableChoice ) => availableChoice.id === choiceId );
 
 		if ( ! choice || ! isStrategyParentChoice( choice ) ) {
@@ -406,7 +464,13 @@ export function createGame( story ) {
 		}
 
 		const candidateState = cloneState( state );
-		applyChoiceEffects( candidateState, choice );
+		clearTemporaryStrategyState( scene, candidateState );
+
+		if ( ! requirementsMet( choice.requirements || {}, candidateState ) ) {
+			return false;
+		}
+
+		applyChoiceEffectsForCandidate( scene, candidateState, choice );
 
 		const nextSceneId = getNextSceneId( story, candidateState, scene, choice );
 		const nextScene = getStoryScene( story, nextSceneId );
@@ -480,7 +544,21 @@ export function createGame( story ) {
 			return;
 		}
 
+		if ( choice.disabled ) {
+			return;
+		}
+
+		const shouldClearTemporaryStrategyAfterChoice = isStrategyScene( scene ) && isRealFollowUpChoice( choice );
+
+		if ( isStrategyParentChoice( choice ) ) {
+			clearTemporaryStrategyState( scene, state );
+		}
+
 		applyChoiceEffects( state, choice );
+
+		if ( shouldClearTemporaryStrategyAfterChoice ) {
+			clearTemporaryStrategyState( scene, state );
+		}
 
 		if ( isVisibleAftermathScene( scene ) ) {
 			clearCurrentVisibleAftermath();

@@ -781,14 +781,16 @@ h1 {
 	min-height: 46px;
 	grid-template-columns: minmax(0, 1fr);
 	place-items: center;
-	padding-inline: 8px;
+	padding: 4px 8px;
 	text-align: center;
 }
 
 .choice-button--strategy .choice-button__text {
+	width: 100%;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+	text-align: center;
 }
 
 .choice-button--full-width {
@@ -807,18 +809,15 @@ h1 {
 	background: rgba(255, 255, 255, 0.08);
 }
 
-.npc-status[hidden] {
-	display: none;
-}
-
 .npc-status {
 	display: grid;
 	grid-template-columns: minmax(130px, 0.8fr) minmax(0, 1.6fr) minmax(160px, 1fr);
 	align-items: center;
 	gap: 12px;
+	margin-top: 12px;
 	padding: 12px 14px;
 	border: 1px solid rgba(142, 202, 230, 0.24);
-	border-radius: 16px;
+	border-radius: var(--radius-small);
 	background:
 		linear-gradient(90deg, rgba(142, 202, 230, 0.1), rgba(255, 255, 255, 0.045)),
 		rgba(7, 10, 24, 0.62);
