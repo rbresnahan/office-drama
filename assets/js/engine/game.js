@@ -27,6 +27,10 @@ function isStrategyThinkAgainChoice( choice ) {
 	return Boolean( choice && /_strategy_think_again$/.test( choice.id || '' ) );
 }
 
+function isStrategyAngleChoice( choice ) {
+	return Boolean( choice && String( choice.text || '' ).startsWith( 'Choose angle:' ) );
+}
+
 function isMenuChoice( choice ) {
 	const text = choice.text || '';
 
@@ -293,7 +297,7 @@ function hasAvailableRealFollowUp( story, scene, candidateState, seenMenuChoices
 	}
 
 	return choices.some( ( choice ) => {
-		if ( ! isMenuChoice( choice ) || isStrategyThinkAgainChoice( choice ) ) {
+		if ( ! isStrategyAngleChoice( choice ) ) {
 			return false;
 		}
 

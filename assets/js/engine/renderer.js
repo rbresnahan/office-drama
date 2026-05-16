@@ -564,6 +564,14 @@ function isStrategyThinkAgainChoice( choice ) {
 	return /_strategy_think_again$/.test( choice.id || '' );
 }
 
+function isChooseDifferentAngleChoice( choice ) {
+	return /_choose_different_angle$/.test( choice.id || '' );
+}
+
+function isHiddenStrategyMenuChoice( choice ) {
+	return isStrategyThinkAgainChoice( choice ) || isChooseDifferentAngleChoice( choice );
+}
+
 function getDisplayChoiceText( choice ) {
 	return String( choice.text || '' ).replace(
 		/^(Choose angle:|Tell the truth:|Truth:|Scheme:|Stay neutral:)\s*/i,
@@ -990,8 +998,8 @@ function renderChoices( game, scene ) {
 	const isMainNavigation = isMainNavigationChoiceSet( choices );
 	const hasStrategyChoices = choices.some( isStrategyParentChoice );
 	const visibleChoices = hasStrategyChoices
-		? choices.filter( ( choice ) => ! isStrategyParentChoice( choice ) && ! isStrategyThinkAgainChoice( choice ) )
-		: choices.filter( ( choice ) => ! isStrategyThinkAgainChoice( choice ) );
+		? choices.filter( ( choice ) => ! isStrategyParentChoice( choice ) && ! isHiddenStrategyMenuChoice( choice ) )
+		: choices.filter( ( choice ) => ! isHiddenStrategyMenuChoice( choice ) );
 
 	choicesContainer.className = `choices-panel ${ isMainNavigation ? 'choices-panel--grid' : 'choices-panel--stacked' }${ hasStrategyChoices ? ' choices-panel--strategy' : '' }`;
 
