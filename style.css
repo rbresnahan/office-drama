@@ -892,6 +892,7 @@ h1 {
 .npc-status__track {
 	height: 7px;
 	overflow: hidden;
+	border: 1px solid rgba(142, 202, 230, 0.22);
 	border-radius: 999px;
 	background: rgba(255, 255, 255, 0.11);
 }

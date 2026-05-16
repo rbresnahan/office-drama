@@ -564,6 +564,13 @@ function isStrategyThinkAgainChoice( choice ) {
 	return /_strategy_think_again$/.test( choice.id || '' );
 }
 
+function getDisplayChoiceText( choice ) {
+	return String( choice.text || '' ).replace(
+		/^(Choose angle:|Tell the truth:|Truth:|Scheme:|Stay neutral:)\s*/i,
+		''
+	);
+}
+
 function renderChoiceButton( choice, extraClass = '' ) {
 	const category = getChoiceCategory( choice );
 	const syntheticClass = choice.isSynthetic ? ' choice-button--synthetic' : '';
@@ -571,7 +578,7 @@ function renderChoiceButton( choice, extraClass = '' ) {
 	return `
 		<button class="choice-button choice-button--${ escapeHtml( category ) }${ syntheticClass }${ extraClass }" type="button" data-choice-id="${ escapeHtml( choice.id ) }">
 			<span class="choice-button__icon" aria-hidden="true">${ escapeHtml( getChoiceIcon( choice ) ) }</span>
-			<span class="choice-button__text">${ escapeHtml( choice.text ) }</span>
+			<span class="choice-button__text">${ escapeHtml( getDisplayChoiceText( choice ) ) }</span>
 			<span class="choice-button__chevron" aria-hidden="true">›</span>
 		</button>
 	`;
@@ -640,7 +647,7 @@ function buildPeoplePanel( scene, content, characterId ) {
 		id: 'people',
 		label: profile.name,
 		icon: profile.icon,
-		eyebrow: `${ profile.name } Intel`,
+		eyebrow: '',
 		title: scene.location || profile.name,
 		subtitle: profile.role,
 		body,
@@ -689,16 +696,16 @@ function buildIntelPanels( game, scene, state, content ) {
 	const npcStatus = getNpcStatusCard( scene, state );
 
 	if ( peoplePanel ) {
-		panels.push( peoplePanel );
+		panels.push( {
+			...peoplePanel,
+			npcStatus,
+		} );
 	}
 
 	panels.push( buildChatterPanel( scene, state ) );
 	panels.push( buildThoughtPanel( scene, content ) );
 
-	return panels.map( ( panel ) => ( {
-		...panel,
-		npcStatus,
-	} ) );
+	return panels;
 }
 
 function getDefaultIntelPanelId( scene, state ) {
@@ -769,13 +776,6 @@ function renderNpcStatusContent( card ) {
 
 	return `
 		<div class="npc-status" aria-label="${ escapeHtml( card.name ) } status">
-			<div class="npc-status__header">
-				<div>
-					<div class="section-label">NPC Status</div>
-					<h2 class="npc-status__name">${ escapeHtml( card.name ) }</h2>
-				</div>
-				<span class="npc-status__role">${ escapeHtml( card.role ) }</span>
-			</div>
 			<div class="npc-status__metrics">
 				${ card.metrics.map( renderNpcMetric ).join( '' ) }
 			</div>
@@ -826,7 +826,7 @@ function renderIntelPanel( panels ) {
 				<div class="intel-card__copy">
 					<div class="intel-card__header">
 						<div>
-							<div class="section-label">${ escapeHtml( activePanel.eyebrow ) }</div>
+							${ activePanel.eyebrow ? `<div class="section-label">${ escapeHtml( activePanel.eyebrow ) }</div>` : '' }
 							<h2 class="intel-card__title">${ escapeHtml( activePanel.title ) }</h2>
 							${ activePanel.subtitle ? `<p class="intel-card__subtitle">${ escapeHtml( activePanel.subtitle ) }</p>` : '' }
 						</div>
@@ -863,10 +863,6 @@ function getFactValue( state, factId ) {
 	return Boolean( facts[ factId ] );
 }
 
-function getNpcValue( state, npcId ) {
-	return Boolean( state.npc && state.npc[ npcId ] );
-}
-
 function getBarValue( state, barId ) {
 	const value = state.bars && Number( state.bars[ barId ] );
 
@@ -883,15 +879,6 @@ function createBarMetric( label, value ) {
 		type: 'bar',
 		value,
 		displayValue: `${ value }%`,
-	};
-}
-
-function createBooleanMetric( label, value ) {
-	return {
-		label,
-		type: 'status',
-		value: value ? 'Yes' : 'No',
-		tone: value ? 'active' : 'quiet',
 	};
 }
 
@@ -941,7 +928,6 @@ function getNpcStatusCard( scene, state ) {
 	if ( scene.id === 'betty_desk' ) {
 		return {
 			name: 'Betty',
-			role: 'Desk Intel',
 			read: getBettyCurrentRead( state ),
 			metrics: [
 				createBarMetric( 'Sympathy', getBarValue( state, 'warmBetty' ) ),
@@ -951,18 +937,12 @@ function getNpcStatusCard( scene, state ) {
 	}
 
 	if ( scene.id === 'frank_desk' ) {
-		const deskAccess = getNpcValue( state, 'frankAwayFromDesk' ) ||
-			getFlagValue( state, 'confirmedFrankAway' ) ||
-			getFlagValue( state, 'sawFrankDeskEmpty' );
-
 		return {
 			name: 'Frank',
-			role: 'Desk Intel',
 			read: getFrankCurrentRead( state ),
 			metrics: [
 				createBarMetric( 'Suspicion Around Frank', getBarValue( state, 'frameFrank' ) ),
 				createBarMetric( 'Hostility', getBarValue( state, 'frankRetaliates' ) ),
-				createBooleanMetric( 'Desk Access', deskAccess ),
 			],
 		};
 	}
