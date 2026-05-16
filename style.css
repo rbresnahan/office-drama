@@ -778,11 +778,17 @@ h1 {
 }
 
 .choice-button--strategy {
-	min-height: 46px;
-	grid-template-columns: minmax(0, 1fr);
-	place-items: center;
+	min-height: 38px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	grid-template-columns: none;
 	padding: 4px 8px;
 	text-align: center;
+}
+
+.choices-panel--stacked .choice-button--strategy {
+	min-height: 38px;
 }
 
 .choice-button--strategy .choice-button__text {

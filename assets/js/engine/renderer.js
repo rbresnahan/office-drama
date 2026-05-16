@@ -834,13 +834,14 @@ function renderIntelPanel( panels ) {
 						${ renderExpandButton( activePanel ) }
 					</div>
 
+					${ renderNpcStatusContent( activePanel.npcStatus ) }
+
 					<div class="intel-card__scroll" tabindex="0">
 						<div class="intel-card__body">
 							${ renderParagraphs( activePanel.body ) }
 						</div>
 
 						${ renderNotices( activePanel.notices ) }
-						${ renderNpcStatusContent( activePanel.npcStatus ) }
 					</div>
 				</div>
 			</div>
