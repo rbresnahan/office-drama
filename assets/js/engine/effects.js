@@ -143,7 +143,7 @@ export function applyChoiceEffects( state, choice ) {
 	const effects = choice.effects || {};
 	const threadFeedbackMessages = [];
 
-	state.usedChoices.push( choice.id );
+	setListValue( state.usedChoices, choice.id );
 
 	state.history.push( {
 		turn: state.turn,

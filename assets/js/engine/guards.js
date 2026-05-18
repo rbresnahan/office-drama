@@ -51,6 +51,10 @@ function getHiddenEventsState( state ) {
 	return Array.isArray( state.hiddenEvents ) ? state.hiddenEvents : [];
 }
 
+function getUsedChoicesState( state ) {
+	return Array.isArray( state.usedChoices ) ? state.usedChoices : [];
+}
+
 export function requirementsMet( requirements = {}, state ) {
 	const currentPhase = getCurrentPhase( state );
 	const currentPhaseIndex = getPhaseIndex( currentPhase.id );
@@ -127,11 +131,15 @@ export function requirementsMet( requirements = {}, state ) {
 		return false;
 	}
 
-	if ( requirements.usedChoicesAll && ! listHasAll( state.usedChoices, requirements.usedChoicesAll ) ) {
+	if ( requirements.usedChoicesAll && ! listHasAll( getUsedChoicesState( state ), requirements.usedChoicesAll ) ) {
 		return false;
 	}
 
-	if ( requirements.usedChoicesNone && ! listHasNone( state.usedChoices, requirements.usedChoicesNone ) ) {
+	if ( requirements.usedChoicesAny && ! listHasAny( getUsedChoicesState( state ), requirements.usedChoicesAny ) ) {
+		return false;
+	}
+
+	if ( requirements.usedChoicesNone && ! listHasNone( getUsedChoicesState( state ), requirements.usedChoicesNone ) ) {
 		return false;
 	}
 
